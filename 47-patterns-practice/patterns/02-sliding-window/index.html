@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sliding Window — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0c12;
+  --surface: #111119;
+  --card: #15151e;
+  --border: #23233a;
+  --text: #e2e2f0;
+  --muted: #52526e;
+  --faint: #1e1e2e;
+
+  --c1: #a78bfa;
+  --c2: #38bdf8;
+  --c3: #fb923c;
+  --c4: #4ade80;
+
+  --b1: rgba(167,139,250,0.08);
+  --b2: rgba(56,189,248,0.07);
+  --b3: rgba(251,146,60,0.08);
+  --b4: rgba(74,222,128,0.07);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image: radial-gradient(rgba(56,189,248,0.1) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events:none; z-index:0;
+}
+
+.wrap {
+  width: 100%; max-width: 820px;
+  padding: 48px 24px 80px;
+  position: relative; z-index:1;
+}
+
+/* ── Header ── */
+.hdr { text-align:center; margin-bottom: 40px; }
+.hdr-pill {
+  display:inline-block;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; letter-spacing:3px; text-transform:uppercase;
+  color:var(--c2); border:1px solid rgba(56,189,248,0.3);
+  padding:4px 14px; border-radius:20px; margin-bottom:16px;
+}
+.hdr h1 {
+  font-size: clamp(24px,5vw,52px); font-weight:800;
+  letter-spacing:-1.5px; line-height:1;
+  background:linear-gradient(120deg,#fff 0%,var(--c2) 50%,var(--c4) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:8px;
+}
+.hdr p {
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px; color:var(--muted);
+}
+
+/* ── Pattern selector ── */
+.selector-wrap { margin-bottom: 28px; }
+.selector-label {
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:10px;
+}
+.selector { display:flex; flex-wrap:wrap; gap:8px; }
+.sel-btn {
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; padding:6px 14px;
+  border:1px solid var(--border);
+  background: var(--faint); color:var(--muted);
+  border-radius:3px; cursor:pointer;
+  transition: all .15s; user-select:none;
+}
+.sel-btn:hover { border-color:var(--c2); color:var(--text); }
+.sel-btn.active {
+  background:rgba(56,189,248,0.1);
+  border-color:var(--c2); color:var(--c2);
+}
+
+/* ── Score bar ── */
+.scorebar {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:20px; padding: 10px 16px;
+  background: var(--surface);
+  border:1px solid var(--border); border-radius:4px;
+}
+.score-item {
+  font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted);
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+}
+.score-item strong { font-size:20px; font-weight:700; color:var(--text); line-height:1; }
+.score-item.good strong { color:var(--c4); }
+.score-item.bad  strong { color:var(--c3); }
+.progress-bar {
+  flex:1; margin:0 20px;
+  height:4px; background:var(--border); border-radius:2px; overflow:hidden;
+}
+.progress-fill {
+  height:100%; background:var(--c2);
+  border-radius:2px; transition: width .4s;
+}
+
+/* ── Template Box ── */
+.template-box {
+  background: var(--card);
+  border:1px solid var(--border);
+  border-radius:6px; overflow:hidden;
+  box-shadow: 0 0 60px rgba(56,189,248,0.04);
+}
+.tbox-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 20px;
+  border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,0.015);
+}
+.tbox-title {
+  font-family:'JetBrains Mono',monospace; font-size:12px;
+  color:var(--c2); font-weight:600; letter-spacing:.5px;
+}
+.tbox-badge {
+  font-family:'JetBrains Mono',monospace; font-size:10px;
+  padding:3px 10px; border-radius:2px; border:1px solid;
+}
+
+/* ── Zones ── */
+.zone {
+  border-bottom:1px solid var(--border);
+  display:flex; flex-direction:column;
+}
+.zone:last-child { border-bottom:none; }
+.zone-header {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 20px 8px;
+}
+.zone-num {
+  font-size:18px; font-weight:800; line-height:1;
+  font-family:'JetBrains Mono',monospace;
+}
+.zone-name {
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; letter-spacing:2px; text-transform:uppercase; opacity:.6;
+}
+.zone-tag {
+  margin-left:auto;
+  font-family:'JetBrains Mono',monospace; font-size:9px;
+  padding:2px 8px; border-radius:2px; opacity:.7;
+}
+
+.zone-1 { background: var(--b1); }
+.zone-2 { background: var(--b2); }
+.zone-3 { background: var(--b3); }
+.zone-4 { background: var(--b4); }
+
+.zone-1 .zone-num, .zone-1 .zone-name { color:var(--c1); }
+.zone-2 .zone-num, .zone-2 .zone-name { color:var(--c2); }
+.zone-3 .zone-num, .zone-3 .zone-name { color:var(--c3); }
+.zone-4 .zone-num, .zone-4 .zone-name { color:var(--c4); }
+
+.zone-1 .zone-tag { background:rgba(167,139,250,0.1); color:var(--c1); }
+.zone-2 .zone-tag { background:rgba(56,189,248,0.1);  color:var(--c2); }
+.zone-3 .zone-tag { background:rgba(251,146,60,0.1);  color:var(--c3); }
+.zone-4 .zone-tag { background:rgba(74,222,128,0.1);  color:var(--c4); }
+
+.zone-body {
+  padding:0 20px 14px 24px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px; line-height:1.8;
+}
+.fixed-line { display:block; color:var(--text); white-space:pre; }
+.cm { color:#3d4f5c; font-style:italic; }
+
+/* ── Fill inputs ── */
+.fill-wrap { display:flex; align-items:center; margin:2px 0; }
+.fill-indent { color:var(--muted); opacity:.3; font-size:12px; white-space:pre; user-select:none; }
+.fill-input {
+  background: rgba(0,0,0,0.25);
+  border:none; border-bottom:1px dashed rgba(255,255,255,0.15);
+  color:var(--text);
+  font-family:'JetBrains Mono',monospace; font-size:12.5px;
+  padding:2px 6px; width:100%;
+  outline:none; caret-color:var(--c2);
+  transition: border-color .2s, background .2s;
+  border-radius:2px 2px 0 0;
+}
+.fill-input:focus {
+  background: rgba(56,189,248,0.06);
+  border-bottom-color:var(--c2);
+}
+.fill-input.correct {
+  background: rgba(74,222,128,0.07);
+  border-bottom-color:var(--c4) !important; color:var(--c4);
+}
+.fill-input.wrong {
+  background: rgba(251,146,60,0.07);
+  border-bottom-color:var(--c3) !important; color:var(--c3);
+  animation: shake .3s;
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-4px)}
+  75%{transform:translateX(4px)}
+}
+.fill-input.revealed {
+  background: rgba(56,189,248,0.07);
+  border-bottom-color:var(--c2) !important; color:var(--c2);
+}
+
+/* ── Actions ── */
+.actions { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+.btn {
+  font-family:'JetBrains Mono',monospace; font-size:11px;
+  padding:9px 20px; border-radius:3px; cursor:pointer;
+  border:1px solid; transition:all .15s; letter-spacing:.5px;
+}
+.btn-check  { background:rgba(56,189,248,0.1);   color:var(--c2); border-color:rgba(56,189,248,0.4); }
+.btn-check:hover  { background:rgba(56,189,248,0.2); }
+.btn-reveal { background:rgba(167,139,250,0.08); color:var(--c1); border-color:rgba(167,139,250,0.3); }
+.btn-reveal:hover { background:rgba(167,139,250,0.15); }
+.btn-reset  { background:transparent; color:var(--muted); border-color:var(--border); }
+.btn-reset:hover  { color:var(--text); border-color:var(--muted); }
+.btn-next   { margin-left:auto; background:rgba(74,222,128,0.1); color:var(--c4); border-color:rgba(74,222,128,0.3); }
+.btn-next:hover   { background:rgba(74,222,128,0.18); }
+
+/* ── Hint ── */
+.hint-row {
+  display:none; align-items:center; gap:10px;
+  margin-top:14px; padding:10px 14px;
+  background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.15);
+  border-radius:3px; font-family:'JetBrains Mono',monospace; font-size:11px;
+  color:var(--c2);
+}
+.hint-row.show { display:flex; }
+
+/* ── Viz ── */
+.viz-row {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 20px; border-top:1px solid var(--border);
+  background:rgba(0,0,0,0.2); overflow-x:auto;
+}
+.viz-label { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); flex-shrink:0; }
+.viz-cells { display:flex; gap:4px; }
+.vcell { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.vcell-box {
+  width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace; font-size:11px;
+  border:1px solid var(--border); border-radius:3px; color:var(--muted);
+}
+.vcell-box.L { border-color:var(--c2); color:var(--c2); background:rgba(56,189,248,0.08); }
+.vcell-box.R { border-color:var(--c3); color:var(--c3); background:rgba(251,146,60,0.08); }
+.vcell-box.W { border-color:var(--c4); color:var(--c4); background:rgba(74,222,128,0.06); }
+.vcell-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--muted); height:10px; }
+
+/* syntax */
+.kw { color:#c792ea; font-weight:600; }
+.ty { color:#82aaff; }
+.nm { color:#f78c6c; }
+.op { color:#ff6b35; }
+.vr { color:#eeffff; }
+.fn { color:#7dd3fc; }
+
+/* toast */
+.toast {
+  position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px);
+  font-family:'JetBrains Mono',monospace; font-size:12px;
+  padding:10px 24px; border-radius:4px; opacity:0;
+  transition:all .3s; z-index:100; pointer-events:none;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.ok  { background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.4); color:var(--c4); }
+.toast.err { background:rgba(251,146,60,0.12); border:1px solid rgba(251,146,60,0.3); color:var(--c3); }
+.toast.inf { background:rgba(56,189,248,0.1);  border:1px solid rgba(56,189,248,0.3); color:var(--c2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 02 — Practice Mode</div>
+    <h1>Sliding Window</h1>
+    <p>// one template · fill the blanks · master all 10 manifestations</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box" id="tbox">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row">
+    <span>💡</span><span id="hint-text"></span>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next Pattern →</button>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// SLIDING WINDOW — 10 Manifestations
+// 4 Blocks:
+//   ① INIT      — L=0, R=0, window state, result seed
+//   ② EXPAND    — while(R < n), add arr[R] to state  [R always moves — FIXED]
+//   ③ SHRINK    — if/while window invalid: remove arr[L], L++
+//   ④ RECORD    — update result from current valid window
+// ─────────────────────────────────────────────────────────────────────────────
+
+const patterns = [
+  {
+    id:1,
+    title:"Fixed Window Max/Min",
+    badge:"FIXED-K",
+    badgeColor:"var(--c2)",
+    viz:{ arr:[2,1,5,1,3,2], L:0, R:2, highlight:[0,1,2] },
+    hint:"Fixed window: shrink only when window size exceeds k. Record before shrinking.",
+    zones:[
+      { z:1, tag:"same across ALL manifestations",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// window state — what are you tracking?", ans:"int windowSum = 0;", hint:"Declare a variable to track running sum of the window" },
+          { t:"blank", ph:"// result seed...", ans:"int best = INT_MIN;", hint:"Initialize best to smallest possible value" },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL — R always expands",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> n) {` },
+          { t:"blank", ph:"// include arr[R] into window state...", ans:"windowSum += arr[R];", hint:"Add the incoming right element to your running sum" },
+        ]
+      },
+      { z:3, tag:"changes — fixed window shrinks exactly once",
+        lines:[
+          { t:"blank", ph:"// shrink condition for fixed window...", ans:"if (R - L + 1 == k) {", hint:"Window hits exact size k — time to record then shrink" },
+          { t:"blank", ph:"//   record result...", ans:"best = max(best, windowSum);", hint:"Update best with current window value" },
+          { t:"blank", ph:"//   remove leftmost element...", ans:"windowSum -= arr[L];", hint:"Subtract arr[L] before sliding L forward" },
+          { t:"blank", ph:"//   slide left boundary...", ans:"L++;", hint:"Move L one step right to maintain window size" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"FIXED across ALL — R always advances",
+        lines:[
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`<span class="kw">return</span> <span class="vr">best</span>;` },
+        ]
+      },
+    ]
+  },
+
+  {
+    id:2,
+    title:"Variable Window with Condition",
+    badge:"VARIABLE",
+    badgeColor:"var(--c3)",
+    viz:{ arr:[2,3,1,2,4,3], L:0, R:3, highlight:[3,4] },
+    hint:"Smallest subarray with sum ≥ X. Shrink aggressively while condition still holds.",
+    zones:[
+      { z:1, tag:"same structure — different state type",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// window state...", ans:"int windowSum = 0;", hint:"Running sum of current window" },
+          { t:"blank", ph:"// result seed for minimum length...", ans:"int best = INT_MAX;", hint:"We want minimum length, so seed with largest value" },
+        ]
+      },
+      { z:2, tag:"FIXED — R expands every iteration",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> n) {` },
+          { t:"blank", ph:"// add arr[R] to state...", ans:"windowSum += arr[R];", hint:"Expand: include right element" },
+        ]
+      },
+      { z:3, tag:"changes — shrink WHILE condition still valid",
+        lines:[
+          { t:"blank", ph:"// shrink while window satisfies condition...", ans:"while (windowSum >= target) {", hint:"Keep shrinking as long as sum still meets target — we want minimum" },
+          { t:"blank", ph:"//   record result (current window length)...", ans:"best = min(best, R - L + 1);", hint:"Current window [L..R] is valid — record its length" },
+          { t:"blank", ph:"//   remove leftmost...", ans:"windowSum -= arr[L];", hint:"Remove arr[L] from state" },
+          { t:"blank", ph:"//   shrink left...", ans:"L++;", hint:"Move L right" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"FIXED — R always advances",
+        lines:[
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`<span class="kw">return</span> (<span class="vr">best</span> <span class="op">==</span> INT_MAX) <span class="op">?</span> <span class="nm">0</span> : <span class="vr">best</span>;` },
+        ]
+      },
+    ]
+  },
+
+  {
+    id:3,
+    title:"Longest Subarray with Constraint",
+    badge:"VARIABLE",
+    badgeColor:"var(--c3)",
+    viz:{ arr:[1,2,1,2,3], L:0, R:3, highlight:[0,1,2,3] },
+    hint:"At most k distinct elements. Shrink when distinct count exceeds k.",
+    zones:[
+      { z:1, tag:"state is a frequency map this time",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// window state — frequency map...", ans:"unordered_map<int,int> freq;", hint:"Track how many times each element appears in window" },
+          { t:"blank", ph:"// result seed for maximum length...", ans:"int best = 0;", hint:"We want maximum length, seed with 0" },
+        ]
+      },
+      { z:2, tag:"FIXED — R expands every iteration",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> n) {` },
+          { t:"blank", ph:"// add arr[R] to freq map...", ans:"freq[arr[R]]++;", hint:"Increment count of incoming element" },
+        ]
+      },
+      { z:3, tag:"changes — shrink IF constraint violated",
+        lines:[
+          { t:"blank", ph:"// shrink while too many distinct elements...", ans:"while (freq.size() > k) {", hint:"More than k distinct? Window is invalid — shrink" },
+          { t:"blank", ph:"//   remove arr[L] from freq map...", ans:"freq[arr[L]]--;", hint:"Decrement count of outgoing element" },
+          { t:"blank", ph:"//   erase if count hits zero...", ans:"if (freq[arr[L]] == 0) freq.erase(arr[L]);", hint:"Clean up map — remove key when its count drops to 0" },
+          { t:"fixed", code:`        <span class="vr">L</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"FIXED — record after shrink, R advances",
+        lines:[
+          { t:"blank", ph:"// record current valid window length...", ans:"best = max(best, R - L + 1);", hint:"Window [L..R] is now valid — could be the longest" },
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`<span class="kw">return</span> <span class="vr">best</span>;` },
+        ]
+      },
+    ]
+  },
+
+  {
+    id:4,
+    title:"Count of Valid Subarrays",
+    badge:"COUNT",
+    badgeColor:"var(--c1)",
+    viz:{ arr:[1,1,1], L:0, R:1, highlight:[0,1] },
+    hint:"Every valid window [L..R] contributes (R-L+1) subarrays ending at R. Count them all.",
+    zones:[
+      { z:1, tag:"state tracks constraint count",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// window state — count of something...", ans:"int count = 0;", hint:"Track the count of 'something' in window (e.g. ones, target elements)" },
+          { t:"blank", ph:"// result — total valid subarrays...", ans:"long long result = 0;", hint:"Accumulator for total count of valid subarrays" },
+        ]
+      },
+      { z:2, tag:"FIXED — R expands, include arr[R]",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> n) {` },
+          { t:"blank", ph:"// update count as R enters window...", ans:"if (arr[R] == target) count++;", hint:"Check if incoming element contributes to constraint count" },
+        ]
+      },
+      { z:3, tag:"changes — shrink while constraint violated",
+        lines:[
+          { t:"blank", ph:"// shrink while window invalid...", ans:"while (count > k) {", hint:"Too many of the constrained element — window invalid" },
+          { t:"blank", ph:"//   remove arr[L] effect...", ans:"if (arr[L] == target) count--;", hint:"Leaving element reduces constraint count" },
+          { t:"fixed", code:`        <span class="vr">L</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"FIXED pattern — all subarrays ending at R",
+        lines:[
+          { t:"blank", ph:"// count all valid subarrays ending at R...", ans:"result += (R - L + 1);", hint:"Every subarray [L..R], [L+1..R], ..., [R..R] is valid — that's (R-L+1) subarrays" },
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`<span class="kw">return</span> <span class="vr">result</span>;` },
+        ]
+      },
+    ]
+  },
+
+  {
+    id:5,
+    title:"String Anagram Detection",
+    badge:"FIXED-K",
+    badgeColor:"var(--c2)",
+    viz:{ arr:['c','b','a','e','b','a','a'], L:0, R:2, highlight:[0,1,2] },
+    hint:"Window size = pattern length. Two freq maps match → anagram found. Slide one step at a time.",
+    zones:[
+      { z:1, tag:"state is two frequency maps",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// freq map for pattern...", ans:"unordered_map<char,int> need, have;", hint:"need = pattern freq, have = current window freq" },
+          { t:"blank", ph:"// build pattern freq map...", ans:"for (char c : p) need[c]++;", hint:"Count each character's frequency in the pattern" },
+          { t:"blank", ph:"// result list of start indices...", ans:"vector<int> result;", hint:"Store starting indices of all anagram matches" },
+        ]
+      },
+      { z:2, tag:"FIXED — R expands, add s[R] to have",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> s.size()) {` },
+          { t:"blank", ph:"// add incoming char to window freq...", ans:"have[s[R]]++;", hint:"Track the new right character entering the window" },
+        ]
+      },
+      { z:3, tag:"changes — fixed window, shrink when size exceeded",
+        lines:[
+          { t:"blank", ph:"// shrink when window exceeds pattern length...", ans:"if (R - L + 1 > p.size()) {", hint:"Window bigger than pattern — must slide L forward" },
+          { t:"blank", ph:"//   remove s[L] from window...", ans:"have[s[L]]--;", hint:"Remove outgoing character from freq map" },
+          { t:"blank", ph:"//   clean up zero entries...", ans:"if (have[s[L]] == 0) have.erase(s[L]);", hint:"Keep map clean — remove keys with zero count" },
+          { t:"fixed", code:`        <span class="vr">L</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"record when maps match",
+        lines:[
+          { t:"blank", ph:"// record if window matches pattern...", ans:"if (have == need) result.push_back(L);", hint:"Identical freq maps = anagram found at index L" },
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`<span class="kw">return</span> <span class="vr">result</span>;` },
+        ]
+      },
+    ]
+  },
+
+  {
+    id:6,
+    title:"Maximum Sum Subarray of Size k",
+    badge:"FIXED-K",
+    badgeColor:"var(--c2)",
+    viz:{ arr:[1,4,2,9,7,5,3], L:1, R:3, highlight:[1,2,3] },
+    hint:"Simplest fixed window. Build first window of size k, then slide — add right, subtract left.",
+    zones:[
+      { z:1, tag:"simplest state — just a running sum",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// running sum of window...", ans:"int windowSum = 0;", hint:"Single integer tracks the sum of current k elements" },
+          { t:"blank", ph:"// result...", ans:"int best = INT_MIN;", hint:"Best sum seen so far" },
+        ]
+      },
+      { z:2, tag:"FIXED — R expands, add arr[R]",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> n) {` },
+          { t:"blank", ph:"// expand — include arr[R]...", ans:"windowSum += arr[R];", hint:"Add incoming element to window sum" },
+        ]
+      },
+      { z:3, tag:"fixed window — shrink exactly when size == k",
+        lines:[
+          { t:"blank", ph:"// when window hits size k...", ans:"if (R - L + 1 == k) {", hint:"Exactly k elements — window is complete" },
+          { t:"blank", ph:"//   record...", ans:"best = max(best, windowSum);", hint:"This window sum could be the answer" },
+          { t:"blank", ph:"//   slide — remove leftmost...", ans:"windowSum -= arr[L++];", hint:"Subtract arr[L] and advance L in one step" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"FIXED — R advances every loop",
+        lines:[
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`<span class="kw">return</span> <span class="vr">best</span>;` },
+        ]
+      },
+    ]
+  },
+
+  {
+    id:7,
+    title:"Minimum Window Substring",
+    badge:"VARIABLE",
+    badgeColor:"var(--c3)",
+    viz:{ arr:['A','D','O','B','E','C','O','D','E','B','A','N','C'], L:0, R:5, highlight:[0,1,2,3,4,5] },
+    hint:"formed == required means all pattern chars are covered. Shrink to minimize. Track best [L,R].",
+    zones:[
+      { z:1, tag:"state tracks coverage of pattern chars",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// freq maps...", ans:"unordered_map<char,int> need, have;", hint:"need = pattern requirements, have = current window coverage" },
+          { t:"blank", ph:"// build need map...", ans:"for (char c : t) need[c]++;", hint:"Count required frequency of each char in pattern t" },
+          { t:"blank", ph:"// formed = how many chars meet required freq...", ans:"int formed = 0, required = need.size();", hint:"formed counts chars whose frequency in window meets need" },
+          { t:"blank", ph:"// best window tracker...", ans:"int bestLen = INT_MAX, bestL = 0;", hint:"Track length and start of best window found" },
+        ]
+      },
+      { z:2, tag:"FIXED — R expands, update have + formed",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> s.size()) {` },
+          { t:"blank", ph:"// add s[R] to have...", ans:"have[s[R]]++;", hint:"Include new right character in window coverage" },
+          { t:"blank", ph:"// check if this char now meets its requirement...", ans:"if (need.count(s[R]) && have[s[R]] == need[s[R]]) formed++;", hint:"If this char's count just hit the required amount, increment formed" },
+        ]
+      },
+      { z:3, tag:"changes — shrink WHILE fully formed",
+        lines:[
+          { t:"blank", ph:"// shrink while window covers all pattern chars...", ans:"while (formed == required) {", hint:"Window is valid (all chars covered) — try to shrink it" },
+          { t:"blank", ph:"//   update best if this window is smaller...", ans:"if (R - L + 1 < bestLen) { bestLen = R - L + 1; bestL = L; }", hint:"Current window might be smallest valid window so far" },
+          { t:"blank", ph:"//   remove s[L] from have...", ans:"have[s[L]]--;", hint:"Remove outgoing left character" },
+          { t:"blank", ph:"//   check if formed decreases...", ans:"if (need.count(s[L]) && have[s[L]] < need[s[L]]) formed--;", hint:"If removing s[L] breaks coverage, formed drops" },
+          { t:"fixed", code:`        <span class="vr">L</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"FIXED — R advances",
+        lines:[
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"blank", ph:"// return best window or empty string...", ans:"return bestLen == INT_MAX ? \"\" : s.substr(bestL, bestLen);", hint:"If no valid window found return empty, else extract substring" },
+        ]
+      },
+    ]
+  },
+
+  {
+    id:8,
+    title:"Longest Substring Without Repeating",
+    badge:"VARIABLE",
+    badgeColor:"var(--c3)",
+    viz:{ arr:['a','b','c','a','b','c','b','b'], L:0, R:2, highlight:[0,1,2] },
+    hint:"Shrink from left whenever a duplicate enters from the right. Window always has unique chars.",
+    zones:[
+      { z:1, tag:"state is a set of current window chars",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// window state — track seen chars...", ans:"unordered_set<char> seen;", hint:"Set holds all characters currently in the window" },
+          { t:"blank", ph:"// result...", ans:"int best = 0;", hint:"Best (longest) length seen so far" },
+        ]
+      },
+      { z:2, tag:"FIXED — R expands every iteration",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> n) {` },
+        ]
+      },
+      { z:3, tag:"changes — shrink WHILE duplicate exists",
+        lines:[
+          { t:"blank", ph:"// shrink while s[R] already in window...", ans:"while (seen.count(s[R])) {", hint:"Duplicate detected — keep removing from left until it's gone" },
+          { t:"blank", ph:"//   remove s[L] from seen...", ans:"seen.erase(s[L]);", hint:"Remove outgoing left character from set" },
+          { t:"fixed", code:`        <span class="vr">L</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"blank", ph:"// now safe to add s[R]...", ans:"seen.insert(s[R]);", hint:"No duplicate — insert right character into window" },
+        ]
+      },
+      { z:4, tag:"FIXED — record then R advances",
+        lines:[
+          { t:"blank", ph:"// record current window length...", ans:"best = max(best, R - L + 1);", hint:"Current window has all unique chars — could be longest" },
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`<span class="kw">return</span> <span class="vr">best</span>;` },
+        ]
+      },
+    ]
+  },
+
+  {
+    id:9,
+    title:"Binary Array Flipping",
+    badge:"VARIABLE",
+    badgeColor:"var(--c3)",
+    viz:{ arr:[1,1,1,0,0,0,1,1,1,1,0], L:0, R:9, highlight:[0,1,2,3,4,5,6,7,8,9] },
+    hint:"At most k zeros allowed in window. Shrink when zeros exceed k. Longest window = most ones after flipping.",
+    zones:[
+      { z:1, tag:"state tracks zero count in window",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// count of zeros in current window...", ans:"int zeroCount = 0;", hint:"Track how many zeros are inside the window" },
+          { t:"blank", ph:"// result...", ans:"int best = 0;", hint:"Longest valid window length seen" },
+        ]
+      },
+      { z:2, tag:"FIXED — R expands, count zeros",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> n) {` },
+          { t:"blank", ph:"// if arr[R] is zero, increment count...", ans:"if (arr[R] == 0) zeroCount++;", hint:"New element entering window — check if it's a zero" },
+        ]
+      },
+      { z:3, tag:"changes — shrink when zeros exceed k",
+        lines:[
+          { t:"blank", ph:"// shrink while too many zeros...", ans:"while (zeroCount > k) {", hint:"More than k zeros means we'd need more than k flips — invalid" },
+          { t:"blank", ph:"//   if arr[L] was zero, decrement count...", ans:"if (arr[L] == 0) zeroCount--;", hint:"Removing a zero from window reduces our flip count" },
+          { t:"fixed", code:`        <span class="vr">L</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"FIXED — record then R advances",
+        lines:[
+          { t:"blank", ph:"// record window length (= ones after k flips)...", ans:"best = max(best, R - L + 1);", hint:"This window has at most k zeros — all can be flipped to ones" },
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`<span class="kw">return</span> <span class="vr">best</span>;` },
+        ]
+      },
+    ]
+  },
+
+  {
+    id:10,
+    title:"Subarray Product Less Than k",
+    badge:"VARIABLE",
+    badgeColor:"var(--c3)",
+    viz:{ arr:[10,5,2,6], L:0, R:3, highlight:[1,2,3] },
+    hint:"Product-based window. Shrink while product >= k. Count of valid subarrays ending at R = (R-L+1).",
+    zones:[
+      { z:1, tag:"state is running product",
+        lines:[
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"blank", ph:"// window state — running product...", ans:"int product = 1;", hint:"Product of all elements in current window — start at 1 (identity)" },
+          { t:"blank", ph:"// result counter...", ans:"long long result = 0;", hint:"Count of all valid subarrays" },
+        ]
+      },
+      { z:2, tag:"FIXED — R expands, multiply",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">R</span> <span class="op">&lt;</span> n) {` },
+          { t:"blank", ph:"// multiply arr[R] into product...", ans:"product *= arr[R];", hint:"Expand: incoming element multiplies into running product" },
+        ]
+      },
+      { z:3, tag:"changes — shrink while product >= k",
+        lines:[
+          { t:"blank", ph:"// shrink while product too large...", ans:"while (product >= k && L <= R) {", hint:"Product violates constraint — shrink from left" },
+          { t:"blank", ph:"//   divide out arr[L]...", ans:"product /= arr[L];", hint:"Remove outgoing element by dividing it out" },
+          { t:"fixed", code:`        <span class="vr">L</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"FIXED — count subarrays ending at R",
+        lines:[
+          { t:"blank", ph:"// all subarrays ending at R are valid...", ans:"result += (R - L + 1);", hint:"Subarrays [L..R],[L+1..R],...,[R..R] all have product < k" },
+          { t:"fixed", code:`    <span class="vr">R</span><span class="op">++</span>;` },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`<span class="kw">return</span> <span class="vr">result</span>;` },
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames = ['Initialization','Expand (R →)','Shrink (← L)','Record Result'];
+const zoneCls   = ['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums  = ['①','②','③','④'];
+
+let current = 0;
+let answered = new Set();
+let stats = { correct:0, wrong:0, streak:0 };
+
+function buildSelector() {
+  const sel = document.getElementById('selector');
+  sel.innerHTML = '';
+  patterns.forEach((p,i) => {
+    const b = document.createElement('button');
+    b.className = 'sel-btn' + (i===0?' active':'');
+    b.textContent = `${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick = () => loadPattern(i);
+    sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx) {
+  current = idx;
+  answered = new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
+
+  const p = patterns[idx];
+  document.getElementById('tbox-title').textContent = p.title.replace(/ /g,'_') + '.cpp';
+  const badge = document.getElementById('tbox-badge');
+  badge.textContent = p.badge;
+  badge.style.cssText = `color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+
+  const zonesEl = document.getElementById('zones');
+  zonesEl.innerHTML = '';
+
+  p.zones.forEach((zone, zi) => {
+    const div = document.createElement('div');
+    div.className = `zone ${zoneCls[zi]}`;
+
+    let linesHTML = '';
+    zone.lines.forEach((line, li) => {
+      if (line.t === 'fixed') {
+        linesHTML += `<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key = `${idx}-${zi}-${li}`;
+        linesHTML += `<div class="fill-wrap">
+          <span class="fill-indent">  </span>
+          <input class="fill-input"
+            data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}"
+            autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)"
+            oninput="clearState(this)"/>
+        </div>`;
+      }
+    });
+
+    div.innerHTML = `
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${linesHTML}</div>`;
+    zonesEl.appendChild(div);
+  });
+
+  buildViz(p);
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p) {
+  const viz = document.getElementById('viz');
+  viz.innerHTML = `<span class="viz-label">example:</span><div class="viz-cells" id="vcells"></div>`;
+  const cells = document.getElementById('vcells');
+  p.viz.arr.forEach((v, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'vcell';
+    const hl = p.viz.highlight && p.viz.highlight.includes(i);
+    let cls = 'vcell-box';
+    let lbl = '';
+    if (i === p.viz.L) { cls += ' L'; lbl = 'L'; }
+    else if (i === p.viz.R) { cls += ' R'; lbl = 'R'; }
+    else if (hl) { cls += ' W'; }
+    wrap.innerHTML = `<div class="${cls}">${v}</div><div class="vcell-lbl">${lbl}</div>`;
+    cells.appendChild(wrap);
+  });
+}
+
+// ── Normalise for flexible comparison ────────────────────────────────────────
+function normalise(s) {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g, '$1')
+    .replace(/\s+/g, ' ')
+    .replace(/;+$/, '')
+    .replace(/\+\+\s*/g, '++')
+    .replace(/--\s*/g, '--')
+    .replace(/\s*->\s*/g, '->')
+    .trim();
+}
+
+function handleKey(e, el) {
+  if (e.key === 'Enter') checkSingle(el);
+  if (e.key === 'Tab')   { e.preventDefault(); focusNext(el); }
+}
+
+function clearState(el) {
+  el.classList.remove('correct','wrong','revealed');
+}
+
+function checkSingle(el) {
+  const key = el.dataset.key;
+  if (answered.has(key)) return;
+  const ans = decodeURIComponent(el.dataset.ans);
+  if (normalise(el.value) === normalise(ans)) {
+    el.classList.add('correct'); el.classList.remove('wrong');
+    answered.add(key);
+    stats.correct++; stats.streak++;
+    updateScore();
+    showToast('✓ Correct!', 'ok');
+    focusNext(el);
+  } else {
+    el.classList.add('wrong'); el.classList.remove('correct');
+    stats.wrong++; stats.streak = 0;
+    updateScore();
+    showToast('✗ Not quite — check hint below', 'err');
+    const hint = document.getElementById('hint-row');
+    document.getElementById('hint-text').textContent = decodeURIComponent(el.dataset.hint);
+    hint.classList.add('show');
+  }
+}
+
+function checkAll() {
+  document.querySelectorAll('.fill-input').forEach(el => {
+    if (!answered.has(el.dataset.key)) checkSingle(el);
+  });
+}
+
+function revealAll() {
+  document.querySelectorAll('.fill-input').forEach(el => {
+    if (!answered.has(el.dataset.key)) {
+      el.value = decodeURIComponent(el.dataset.ans);
+      el.classList.add('revealed'); el.classList.remove('correct','wrong');
+    }
+  });
+  showToast('Answers revealed — study, then Reset to retry!', 'inf');
+  document.getElementById('hint-text').textContent = patterns[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+
+function resetInputs() {
+  answered = new Set();
+  document.querySelectorAll('.fill-input').forEach(el => {
+    el.value = ''; el.classList.remove('correct','wrong','revealed');
+  });
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function nextPattern() {
+  loadPattern((current + 1) % patterns.length);
+}
+
+function focusNext(el) {
+  const all = Array.from(document.querySelectorAll('.fill-input'));
+  const i = all.indexOf(el);
+  if (i < all.length - 1) all[i+1].focus();
+}
+
+function updateScore() {
+  document.getElementById('s-correct').textContent = stats.correct;
+  document.getElementById('s-wrong').textContent   = stats.wrong;
+  document.getElementById('s-streak').textContent  = stats.streak;
+  const total = stats.correct + stats.wrong;
+  document.getElementById('prog').style.width = total ? Math.round(stats.correct/total*100)+'%' : '0%';
+}
+
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+buildSelector();
+loadPattern(0);
+</script>
+</body>
+</html>

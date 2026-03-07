@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary Search — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0c12;
+  --surface: #111119;
+  --card: #15151e;
+  --border: #23233a;
+  --text: #e2e2f0;
+  --muted: #52526e;
+  --faint: #1e1e2e;
+
+  --c1: #a78bfa;
+  --c2: #38bdf8;
+  --c3: #fb923c;
+  --c4: #4ade80;
+
+  --b1: rgba(167,139,250,0.08);
+  --b2: rgba(56,189,248,0.07);
+  --b3: rgba(251,146,60,0.08);
+  --b4: rgba(74,222,128,0.07);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image: radial-gradient(rgba(251,146,60,0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events:none; z-index:0;
+}
+
+.wrap {
+  width: 100%; max-width: 820px;
+  padding: 48px 24px 80px;
+  position: relative; z-index:1;
+}
+
+.hdr { text-align:center; margin-bottom: 40px; }
+.hdr-pill {
+  display:inline-block;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; letter-spacing:3px; text-transform:uppercase;
+  color:var(--c3); border:1px solid rgba(251,146,60,0.3);
+  padding:4px 14px; border-radius:20px; margin-bottom:16px;
+}
+.hdr h1 {
+  font-size: clamp(24px,5vw,52px); font-weight:800;
+  letter-spacing:-1.5px; line-height:1;
+  background:linear-gradient(120deg,#fff 0%,var(--c3) 50%,var(--c1) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:8px;
+}
+.hdr p { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); }
+
+.selector-wrap { margin-bottom: 28px; }
+.selector-label {
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--muted); margin-bottom:10px;
+}
+.selector { display:flex; flex-wrap:wrap; gap:8px; }
+.sel-btn {
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; padding:6px 14px;
+  border:1px solid var(--border);
+  background: var(--faint); color:var(--muted);
+  border-radius:3px; cursor:pointer;
+  transition: all .15s; user-select:none;
+}
+.sel-btn:hover { border-color:var(--c3); color:var(--text); }
+.sel-btn.active { background:rgba(251,146,60,0.1); border-color:var(--c3); color:var(--c3); }
+
+.scorebar {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:20px; padding: 10px 16px;
+  background: var(--surface); border:1px solid var(--border); border-radius:4px;
+}
+.score-item {
+  font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted);
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+}
+.score-item strong { font-size:20px; font-weight:700; color:var(--text); line-height:1; }
+.score-item.good strong { color:var(--c4); }
+.score-item.bad  strong { color:var(--c3); }
+.progress-bar { flex:1; margin:0 20px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--c3); border-radius:2px; transition: width .4s; }
+
+.template-box {
+  background: var(--card); border:1px solid var(--border);
+  border-radius:6px; overflow:hidden;
+  box-shadow: 0 0 60px rgba(251,146,60,0.04);
+}
+.tbox-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 20px; border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,0.015);
+}
+.tbox-title { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--c3); font-weight:600; }
+.tbox-badge { font-family:'JetBrains Mono',monospace; font-size:10px; padding:3px 10px; border-radius:2px; border:1px solid; }
+
+.zone { border-bottom:1px solid var(--border); display:flex; flex-direction:column; }
+.zone:last-child { border-bottom:none; }
+.zone-header { display:flex; align-items:center; gap:10px; padding:10px 20px 8px; }
+.zone-num { font-size:18px; font-weight:800; line-height:1; font-family:'JetBrains Mono',monospace; }
+.zone-name { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; opacity:.6; }
+.zone-tag { margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:9px; padding:2px 8px; border-radius:2px; opacity:.7; }
+
+.zone-1 { background: var(--b1); }
+.zone-2 { background: var(--b2); }
+.zone-3 { background: var(--b3); }
+.zone-4 { background: var(--b4); }
+
+.zone-1 .zone-num, .zone-1 .zone-name { color:var(--c1); }
+.zone-2 .zone-num, .zone-2 .zone-name { color:var(--c2); }
+.zone-3 .zone-num, .zone-3 .zone-name { color:var(--c3); }
+.zone-4 .zone-num, .zone-4 .zone-name { color:var(--c4); }
+
+.zone-1 .zone-tag { background:rgba(167,139,250,0.1); color:var(--c1); }
+.zone-2 .zone-tag { background:rgba(56,189,248,0.1);  color:var(--c2); }
+.zone-3 .zone-tag { background:rgba(251,146,60,0.1);  color:var(--c3); }
+.zone-4 .zone-tag { background:rgba(74,222,128,0.1);  color:var(--c4); }
+
+.zone-body { padding:0 20px 14px 24px; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.8; }
+.fixed-line { display:block; color:var(--text); white-space:pre; }
+.cm { color:#3d4f5c; font-style:italic; }
+
+.fill-wrap { display:flex; align-items:center; margin:2px 0; }
+.fill-indent { color:var(--muted); opacity:.3; font-size:12px; white-space:pre; user-select:none; }
+.fill-input {
+  background: rgba(0,0,0,0.25); border:none;
+  border-bottom:1px dashed rgba(255,255,255,0.15);
+  color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12.5px;
+  padding:2px 6px; width:100%; outline:none; caret-color:var(--c3);
+  transition: border-color .2s, background .2s; border-radius:2px 2px 0 0;
+}
+.fill-input:focus { background: rgba(251,146,60,0.06); border-bottom-color:var(--c3); }
+.fill-input.correct { background: rgba(74,222,128,0.07); border-bottom-color:var(--c4) !important; color:var(--c4); }
+.fill-input.wrong { background: rgba(251,146,60,0.07); border-bottom-color:var(--c3) !important; color:var(--c3); animation: shake .3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+.fill-input.revealed { background: rgba(56,189,248,0.07); border-bottom-color:var(--c2) !important; color:var(--c2); }
+
+.actions { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+.btn { font-family:'JetBrains Mono',monospace; font-size:11px; padding:9px 20px; border-radius:3px; cursor:pointer; border:1px solid; transition:all .15s; letter-spacing:.5px; }
+.btn-check  { background:rgba(251,146,60,0.1);  color:var(--c3); border-color:rgba(251,146,60,0.4); }
+.btn-check:hover  { background:rgba(251,146,60,0.2); }
+.btn-reveal { background:rgba(167,139,250,0.08); color:var(--c1); border-color:rgba(167,139,250,0.3); }
+.btn-reveal:hover { background:rgba(167,139,250,0.15); }
+.btn-reset  { background:transparent; color:var(--muted); border-color:var(--border); }
+.btn-reset:hover  { color:var(--text); border-color:var(--muted); }
+.btn-next   { margin-left:auto; background:rgba(74,222,128,0.1); color:var(--c4); border-color:rgba(74,222,128,0.3); }
+.btn-next:hover   { background:rgba(74,222,128,0.18); }
+
+.hint-row {
+  display:none; align-items:center; gap:10px; margin-top:14px; padding:10px 14px;
+  background:rgba(251,146,60,0.05); border:1px solid rgba(251,146,60,0.15);
+  border-radius:3px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--c3);
+}
+.hint-row.show { display:flex; }
+
+.viz-row {
+  display:flex; align-items:center; gap:8px; padding:10px 20px;
+  border-top:1px solid var(--border); background:rgba(0,0,0,0.2); overflow-x:auto;
+}
+.viz-label { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); flex-shrink:0; }
+.viz-cells { display:flex; gap:4px; }
+.vcell { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.vcell-box {
+  width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace; font-size:11px;
+  border:1px solid var(--border); border-radius:3px; color:var(--muted);
+}
+.vcell-box.L   { border-color:var(--c2);  color:var(--c2);  background:rgba(56,189,248,0.08); }
+.vcell-box.R   { border-color:var(--c3);  color:var(--c3);  background:rgba(251,146,60,0.08); }
+.vcell-box.MID { border-color:var(--c1);  color:var(--c1);  background:rgba(167,139,250,0.1); }
+.vcell-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--muted); height:10px; }
+
+.kw { color:#c792ea; font-weight:600; }
+.ty { color:#82aaff; }
+.nm { color:#f78c6c; }
+.op { color:#ff6b35; }
+.vr { color:#eeffff; }
+.fn { color:#7dd3fc; }
+
+.toast {
+  position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px);
+  font-family:'JetBrains Mono',monospace; font-size:12px;
+  padding:10px 24px; border-radius:4px; opacity:0;
+  transition:all .3s; z-index:100; pointer-events:none;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.ok  { background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.4); color:var(--c4); }
+.toast.err { background:rgba(251,146,60,0.12); border:1px solid rgba(251,146,60,0.3);  color:var(--c3); }
+.toast.inf { background:rgba(56,189,248,0.1);  border:1px solid rgba(56,189,248,0.3);  color:var(--c2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 03 — Practice Mode</div>
+    <h1>Binary Search</h1>
+    <p>// one template · fill the blanks · master all 10 manifestations</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box" id="tbox">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row">
+    <span>💡</span><span id="hint-text"></span>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next Pattern →</button>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// BINARY SEARCH — 10 Manifestations
+// 4 Blocks:
+//   ① INIT      — signature, edge guard, L / R boundaries, result seed
+//   ② LOOP+MID  — while(L<=R), mid = L+(R-L)/2   [FIXED across all]
+//   ③ DECIDE    — 3-branch: exact / go-right / go-left  [changes per pattern]
+//   ④ RETURN    — what to return after loop ends
+// ─────────────────────────────────────────────────────────────────────────────
+
+const patterns = [
+  // ── 01 ──────────────────────────────────────────────────────────────────
+  {
+    id:1, title:"Classic Search", badge:"INDEX SEARCH", badgeColor:"var(--c3)",
+    viz:{ arr:[-4,0,3,5,9,13,17], L:0, R:6, mid:3 },
+    hint:"Exact match → return mid. arr[mid] < target → eliminate left half. arr[mid] > target → eliminate right half.",
+    zones:[
+      { z:1, tag:"signature + edge guard + boundaries",
+        lines:[
+          { t:"blank", ph:"// function signature...", ans:"int binarySearch(vector<int>& arr, int target) {", hint:"Returns index of target, takes sorted array and target value" },
+          { t:"blank", ph:"// edge case — empty array...", ans:"if (arr.empty()) return -1;", hint:"Nothing to search in empty array" },
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> arr.size() <span class="op">-</span> <span class="nm">1</span>;` },
+          { t:"blank", ph:"// result seed...", ans:"int result = -1;", hint:"Default result if target not found" },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL binary search",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — exact match returns immediately",
+        lines:[
+          { t:"blank", ph:"// found exact match...", ans:"if (arr[mid] == target) return mid;", hint:"Target found at mid — return its index immediately" },
+          { t:"blank", ph:"// target in right half...", ans:"else if (arr[mid] < target) L = mid + 1;", hint:"mid too small — eliminate left half, search right" },
+          { t:"blank", ph:"// target in left half...", ans:"else R = mid - 1;", hint:"mid too large — eliminate right half, search left" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"return -1 if not found",
+        lines:[
+          { t:"blank", ph:"// return if target absent...", ans:"return -1;", hint:"Loop ended without finding target — it doesn't exist" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+
+  // ── 02 ──────────────────────────────────────────────────────────────────
+  {
+    id:2, title:"Lower / Upper Bound", badge:"BOUND SEARCH", badgeColor:"var(--c1)",
+    viz:{ arr:[1,2,2,2,3,4,5], L:0, R:6, mid:3 },
+    hint:"Lower bound: record mid, keep searching LEFT for earlier occurrence. Upper bound: record mid, keep searching RIGHT.",
+    zones:[
+      { z:1, tag:"signature + edge guard + boundaries",
+        lines:[
+          { t:"blank", ph:"// function signature — lower bound...", ans:"int lowerBound(vector<int>& arr, int target) {", hint:"Returns first index where arr[i] >= target" },
+          { t:"blank", ph:"// edge case...", ans:"if (arr.empty()) return -1;", hint:"Guard against empty input" },
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> arr.size() <span class="op">-</span> <span class="nm">1</span>;` },
+          { t:"blank", ph:"// result seed for lower bound...", ans:"int result = -1;", hint:"Will be updated every time we find a candidate" },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL binary search",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — record then bias direction",
+        lines:[
+          { t:"blank", ph:"// candidate found — record and search LEFT...", ans:"if (arr[mid] == target) { result = mid; R = mid - 1; }", hint:"Record this position but keep searching left for earlier occurrence" },
+          { t:"blank", ph:"// mid too small — search right...", ans:"else if (arr[mid] < target) L = mid + 1;", hint:"Current mid is before target range — go right" },
+          { t:"blank", ph:"// mid too large — search left...", ans:"else R = mid - 1;", hint:"Current mid is after target range — go left" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"return first occurrence index",
+        lines:[
+          { t:"blank", ph:"// return first occurrence...", ans:"return result;", hint:"result holds leftmost index where target was found, or -1" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+
+  // ── 03 ──────────────────────────────────────────────────────────────────
+  {
+    id:3, title:"Search on Answer", badge:"VALUE SEARCH", badgeColor:"var(--c4)",
+    viz:{ arr:[1,2,3,4,5,6,7,8,9,10], L:0, R:9, mid:4 },
+    hint:"Search space is the answer VALUE range, not indices. feasible(mid) tells you which half contains the answer.",
+    zones:[
+      { z:1, tag:"signature + edge guard + VALUE boundaries",
+        lines:[
+          { t:"blank", ph:"// function signature — search on answer...", ans:"int searchOnAnswer(vector<int>& arr, int target) {", hint:"Returns minimum feasible value satisfying the constraint" },
+          { t:"blank", ph:"// edge case — empty array...", ans:"if (arr.empty()) return -1;", hint:"Guard: nothing to process if input is empty" },
+          { t:"blank", ph:"// L = min possible answer, R = max possible...", ans:"int L = *min_element(arr.begin(), arr.end()), R = *max_element(arr.begin(), arr.end());", hint:"Search space is the VALUE range of the array, not indices" },
+          { t:"blank", ph:"// result seed...", ans:"int result = -1;", hint:"Will hold the best (minimum) feasible answer found" },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL binary search",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — feasibility decides direction",
+        lines:[
+          { t:"blank", ph:"// if mid is feasible — record and try smaller...", ans:"if (feasible(arr, mid, target)) { result = mid; R = mid - 1; }", hint:"mid works — but can we do better (smaller)? Search left" },
+          { t:"blank", ph:"// mid not feasible — need larger value...", ans:"else L = mid + 1;", hint:"mid too small to satisfy constraint — must go right" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"return minimum feasible answer",
+        lines:[
+          { t:"blank", ph:"// return best answer found...", ans:"return result;", hint:"Smallest value that satisfies the feasibility condition" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+
+  // ── 04 ──────────────────────────────────────────────────────────────────
+  {
+    id:4, title:"Peak Element Finder", badge:"SLOPE SEARCH", badgeColor:"var(--c2)",
+    viz:{ arr:[1,3,5,7,6,4,2], L:0, R:6, mid:3 },
+    hint:"Compare arr[mid] with arr[mid+1]. If rising slope → peak is right. If falling slope → peak is left or at mid.",
+    zones:[
+      { z:1, tag:"signature + edge guard + boundaries",
+        lines:[
+          { t:"blank", ph:"// function signature...", ans:"int findPeak(vector<int>& arr) {", hint:"Returns index of any peak element (arr[i] > both neighbors)" },
+          { t:"blank", ph:"// edge case — single element is always a peak...", ans:"if (arr.size() == 1) return 0;", hint:"Single element has no neighbors so it's trivially a peak" },
+          { t:"blank", ph:"// boundaries — note: R = n-2 to allow arr[mid+1]...", ans:"int L = 0, R = arr.size() - 2;", hint:"R stops at n-2 so arr[mid+1] is always valid" },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL binary search",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — slope direction decides which half",
+        lines:[
+          { t:"blank", ph:"// on rising slope — peak must be to the right...", ans:"if (arr[mid] < arr[mid + 1]) L = mid + 1;", hint:"arr[mid] < arr[mid+1] means we're going uphill — peak is ahead" },
+          { t:"blank", ph:"// on falling slope — peak is here or to the left...", ans:"else R = mid;", hint:"arr[mid] >= arr[mid+1] means peak is at mid or left of mid" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"L == R converges to peak index",
+        lines:[
+          { t:"blank", ph:"// L and R converge to peak...", ans:"return L;", hint:"When L == R, both point to the peak element" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+
+  // ── 05 ──────────────────────────────────────────────────────────────────
+  {
+    id:5, title:"Rotated Sorted Array", badge:"PIVOT SEARCH", badgeColor:"var(--c3)",
+    viz:{ arr:[4,5,6,7,0,1,2], L:0, R:6, mid:3 },
+    hint:"One half is always sorted. Determine which half is sorted, then check if target lies in it.",
+    zones:[
+      { z:1, tag:"signature + edge guard + boundaries",
+        lines:[
+          { t:"blank", ph:"// function signature...", ans:"int searchRotated(vector<int>& arr, int target) {", hint:"Search in a rotated sorted array — returns index or -1" },
+          { t:"blank", ph:"// edge case...", ans:"if (arr.empty()) return -1;", hint:"Guard against empty array" },
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> arr.size() <span class="op">-</span> <span class="nm">1</span>;` },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL binary search",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — identify sorted half, then target location",
+        lines:[
+          { t:"blank", ph:"// found target...", ans:"if (arr[mid] == target) return mid;", hint:"Direct hit — return immediately" },
+          { t:"blank", ph:"// check if left half is sorted...", ans:"if (arr[L] <= arr[mid]) {", hint:"arr[L] <= arr[mid] means left half [L..mid] is sorted" },
+          { t:"blank", ph:"//   target in sorted left half?...", ans:"if (arr[L] <= target && target < arr[mid]) R = mid - 1; else L = mid + 1;", hint:"If target fits in [arr[L]..arr[mid]) range, search left; else right" },
+          { t:"blank", ph:"// else right half is sorted...", ans:"} else {", hint:"Left half has the rotation point — right half [mid..R] is sorted" },
+          { t:"blank", ph:"//   target in sorted right half?...", ans:"if (arr[mid] < target && target <= arr[R]) L = mid + 1; else R = mid - 1;", hint:"If target fits in (arr[mid]..arr[R]] range, search right; else left" },
+          { t:"fixed", code:`}` },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"return -1 if not found",
+        lines:[
+          { t:"blank", ph:"// target not in array...", ans:"return -1;", hint:"Exhausted search space without finding target" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+
+  // ── 06 ──────────────────────────────────────────────────────────────────
+  {
+    id:6, title:"Matrix Binary Search", badge:"2D→1D", badgeColor:"var(--c1)",
+    viz:{ arr:[1,3,5,7,10,11,16,20,23,30,34,60], L:0, R:11, mid:5 },
+    hint:"Treat m×n matrix as flattened 1D array. mid → row = mid/n, col = mid%n.",
+    zones:[
+      { z:1, tag:"signature + edge guard + FLATTENED boundaries",
+        lines:[
+          { t:"blank", ph:"// function signature — 2D matrix search...", ans:"bool searchMatrix(vector<vector<int>>& mat, int target) {", hint:"Returns true if target exists in row-column sorted matrix" },
+          { t:"blank", ph:"// edge case — empty matrix...", ans:"if (mat.empty() || mat[0].empty()) return false;", hint:"Guard both outer and inner vectors" },
+          { t:"blank", ph:"// treat as flattened 1D array...", ans:"int m = mat.size(), n = mat[0].size();", hint:"Get dimensions to convert mid back to 2D coordinates" },
+          { t:"blank", ph:"// L and R over flattened indices...", ans:"int L = 0, R = m * n - 1;", hint:"Total elements = m*n, indices run 0 to m*n-1" },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL binary search",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — convert mid to row/col then compare",
+        lines:[
+          { t:"blank", ph:"// convert flat mid to 2D coordinates...", ans:"int val = mat[mid / n][mid % n];", hint:"Row = mid/n (integer division), Col = mid%n (remainder)" },
+          { t:"blank", ph:"// found target...", ans:"if (val == target) return true;", hint:"Direct match at [mid/n][mid%n]" },
+          { t:"blank", ph:"// too small — go right...", ans:"else if (val < target) L = mid + 1;", hint:"Current cell value smaller than target — search right" },
+          { t:"blank", ph:"// too large — go left...", ans:"else R = mid - 1;", hint:"Current cell value larger than target — search left" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"return false — not found in matrix",
+        lines:[
+          { t:"blank", ph:"// target absent from matrix...", ans:"return false;", hint:"Exhausted all cells without finding target" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+
+  // ── 07 ──────────────────────────────────────────────────────────────────
+  {
+    id:7, title:"Minimum in Rotated Array", badge:"ROTATION POINT", badgeColor:"var(--c4)",
+    viz:{ arr:[4,5,6,7,0,1,2], L:0, R:6, mid:3 },
+    hint:"The minimum is at the rotation point. Compare arr[mid] with arr[R] to know which half it's in.",
+    zones:[
+      { z:1, tag:"signature + edge guard + boundaries",
+        lines:[
+          { t:"blank", ph:"// function signature...", ans:"int findMin(vector<int>& arr) {", hint:"Returns the minimum element in a rotated sorted array" },
+          { t:"blank", ph:"// edge case — single element...", ans:"if (arr.size() == 1) return arr[0];", hint:"Trivially the only element is the minimum" },
+          { t:"fixed", code:`<span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> arr.size() <span class="op">-</span> <span class="nm">1</span>;` },
+          { t:"blank", ph:"// already sorted — no rotation...", ans:"if (arr[L] < arr[R]) return arr[L];", hint:"If arr[L] < arr[R] the array isn't rotated — min is at L" },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL binary search",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — compare mid with R to find rotation",
+        lines:[
+          { t:"blank", ph:"// mid is in left sorted portion — min is right...", ans:"if (arr[mid] > arr[R]) L = mid + 1;", hint:"arr[mid] > arr[R] means rotation (minimum) is to the right of mid" },
+          { t:"blank", ph:"// mid is in right sorted portion — min is here or left...", ans:"else R = mid;", hint:"arr[mid] <= arr[R] means mid could be minimum — don't exclude it" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"L converges to minimum",
+        lines:[
+          { t:"blank", ph:"// L points to minimum...", ans:"return arr[L];", hint:"L and R converge to the rotation point — the minimum element" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+
+  // ── 08 ──────────────────────────────────────────────────────────────────
+  {
+    id:8, title:"Capacity / Feasibility Check", badge:"YES/NO SEARCH", badgeColor:"var(--c3)",
+    viz:{ arr:[1,2,3,4,5,6,7,8,9,10], L:0, R:9, mid:4 },
+    hint:"canAchieve(mid) is a yes/no oracle. Binary search on the answer space — classic 'minimize the maximum' pattern.",
+    zones:[
+      { z:1, tag:"signature + edge guard + ANSWER SPACE boundaries",
+        lines:[
+          { t:"blank", ph:"// function signature — e.g. ship within D days...", ans:"int minCapacity(vector<int>& weights, int days) {", hint:"Find minimum capacity to ship all weights within given days" },
+          { t:"blank", ph:"// edge case — single item...", ans:"if (weights.size() == 1) return weights[0];", hint:"Only one item — its weight is the required capacity" },
+          { t:"blank", ph:"// L = max single weight (minimum possible), R = total sum (ship all at once)...", ans:"int L = *max_element(weights.begin(), weights.end()), R = accumulate(weights.begin(), weights.end(), 0);", hint:"Can't be less than heaviest item; at most sum of all items" },
+          { t:"blank", ph:"// result seed...", ans:"int result = R;", hint:"Start with worst case (ship everything at once)" },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL binary search",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — feasibility oracle drives direction",
+        lines:[
+          { t:"blank", ph:"// helper: can we ship with capacity mid in 'days' days?...", ans:"auto canShip = [&](int cap) { int d = 1, cur = 0; for (int w : weights) { if (cur + w > cap) { d++; cur = 0; } cur += w; } return d <= days; };", hint:"Greedy simulation: load as much as possible per day, count days needed" },
+          { t:"blank", ph:"// if feasible — record and try smaller...", ans:"if (canShip(mid)) { result = mid; R = mid - 1; }", hint:"mid capacity works — record it and search for something smaller" },
+          { t:"blank", ph:"// not feasible — need larger capacity...", ans:"else L = mid + 1;", hint:"mid too small — can't finish in time — increase capacity" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"return minimum feasible capacity",
+        lines:[
+          { t:"blank", ph:"// return minimum capacity that works...", ans:"return result;", hint:"Smallest capacity that allows shipping all items within deadline" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+
+  // ── 09 ──────────────────────────────────────────────────────────────────
+  {
+    id:9, title:"Kth Smallest in Sorted Matrix", badge:"VALUE RANGE", badgeColor:"var(--c1)",
+    viz:{ arr:[1,5,9,10,11,13,12,13,15], L:0, R:8, mid:4 },
+    hint:"Binary search on VALUE range [min..max]. Count elements ≤ mid using sorted structure. Converge to kth smallest.",
+    zones:[
+      { z:1, tag:"signature + edge guard + VALUE boundaries",
+        lines:[
+          { t:"blank", ph:"// function signature...", ans:"int kthSmallest(vector<vector<int>>& mat, int k) {", hint:"Returns kth smallest value in a row+column sorted matrix" },
+          { t:"blank", ph:"// edge case...", ans:"if (mat.empty()) return -1;", hint:"Guard against empty matrix" },
+          { t:"blank", ph:"// L = matrix minimum, R = matrix maximum...", ans:"int L = mat[0][0], R = mat.back().back();", hint:"In a sorted matrix, min is top-left and max is bottom-right" },
+          { t:"blank", ph:"// result seed...", ans:"int result = L;", hint:"Will converge to the kth smallest value" },
+        ]
+      },
+      { z:2, tag:"FIXED across ALL binary search",
+        lines:[
+          { t:"fixed", code:`<span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — count elements ≤ mid to guide direction",
+        lines:[
+          { t:"blank", ph:"// count elements <= mid in matrix...", ans:"auto countLE = [&](int val) { int cnt = 0; for (auto& row : mat) cnt += upper_bound(row.begin(), row.end(), val) - row.begin(); return cnt; };", hint:"Use upper_bound on each row (they're sorted) to count elements ≤ val" },
+          { t:"blank", ph:"// count >= k means mid is a candidate or too large...", ans:"if (countLE(mid) >= k) { result = mid; R = mid - 1; }", hint:"Enough elements ≤ mid means kth smallest is ≤ mid — record and go left" },
+          { t:"blank", ph:"// count < k means mid is too small...", ans:"else L = mid + 1;", hint:"Not enough elements ≤ mid — kth smallest must be larger" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+      { z:4, tag:"return converged kth smallest value",
+        lines:[
+          { t:"blank", ph:"// return kth smallest value...", ans:"return result;", hint:"result converged to the exact kth smallest value in the matrix" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+
+  // ── 10 ──────────────────────────────────────────────────────────────────
+  {
+    id:10, title:"Weighted Job Scheduling", badge:"TIME AXIS BS", badgeColor:"var(--c4)",
+    viz:{ arr:[1,2,3,4,5,6,7,8,9,10], L:0, R:9, mid:4 },
+    hint:"For each job, binary search for last job that ends before this one starts. Enables DP transition in O(log n).",
+    zones:[
+      { z:1, tag:"signature + edge guard + sorted job setup",
+        lines:[
+          { t:"blank", ph:"// function signature — job: {start, end, profit}...", ans:"int maxProfit(vector<vector<int>>& jobs) {", hint:"Returns maximum profit from non-overlapping weighted jobs" },
+          { t:"blank", ph:"// edge case...", ans:"if (jobs.empty()) return 0;", hint:"No jobs means zero profit" },
+          { t:"blank", ph:"// sort jobs by end time for DP to work...", ans:"sort(jobs.begin(), jobs.end(), [](auto& a, auto& b){ return a[1] < b[1]; });", hint:"Sort by end time — standard setup for job scheduling DP" },
+          { t:"blank", ph:"// dp[i] = max profit using first i jobs...", ans:"int n = jobs.size(); vector<int> dp(n + 1, 0);", hint:"dp array: dp[0]=0 (base), dp[i] considers job i-1" },
+        ]
+      },
+      { z:2, tag:"FIXED binary search inside DP loop",
+        lines:[
+          { t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> <span class="vr">i</span> <span class="op">=</span> <span class="nm">1</span>; <span class="vr">i</span> <span class="op">&lt;=</span> <span class="vr">n</span>; <span class="vr">i</span><span class="op">++</span>) {` },
+          { t:"fixed", code:`    <span class="ty">int</span> <span class="vr">L</span> <span class="op">=</span> <span class="nm">0</span>, <span class="vr">R</span> <span class="op">=</span> <span class="vr">i</span> <span class="op">-</span> <span class="nm">1</span>, <span class="vr">last</span> <span class="op">=</span> <span class="nm">0</span>;` },
+          { t:"fixed", code:`    <span class="kw">while</span> (<span class="vr">L</span> <span class="op">&lt;=</span> <span class="vr">R</span>) {` },
+          { t:"fixed", code:`        <span class="ty">int</span> <span class="vr">mid</span> <span class="op">=</span> <span class="vr">L</span> <span class="op">+</span> (<span class="vr">R</span> <span class="op">-</span> <span class="vr">L</span>) <span class="op">/</span> <span class="nm">2</span>;` },
+        ]
+      },
+      { z:3, tag:"changes — find last non-overlapping job",
+        lines:[
+          { t:"blank", ph:"// job[mid] ends before job[i-1] starts — valid candidate...", ans:"if (jobs[mid][1] <= jobs[i-1][0]) { last = mid + 1; L = mid + 1; }", hint:"This job ends before current starts — record it, try finding a later one" },
+          { t:"blank", ph:"// job[mid] overlaps — search earlier...", ans:"else R = mid - 1;", hint:"job[mid] overlaps current job — must look at earlier jobs" },
+          { t:"fixed", code:`    }` },
+        ]
+      },
+      { z:4, tag:"DP transition using binary search result",
+        lines:[
+          { t:"blank", ph:"// dp[i] = max(skip job i, take job i + best before it)...", ans:"dp[i] = max(dp[i-1], dp[last] + jobs[i-1][2]);", hint:"Either skip job i (dp[i-1]) or take it (its profit + best compatible jobs)" },
+          { t:"fixed", code:`}` },
+          { t:"blank", ph:"// return maximum profit...", ans:"return dp[n];", hint:"dp[n] holds the maximum profit considering all n jobs" },
+          { t:"fixed", code:`}` },
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames = ['Init + Signature','Loop + Mid (FIXED)','Decide (3-branch)','Return'];
+const zoneCls   = ['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums  = ['①','②','③','④'];
+
+let current = 0;
+let answered = new Set();
+let stats = { correct:0, wrong:0, streak:0 };
+
+function buildSelector() {
+  const sel = document.getElementById('selector');
+  sel.innerHTML = '';
+  patterns.forEach((p,i) => {
+    const b = document.createElement('button');
+    b.className = 'sel-btn' + (i===0?' active':'');
+    b.textContent = `${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick = () => loadPattern(i);
+    sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx) {
+  current = idx;
+  answered = new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
+  const p = patterns[idx];
+  document.getElementById('tbox-title').textContent = p.title.replace(/ /g,'_') + '.cpp';
+  const badge = document.getElementById('tbox-badge');
+  badge.textContent = p.badge;
+  badge.style.cssText = `color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+
+  const zonesEl = document.getElementById('zones');
+  zonesEl.innerHTML = '';
+  p.zones.forEach((zone, zi) => {
+    const div = document.createElement('div');
+    div.className = `zone ${zoneCls[zi]}`;
+    let linesHTML = '';
+    zone.lines.forEach((line, li) => {
+      if (line.t === 'fixed') {
+        linesHTML += `<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key = `${idx}-${zi}-${li}`;
+        linesHTML += `<div class="fill-wrap">
+          <span class="fill-indent">  </span>
+          <input class="fill-input"
+            data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}"
+            autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)"
+            oninput="clearState(this)"/>
+        </div>`;
+      }
+    });
+    div.innerHTML = `
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${linesHTML}</div>`;
+    zonesEl.appendChild(div);
+  });
+
+  buildViz(p);
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p) {
+  const viz = document.getElementById('viz');
+  viz.innerHTML = `<span class="viz-label">example:</span><div class="viz-cells" id="vcells"></div>`;
+  const cells = document.getElementById('vcells');
+  p.viz.arr.forEach((v, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'vcell';
+    let cls = 'vcell-box', lbl = '';
+    if (i === p.viz.L)   { cls += ' L';   lbl = 'L'; }
+    else if (i === p.viz.R)   { cls += ' R';   lbl = 'R'; }
+    else if (i === p.viz.mid) { cls += ' MID'; lbl = 'mid'; }
+    wrap.innerHTML = `<div class="${cls}">${v}</div><div class="vcell-lbl">${lbl}</div>`;
+    cells.appendChild(wrap);
+  });
+}
+
+function normalise(s) {
+  return s
+    .trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g, '$1')
+    .replace(/\s+/g, ' ')
+    .replace(/;+$/, '')
+    .replace(/\+\+\s*/g, '++')
+    .replace(/--\s*/g, '--')
+    .replace(/\s*->\s*/g, '->')
+    .trim();
+}
+
+function handleKey(e, el) {
+  if (e.key === 'Enter') checkSingle(el);
+  if (e.key === 'Tab')   { e.preventDefault(); focusNext(el); }
+}
+function clearState(el) { el.classList.remove('correct','wrong','revealed'); }
+
+function checkSingle(el) {
+  const key = el.dataset.key;
+  if (answered.has(key)) return;
+  const ans = decodeURIComponent(el.dataset.ans);
+  if (normalise(el.value) === normalise(ans)) {
+    el.classList.add('correct'); el.classList.remove('wrong');
+    answered.add(key); stats.correct++; stats.streak++;
+    updateScore(); showToast('✓ Correct!', 'ok'); focusNext(el);
+  } else {
+    el.classList.add('wrong'); el.classList.remove('correct');
+    stats.wrong++; stats.streak = 0; updateScore();
+    showToast('✗ Not quite — check hint below', 'err');
+    document.getElementById('hint-text').textContent = decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+
+function checkAll()   { document.querySelectorAll('.fill-input').forEach(el => { if (!answered.has(el.dataset.key)) checkSingle(el); }); }
+function revealAll()  {
+  document.querySelectorAll('.fill-input').forEach(el => {
+    if (!answered.has(el.dataset.key)) {
+      el.value = decodeURIComponent(el.dataset.ans);
+      el.classList.add('revealed'); el.classList.remove('correct','wrong');
+    }
+  });
+  showToast('Answers revealed — study, then Reset to retry!', 'inf');
+  document.getElementById('hint-text').textContent = patterns[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs() {
+  answered = new Set();
+  document.querySelectorAll('.fill-input').forEach(el => { el.value=''; el.classList.remove('correct','wrong','revealed'); });
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern() { loadPattern((current + 1) % patterns.length); }
+function focusNext(el) {
+  const all = Array.from(document.querySelectorAll('.fill-input'));
+  const i = all.indexOf(el);
+  if (i < all.length - 1) all[i+1].focus();
+}
+function updateScore() {
+  document.getElementById('s-correct').textContent = stats.correct;
+  document.getElementById('s-wrong').textContent   = stats.wrong;
+  document.getElementById('s-streak').textContent  = stats.streak;
+  const total = stats.correct + stats.wrong;
+  document.getElementById('prog').style.width = total ? Math.round(stats.correct/total*100)+'%' : '0%';
+}
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+buildSelector();
+loadPattern(0);
+</script>
+</body>
+</html>

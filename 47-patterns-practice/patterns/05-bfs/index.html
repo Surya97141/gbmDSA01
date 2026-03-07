@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BFS — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0c12; --surface: #111119; --card: #15151e; --border: #23233a;
+  --text: #e2e2f0; --muted: #52526e; --faint: #1e1e2e;
+  --c1: #a78bfa; --c2: #38bdf8; --c3: #fb923c; --c4: #4ade80;
+  --b1: rgba(167,139,250,0.08); --b2: rgba(56,189,248,0.07);
+  --b3: rgba(251,146,60,0.08);  --b4: rgba(74,222,128,0.07);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+body::before { content:''; position:fixed; inset:0; background-image:radial-gradient(rgba(56,189,248,0.08) 1px,transparent 1px); background-size:28px 28px; pointer-events:none; z-index:0; }
+.wrap { width:100%; max-width:820px; padding:48px 24px 80px; position:relative; z-index:1; }
+
+.hdr { text-align:center; margin-bottom:40px; }
+.hdr-pill { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--c2); border:1px solid rgba(56,189,248,0.3); padding:4px 14px; border-radius:20px; margin-bottom:16px; }
+.hdr h1 { font-size:clamp(24px,5vw,52px); font-weight:800; letter-spacing:-1.5px; line-height:1; background:linear-gradient(120deg,#fff 0%,var(--c2) 50%,var(--c4) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px; }
+.hdr p { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); }
+
+.selector-wrap { margin-bottom:28px; }
+.selector-label { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.selector { display:flex; flex-wrap:wrap; gap:8px; }
+.sel-btn { font-family:'JetBrains Mono',monospace; font-size:11px; padding:6px 14px; border:1px solid var(--border); background:var(--faint); color:var(--muted); border-radius:3px; cursor:pointer; transition:all .15s; user-select:none; }
+.sel-btn:hover { border-color:var(--c2); color:var(--text); }
+.sel-btn.active { background:rgba(56,189,248,0.1); border-color:var(--c2); color:var(--c2); }
+
+.scorebar { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:10px 16px; background:var(--surface); border:1px solid var(--border); border-radius:4px; }
+.score-item { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:3px; }
+.score-item strong { font-size:20px; font-weight:700; color:var(--text); line-height:1; }
+.score-item.good strong { color:var(--c4); }
+.score-item.bad  strong { color:var(--c3); }
+.progress-bar { flex:1; margin:0 20px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--c2); border-radius:2px; transition:width .4s; }
+
+.template-box { background:var(--card); border:1px solid var(--border); border-radius:6px; overflow:hidden; box-shadow:0 0 60px rgba(56,189,248,0.04); }
+.tbox-header { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-bottom:1px solid var(--border); background:rgba(255,255,255,0.015); }
+.tbox-title { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--c2); font-weight:600; }
+.tbox-badge { font-family:'JetBrains Mono',monospace; font-size:10px; padding:3px 10px; border-radius:2px; border:1px solid; }
+
+.zone { border-bottom:1px solid var(--border); display:flex; flex-direction:column; }
+.zone:last-child { border-bottom:none; }
+.zone-header { display:flex; align-items:center; gap:10px; padding:10px 20px 8px; }
+.zone-num { font-size:18px; font-weight:800; line-height:1; font-family:'JetBrains Mono',monospace; }
+.zone-name { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px; text-transform:uppercase; opacity:.6; }
+.zone-tag { margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:9px; padding:2px 8px; border-radius:2px; opacity:.7; }
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body { padding:0 20px 14px 24px; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.8; }
+.fixed-line { display:block; color:var(--text); white-space:pre; }
+.cm { color:#3d4f5c; font-style:italic; }
+
+.fill-wrap { display:flex; align-items:center; margin:2px 0; }
+.fill-indent { color:var(--muted); opacity:.3; font-size:12px; white-space:pre; user-select:none; }
+.fill-input { background:rgba(0,0,0,0.25); border:none; border-bottom:1px dashed rgba(255,255,255,0.15); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12.5px; padding:2px 6px; width:100%; outline:none; caret-color:var(--c2); transition:border-color .2s,background .2s; border-radius:2px 2px 0 0; }
+.fill-input:focus { background:rgba(56,189,248,0.06); border-bottom-color:var(--c2); }
+.fill-input.correct { background:rgba(74,222,128,0.07); border-bottom-color:var(--c4)!important; color:var(--c4); }
+.fill-input.wrong { background:rgba(251,146,60,0.07); border-bottom-color:var(--c3)!important; color:var(--c3); animation:shake .3s; }
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed { background:rgba(167,139,250,0.07); border-bottom-color:var(--c1)!important; color:var(--c1); }
+
+.actions { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+.btn { font-family:'JetBrains Mono',monospace; font-size:11px; padding:9px 20px; border-radius:3px; cursor:pointer; border:1px solid; transition:all .15s; letter-spacing:.5px; }
+.btn-check  { background:rgba(56,189,248,0.1);  color:var(--c2); border-color:rgba(56,189,248,0.4); }
+.btn-check:hover  { background:rgba(56,189,248,0.2); }
+.btn-reveal { background:rgba(167,139,250,0.08); color:var(--c1); border-color:rgba(167,139,250,0.3); }
+.btn-reveal:hover { background:rgba(167,139,250,0.15); }
+.btn-reset  { background:transparent; color:var(--muted); border-color:var(--border); }
+.btn-reset:hover  { color:var(--text); border-color:var(--muted); }
+.btn-next   { margin-left:auto; background:rgba(74,222,128,0.1); color:var(--c4); border-color:rgba(74,222,128,0.3); }
+.btn-next:hover   { background:rgba(74,222,128,0.18); }
+
+.hint-row { display:none; align-items:center; gap:10px; margin-top:14px; padding:10px 14px; background:rgba(56,189,248,0.05); border:1px solid rgba(56,189,248,0.15); border-radius:3px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--c2); }
+.hint-row.show { display:flex; }
+
+.viz-row { display:flex; align-items:flex-start; gap:12px; padding:12px 20px; border-top:1px solid var(--border); background:rgba(0,0,0,0.2); overflow-x:auto; flex-wrap:wrap; }
+.viz-label { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); flex-shrink:0; padding-top:4px; }
+.viz-queue { display:flex; flex-direction:column; gap:6px; }
+.viz-level { display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); }
+.viz-node { width:28px; height:28px; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
+.viz-node.queued  { border-color:var(--c2); color:var(--c2); background:rgba(56,189,248,0.08); }
+.viz-node.visited { border-color:var(--c4); color:var(--c4); background:rgba(74,222,128,0.07); }
+.viz-node.current { border-color:var(--c3); color:var(--c3); background:rgba(251,146,60,0.1); }
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .vr{color:#eeffff} .fn{color:#7dd3fc}
+
+.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px); font-family:'JetBrains Mono',monospace; font-size:12px; padding:10px 24px; border-radius:4px; opacity:0; transition:all .3s; z-index:100; pointer-events:none; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.ok  { background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.4); color:var(--c4); }
+.toast.err { background:rgba(251,146,60,0.12); border:1px solid rgba(251,146,60,0.3);  color:var(--c3); }
+.toast.inf { background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.3); color:var(--c1); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 05 — Practice Mode</div>
+    <h1>BFS</h1>
+    <p>// one template · fill the blanks · master all 10 manifestations</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// BFS — 10 Manifestations
+// 4 Blocks:
+//   ① INIT        — signature, edge guard, seed queue, mark visited ON PUSH
+//   ② POP FRONT   — while(!q.empty()), curr = front+pop, immediate work on curr
+//   ③ EXPAND      — generate neighbors, if !visited: mark ON PUSH, push, attach data
+//   ④ RETURN      — what to return after queue drains
+//
+// THE GOLDEN RULE baked into every manifestation:
+//   mark visited WHEN YOU PUSH — not when you pop
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Shortest Path Unweighted ──────────────────────────────────────────
+  {
+    id:1, title:"Shortest Path Unweighted", badge:"GRAPH", badgeColor:"var(--c2)",
+    hint:"Distance array replaces visited array — dist[node] = -1 means unvisited. Return dist[dst] after BFS.",
+    zones:[
+      { z:1, tag:"seed queue + mark dist on PUSH",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int shortestPath(int n, int src, int dst, vector<vector<int>>& graph) {", hint:"Returns minimum hops from src to dst, or -1 if unreachable"},
+          {t:"blank", ph:"// edge case — same node...", ans:"if (src == dst) return 0;", hint:"Already at destination — zero hops needed"},
+          {t:"blank", ph:"// dist array — -1 means unvisited...", ans:"vector<int> dist(n, -1);", hint:"dist doubles as visited array: -1 = not reached yet"},
+          {t:"fixed", code:`<span class="ty">queue</span><span class="op">&lt;</span><span class="ty">int</span><span class="op">&gt;</span> <span class="vr">q</span>;`},
+          {t:"blank", ph:"// seed queue + mark src distance...", ans:"q.push(src); dist[src] = 0;", hint:"Push source, mark its distance as 0 — ON PUSH not on pop"},
+        ]
+      },
+      { z:2, tag:"FIXED — pop front, check if destination",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!<span class="vr">q</span>.empty()) {`},
+          {t:"fixed", code:`    <span class="ty">int</span> <span class="vr">curr</span> <span class="op">=</span> <span class="vr">q</span>.front(); <span class="vr">q</span>.pop();`},
+          {t:"blank", ph:"// early return if we reached destination...", ans:"if (curr == dst) return dist[dst];", hint:"BFS guarantees first time we reach dst = shortest path"},
+        ]
+      },
+      { z:3, tag:"changes — attach distance to each neighbor",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> <span class="vr">nb</span> : graph[<span class="vr">curr</span>]) {`},
+          {t:"blank", ph:"// only push unvisited neighbors...", ans:"if (dist[nb] == -1) {", hint:"dist[nb] == -1 means not yet visited"},
+          {t:"blank", ph:"//   set distance = parent dist + 1...", ans:"dist[nb] = dist[curr] + 1;", hint:"Each hop costs 1 — mark ON PUSH"},
+          {t:"fixed", code:`            <span class="vr">q</span>.push(<span class="vr">nb</span>);`},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return -1 if unreachable",
+        lines:[
+          {t:"blank", ph:"// dst never reached — unreachable...", ans:"return -1;", hint:"Queue drained without reaching dst — no path exists"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Level Order Traversal ─────────────────────────────────────────────
+  {
+    id:2, title:"Level Order Traversal", badge:"TREE", badgeColor:"var(--c4)",
+    hint:"Snapshot queue size at start of each level. Process exactly that many nodes — they all belong to same level.",
+    zones:[
+      { z:1, tag:"seed queue with root + null guard",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<vector<int>> levelOrder(TreeNode* root) {", hint:"Returns 2D vector — each inner vector = one level of tree"},
+          {t:"blank", ph:"// edge case — empty tree...", ans:"if (!root) return {};", hint:"Nothing to traverse"},
+          {t:"blank", ph:"// result container...", ans:"vector<vector<int>> result;", hint:"Each element will be one level's node values"},
+          {t:"fixed", code:`<span class="ty">queue</span><span class="op">&lt;</span>TreeNode<span class="op">*&gt;</span> <span class="vr">q</span>;`},
+          {t:"blank", ph:"// seed queue with root...", ans:"q.push(root);", hint:"Root is level 0 — seed it, no need to mark visited (tree has no cycles)"},
+        ]
+      },
+      { z:2, tag:"FIXED — pop front, outer loop per level",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!<span class="vr">q</span>.empty()) {`},
+          {t:"blank", ph:"// snapshot current level size...", ans:"int levelSize = q.size();", hint:"All nodes currently in queue belong to the same level"},
+          {t:"blank", ph:"// container for this level's values...", ans:"vector<int> level;", hint:"Collect all node values at this level"},
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> <span class="vr">i</span> <span class="op">=</span> <span class="nm">0</span>; <span class="vr">i</span> <span class="op">&lt;</span> <span class="vr">levelSize</span>; <span class="vr">i</span><span class="op">++</span>) {`},
+          {t:"fixed", code:`        <span class="kw">auto</span> <span class="vr">curr</span> <span class="op">=</span> <span class="vr">q</span>.front(); <span class="vr">q</span>.pop();`},
+          {t:"blank", ph:"//     record current node's value...", ans:"level.push_back(curr->val);", hint:"Add this node's value to current level"},
+        ]
+      },
+      { z:3, tag:"changes — push children of current node",
+        lines:[
+          {t:"blank", ph:"//     push left child if exists...", ans:"if (curr->left)  q.push(curr->left);", hint:"Left child goes to next level"},
+          {t:"blank", ph:"//     push right child if exists...", ans:"if (curr->right) q.push(curr->right);", hint:"Right child goes to next level"},
+          {t:"fixed", code:`    }`},
+          {t:"blank", ph:"//   save completed level to result...", ans:"result.push_back(level);", hint:"Current level fully processed — add to result"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return all levels",
+        lines:[
+          {t:"blank", ph:"// return level-by-level result...", ans:"return result;", hint:"2D vector where result[i] = all node values at depth i"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Multi-Source BFS ──────────────────────────────────────────────────
+  {
+    id:3, title:"Multi-Source BFS", badge:"MULTI-SEED", badgeColor:"var(--c3)",
+    hint:"Push ALL sources into queue at start before the BFS loop begins. They all start at distance 0 simultaneously.",
+    zones:[
+      { z:1, tag:"seed queue with ALL sources at once",
+        lines:[
+          {t:"blank", ph:"// function signature — fire spreading from multiple sources...", ans:"vector<vector<int>> multiSourceBFS(vector<vector<int>>& grid) {", hint:"Classic example: 01-matrix — distance from each cell to nearest 0"},
+          {t:"blank", ph:"// edge case — empty grid...", ans:"if (grid.empty()) return {};", hint:"Guard against empty input"},
+          {t:"blank", ph:"// dist grid — -1 means unvisited...", ans:"int m = grid.size(), n = grid[0].size(); vector<vector<int>> dist(m, vector<int>(n, -1));", hint:"Distance grid initialised to -1 (unvisited)"},
+          {t:"fixed", code:`<span class="ty">queue</span><span class="op">&lt;</span><span class="ty">pair</span><span class="op">&lt;</span><span class="ty">int</span>,<span class="ty">int</span><span class="op">&gt;&gt;</span> <span class="vr">q</span>;`},
+          {t:"blank", ph:"// seed ALL source cells (value==0) at distance 0...", ans:"for (int r=0;r<m;r++) for (int c=0;c<n;c++) if (grid[r][c]==0) { dist[r][c]=0; q.push({r,c}); }", hint:"All sources enter queue together — BFS fans out equally from all"},
+        ]
+      },
+      { z:2, tag:"FIXED — pop {row,col} pair from front",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!<span class="vr">q</span>.empty()) {`},
+          {t:"blank", ph:"// pop current cell...", ans:"auto [r, c] = q.front(); q.pop();", hint:"Structured binding to unpack {row, col} pair"},
+        ]
+      },
+      { z:3, tag:"changes — 4-directional expansion",
+        lines:[
+          {t:"blank", ph:"// 4 direction deltas...", ans:"for (auto [dr,dc] : vector<pair<int,int>>{{1,0},{-1,0},{0,1},{0,-1}}) {", hint:"Expand to up/down/left/right neighbors"},
+          {t:"blank", ph:"//   compute neighbor coordinates...", ans:"int nr = r+dr, nc = c+dc;", hint:"New row and column after applying delta"},
+          {t:"blank", ph:"//   bounds check + unvisited check...", ans:"if (nr>=0 && nr<m && nc>=0 && nc<n && dist[nr][nc]==-1) {", hint:"In bounds AND not yet reached"},
+          {t:"blank", ph:"//     mark distance ON PUSH...", ans:"dist[nr][nc] = dist[r][c] + 1;", hint:"BFS guarantees this is the shortest distance — mark on push"},
+          {t:"fixed", code:`            <span class="vr">q</span>.push({<span class="vr">nr</span>, <span class="vr">nc</span>});`},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return filled distance grid",
+        lines:[
+          {t:"blank", ph:"// return distance grid...", ans:"return dist;", hint:"Each cell now holds its distance to nearest source"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── 0-1 BFS ───────────────────────────────────────────────────────────
+  {
+    id:4, title:"0-1 BFS", badge:"DEQUE", badgeColor:"var(--c1)",
+    hint:"Weight 0 edge → push_front (free move, same distance). Weight 1 edge → push_back (costs 1). Deque replaces queue.",
+    zones:[
+      { z:1, tag:"DEQUE replaces queue — dist array seeded",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int zeroOneBFS(int n, int src, int dst, vector<vector<pair<int,int>>>& graph) {", hint:"graph[u] = {{v, weight}} where weight is 0 or 1"},
+          {t:"blank", ph:"// dist array — INT_MAX means unvisited...", ans:"vector<int> dist(n, INT_MAX);", hint:"Using INT_MAX as infinity for unvisited nodes"},
+          {t:"blank", ph:"// USE DEQUE not queue...", ans:"deque<int> dq;", hint:"Deque allows both push_front (weight 0) and push_back (weight 1)"},
+          {t:"blank", ph:"// seed deque + set src distance to 0...", ans:"dq.push_back(src); dist[src] = 0;", hint:"Source starts with distance 0"},
+        ]
+      },
+      { z:2, tag:"FIXED — pop front same as regular BFS",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!<span class="vr">dq</span>.empty()) {`},
+          {t:"fixed", code:`    <span class="ty">int</span> <span class="vr">curr</span> <span class="op">=</span> <span class="vr">dq</span>.front(); <span class="vr">dq</span>.pop_front();`},
+          {t:"blank", ph:"// skip if we already found shorter path to curr...", ans:"if (curr == dst) return dist[dst];", hint:"Early exit when destination is popped"},
+        ]
+      },
+      { z:3, tag:"changes — push_front for 0, push_back for 1",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="kw">auto</span> [<span class="vr">nb</span>, <span class="vr">w</span>] : graph[<span class="vr">curr</span>]) {`},
+          {t:"blank", ph:"// only process if we found shorter path...", ans:"if (dist[curr] + w < dist[nb]) {", hint:"Relaxation condition — only update if we found a cheaper route"},
+          {t:"blank", ph:"//   update distance...", ans:"dist[nb] = dist[curr] + w;", hint:"Record the shorter distance ON PUSH"},
+          {t:"blank", ph:"//   weight 0 → push_front, weight 1 → push_back...", ans:"if (w == 0) dq.push_front(nb); else dq.push_back(nb);", hint:"Free edges go to front (processed next), costly edges go to back"},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return dist[dst] or -1",
+        lines:[
+          {t:"blank", ph:"// return shortest distance or -1 if unreachable...", ans:"return dist[dst] == INT_MAX ? -1 : dist[dst];", hint:"If dist[dst] still INT_MAX — destination was never reached"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Shortest Path in Grid ─────────────────────────────────────────────
+  {
+    id:5, title:"Shortest Path in Grid", badge:"GRID", badgeColor:"var(--c2)",
+    hint:"Treat each cell as a graph node. BFS guarantees shortest path in unweighted grid. Mark visited ON PUSH.",
+    zones:[
+      { z:1, tag:"seed queue with {row,col,dist} + mark visited",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int shortestPathGrid(vector<vector<int>>& grid, pair<int,int> src, pair<int,int> dst) {", hint:"Returns min steps from src to dst avoiding obstacles (1=wall, 0=open)"},
+          {t:"blank", ph:"// edge case — start or end is a wall...", ans:"if (grid[src.first][src.second] == 1 || grid[dst.first][dst.second] == 1) return -1;", hint:"Can't start or end inside a wall"},
+          {t:"blank", ph:"// dimensions + visited grid...", ans:"int m = grid.size(), n = grid[0].size(); vector<vector<bool>> visited(m, vector<bool>(n, false));", hint:"Separate visited grid — don't modify the original"},
+          {t:"fixed", code:`<span class="ty">queue</span><span class="op">&lt;</span><span class="ty">tuple</span><span class="op">&lt;</span><span class="ty">int</span>,<span class="ty">int</span>,<span class="ty">int</span><span class="op">&gt;&gt;</span> <span class="vr">q</span>;`},
+          {t:"blank", ph:"// seed with {sr, sc, distance=0} + mark visited...", ans:"q.push({src.first, src.second, 0}); visited[src.first][src.second] = true;", hint:"Mark source visited ON PUSH — the golden BFS rule"},
+        ]
+      },
+      { z:2, tag:"FIXED — pop {r,c,d} tuple from front",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!<span class="vr">q</span>.empty()) {`},
+          {t:"blank", ph:"// unpack current cell and its distance...", ans:"auto [r, c, d] = q.front(); q.pop();", hint:"Structured binding to get row, col, and current distance"},
+          {t:"blank", ph:"// reached destination — return distance...", ans:"if (r == dst.first && c == dst.second) return d;", hint:"BFS guarantees first arrival = shortest path"},
+        ]
+      },
+      { z:3, tag:"changes — 4-directional + obstacle + bounds check",
+        lines:[
+          {t:"blank", ph:"// 4 direction deltas...", ans:"for (auto [dr,dc] : vector<pair<int,int>>{{1,0},{-1,0},{0,1},{0,-1}}) {", hint:"Standard 4-directional movement"},
+          {t:"blank", ph:"//   neighbor coordinates...", ans:"int nr = r+dr, nc = c+dc;", hint:"Apply delta to get neighbor cell"},
+          {t:"blank", ph:"//   bounds + wall + unvisited check...", ans:"if (nr>=0 && nr<m && nc>=0 && nc<n && !visited[nr][nc] && grid[nr][nc]==0) {", hint:"Must be: in bounds, not a wall (0=open), not visited"},
+          {t:"blank", ph:"//   mark visited ON PUSH + push with d+1...", ans:"visited[nr][nc] = true; q.push({nr, nc, d+1});", hint:"Mark visited immediately before pushing — prevents duplicate entries"},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return -1 — destination unreachable",
+        lines:[
+          {t:"blank", ph:"// no path found...", ans:"return -1;", hint:"Queue exhausted without reaching destination"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Word Ladder ───────────────────────────────────────────────────────
+  {
+    id:6, title:"Word Ladder", badge:"STATE SPACE", badgeColor:"var(--c3)",
+    hint:"Each word is a node. Neighbors = all words differing by exactly 1 letter that exist in wordList. Use unordered_set for O(1) lookup.",
+    zones:[
+      { z:1, tag:"seed queue with beginWord + build word set",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int ladderLength(string beginWord, string endWord, vector<string>& wordList) {", hint:"Returns minimum transformations from begin to end, or 0 if impossible"},
+          {t:"blank", ph:"// word set for O(1) neighbor lookup...", ans:"unordered_set<string> wordSet(wordList.begin(), wordList.end());", hint:"Convert list to set for fast existence checking"},
+          {t:"blank", ph:"// edge case — end word not in list...", ans:"if (!wordSet.count(endWord)) return 0;", hint:"Can never reach a word that doesn't exist in the list"},
+          {t:"fixed", code:`<span class="ty">queue</span><span class="op">&lt;</span><span class="ty">pair</span><span class="op">&lt;</span><span class="ty">string</span>,<span class="ty">int</span><span class="op">&gt;&gt;</span> <span class="vr">q</span>;`},
+          {t:"blank", ph:"// seed with {beginWord, steps=1} + remove from set...", ans:"q.push({beginWord, 1}); wordSet.erase(beginWord);", hint:"Steps start at 1 (beginWord counts). Erasing = marking visited"},
+        ]
+      },
+      { z:2, tag:"FIXED — pop {word, steps} from front",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!<span class="vr">q</span>.empty()) {`},
+          {t:"blank", ph:"// unpack current word and step count...", ans:"auto [word, steps] = q.front(); q.pop();", hint:"Current transformation and how many steps taken so far"},
+          {t:"blank", ph:"// reached end word — return steps...", ans:"if (word == endWord) return steps;", hint:"Found the target transformation sequence"},
+        ]
+      },
+      { z:3, tag:"changes — generate all 1-letter mutations",
+        lines:[
+          {t:"blank", ph:"// try changing each character position...", ans:"for (int i = 0; i < word.size(); i++) {", hint:"For each position in the word"},
+          {t:"blank", ph:"//   try all 26 letters at position i...", ans:"for (char c = 'a'; c <= 'z'; c++) {", hint:"26 possible characters at each position"},
+          {t:"blank", ph:"//   build mutated word...", ans:"string next = word; next[i] = c;", hint:"Replace character at position i with c"},
+          {t:"blank", ph:"//   if valid word — mark visited + push...", ans:"if (wordSet.count(next)) { wordSet.erase(next); q.push({next, steps+1}); }", hint:"Erase from set = mark visited ON PUSH. Prevents revisiting words."},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return 0 — no transformation sequence",
+        lines:[
+          {t:"blank", ph:"// transformation impossible...", ans:"return 0;", hint:"Queue drained without reaching endWord"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Bipartite Check ───────────────────────────────────────────────────
+  {
+    id:7, title:"Bipartite Check", badge:"2-COLORING", badgeColor:"var(--c4)",
+    hint:"2-color the graph: color[src]=0. Every neighbor must get opposite color (1-color[curr]). Conflict = not bipartite.",
+    zones:[
+      { z:1, tag:"color array replaces visited — -1 means uncolored",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"bool isBipartite(int n, vector<vector<int>>& graph) {", hint:"Returns true if graph can be 2-colored with no same-color neighbors"},
+          {t:"blank", ph:"// color array — -1 uncolored, 0 or 1 for two groups...", ans:"vector<int> color(n, -1);", hint:"color[i] = -1 means node i not yet visited/colored"},
+          {t:"fixed", code:`<span class="ty">queue</span><span class="op">&lt;</span><span class="ty">int</span><span class="op">&gt;</span> <span class="vr">q</span>;`},
+        ]
+      },
+      { z:2, tag:"FIXED — outer loop for disconnected components",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> <span class="vr">i</span> <span class="op">=</span> <span class="nm">0</span>; <span class="vr">i</span> <span class="op">&lt;</span> <span class="vr">n</span>; <span class="vr">i</span><span class="op">++</span>) {`},
+          {t:"blank", ph:"//   skip already colored nodes...", ans:"if (color[i] != -1) continue;", hint:"Already processed this component"},
+          {t:"blank", ph:"//   seed uncolored node with color 0...", ans:"color[i] = 0; q.push(i);", hint:"Start new component — assign color 0 and push ON PUSH rule"},
+          {t:"fixed", code:`    <span class="kw">while</span> (!<span class="vr">q</span>.empty()) {`},
+          {t:"fixed", code:`        <span class="ty">int</span> <span class="vr">curr</span> <span class="op">=</span> <span class="vr">q</span>.front(); <span class="vr">q</span>.pop();`},
+        ]
+      },
+      { z:3, tag:"changes — alternate colors, detect conflict",
+        lines:[
+          {t:"fixed", code:`        <span class="kw">for</span> (<span class="ty">int</span> <span class="vr">nb</span> : graph[<span class="vr">curr</span>]) {`},
+          {t:"blank", ph:"//     uncolored neighbor — assign opposite color + push...", ans:"if (color[nb] == -1) { color[nb] = 1 - color[curr]; q.push(nb); }", hint:"1-color[curr] flips 0↔1 — neighbor always gets opposite color"},
+          {t:"blank", ph:"//     same color as current — conflict! not bipartite...", ans:"else if (color[nb] == color[curr]) return false;", hint:"Adjacent nodes with same color = odd cycle = not bipartite"},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return true — successfully 2-colored",
+        lines:[
+          {t:"blank", ph:"// all components 2-colored without conflict...", ans:"return true;", hint:"Every edge connects nodes of different colors — valid bipartite graph"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Minimum Steps to Reach State ─────────────────────────────────────
+  {
+    id:8, title:"Min Steps to Reach State", badge:"STATE BFS", badgeColor:"var(--c1)",
+    hint:"State = the entire configuration (string/tuple). visited = set of seen states. BFS level = number of moves.",
+    zones:[
+      { z:1, tag:"state is a STRING — visited is an unordered_set",
+        lines:[
+          {t:"blank", ph:"// function signature — sliding puzzle example...", ans:"int slidingPuzzle(vector<vector<int>>& board) {", hint:"Returns min moves to solve 2×3 sliding puzzle, -1 if impossible"},
+          {t:"blank", ph:"// encode initial board state as string...", ans:"string start = \"\"; for (auto& row : board) for (int v : row) start += to_string(v);", hint:"Flatten 2D board to string — e.g. [[1,2,3],[4,0,5]] → \"123405\""},
+          {t:"blank", ph:"// target solved state...", ans:"string target = \"123450\";", hint:"Goal configuration for 2×3 puzzle"},
+          {t:"blank", ph:"// visited set of states...", ans:"unordered_set<string> visited;", hint:"Track all configurations seen so far"},
+          {t:"fixed", code:`<span class="ty">queue</span><span class="op">&lt;</span><span class="ty">pair</span><span class="op">&lt;</span><span class="ty">string</span>,<span class="ty">int</span><span class="op">&gt;&gt;</span> <span class="vr">q</span>;`},
+          {t:"blank", ph:"// seed + mark start state as visited ON PUSH...", ans:"q.push({start, 0}); visited.insert(start);", hint:"Insert into visited set when pushing — same golden rule"},
+        ]
+      },
+      { z:2, tag:"FIXED — pop {state, moves} from front",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!<span class="vr">q</span>.empty()) {`},
+          {t:"blank", ph:"// unpack current state and move count...", ans:"auto [state, moves] = q.front(); q.pop();", hint:"Current puzzle configuration and moves taken"},
+          {t:"blank", ph:"// reached target state...", ans:"if (state == target) return moves;", hint:"Puzzle solved — BFS guarantees minimum moves"},
+        ]
+      },
+      { z:3, tag:"changes — generate next states by swapping 0",
+        lines:[
+          {t:"blank", ph:"// find position of blank (0) in state string...", ans:"int zeroPos = state.find('0');", hint:"Blank tile's position in flattened string"},
+          {t:"blank", ph:"// valid swap positions for 2×3 board...", ans:"vector<vector<int>> neighbors = {{1,3},{0,2,4},{1,5},{0,4},{1,3,5},{2,4}};", hint:"For each position 0-5, which positions are adjacent in 2×3 grid"},
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> <span class="vr">nb</span> : neighbors[<span class="vr">zeroPos</span>]) {`},
+          {t:"blank", ph:"//   swap blank with neighbor to create new state...", ans:"string next = state; swap(next[zeroPos], next[nb]);", hint:"Simulate moving a tile into the blank position"},
+          {t:"blank", ph:"//   push if state not visited before...", ans:"if (!visited.count(next)) { visited.insert(next); q.push({next, moves+1}); }", hint:"Insert into visited set ON PUSH — prevents re-exploring same config"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return -1 — puzzle unsolvable",
+        lines:[
+          {t:"blank", ph:"// all reachable states explored — no solution...", ans:"return -1;", hint:"Some initial configurations of sliding puzzle are unsolvable"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Nearest Cell Query ────────────────────────────────────────────────
+  {
+    id:9, title:"Nearest Cell Query", badge:"MULTI-SEED", badgeColor:"var(--c3)",
+    hint:"Multi-source BFS from ALL 1-cells simultaneously. Every 0-cell gets filled with distance to nearest 1.",
+    zones:[
+      { z:1, tag:"seed ALL 1-cells at distance 0",
+        lines:[
+          {t:"blank", ph:"// function signature — nearest 1 in binary grid...", ans:"vector<vector<int>> nearest1(vector<vector<int>>& grid) {", hint:"Returns grid where each cell holds distance to nearest 1-cell"},
+          {t:"blank", ph:"// edge case...", ans:"if (grid.empty()) return {};", hint:"Guard empty input"},
+          {t:"blank", ph:"// dimensions + dist grid initialised to -1...", ans:"int m = grid.size(), n = grid[0].size(); vector<vector<int>> dist(m, vector<int>(n, -1));", hint:"-1 means this cell hasn't been reached yet"},
+          {t:"fixed", code:`<span class="ty">queue</span><span class="op">&lt;</span><span class="ty">pair</span><span class="op">&lt;</span><span class="ty">int</span>,<span class="ty">int</span><span class="op">&gt;&gt;</span> <span class="vr">q</span>;`},
+          {t:"blank", ph:"// seed ALL 1-cells into queue at dist=0...", ans:"for(int r=0;r<m;r++) for(int c=0;c<n;c++) if(grid[r][c]==1){ dist[r][c]=0; q.push({r,c}); }", hint:"All 1-cells are sources — they start BFS wave simultaneously"},
+        ]
+      },
+      { z:2, tag:"FIXED — pop {r,c} and expand",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!<span class="vr">q</span>.empty()) {`},
+          {t:"blank", ph:"// pop current cell...", ans:"auto [r, c] = q.front(); q.pop();", hint:"Current cell being processed"},
+        ]
+      },
+      { z:3, tag:"changes — 4-directional, fill unvisited 0-cells",
+        lines:[
+          {t:"blank", ph:"// 4-directional expansion...", ans:"for (auto [dr,dc] : vector<pair<int,int>>{{1,0},{-1,0},{0,1},{0,-1}}) {", hint:"Spread BFS wave in all 4 directions"},
+          {t:"blank", ph:"//   neighbor...", ans:"int nr=r+dr, nc=c+dc;", hint:"Compute neighbor coordinates"},
+          {t:"blank", ph:"//   bounds + unvisited...", ans:"if (nr>=0&&nr<m&&nc>=0&&nc<n&&dist[nr][nc]==-1) {", hint:"Valid unvisited neighbor"},
+          {t:"blank", ph:"//   set distance to nearest 1...", ans:"dist[nr][nc] = dist[r][c] + 1; q.push({nr,nc});", hint:"Mark distance ON PUSH — BFS wave guarantees this is minimum"},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return filled distance grid",
+        lines:[
+          {t:"blank", ph:"// return distance-to-nearest-1 grid...", ans:"return dist;", hint:"Each cell now contains shortest distance to any 1-cell"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Cycle Detection Undirected ────────────────────────────────────────
+  {
+    id:10, title:"Cycle Detection Undirected", badge:"PARENT TRACK", badgeColor:"var(--c2)",
+    hint:"Track parent in queue alongside node. If we reach a visited node that isn't our parent — cycle found.",
+    zones:[
+      { z:1, tag:"queue holds {node, parent} pairs",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"bool hasCycleBFS(int n, vector<vector<int>>& graph) {", hint:"Returns true if undirected graph contains a cycle"},
+          {t:"blank", ph:"// visited array...", ans:"vector<bool> visited(n, false);", hint:"Track which nodes have been processed"},
+          {t:"fixed", code:`<span class="ty">queue</span><span class="op">&lt;</span><span class="ty">pair</span><span class="op">&lt;</span><span class="ty">int</span>,<span class="ty">int</span><span class="op">&gt;&gt;</span> <span class="vr">q</span>; <span class="cm">// {node, parent}</span>`},
+        ]
+      },
+      { z:2, tag:"FIXED outer loop — handle disconnected components",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> <span class="vr">i</span> <span class="op">=</span> <span class="nm">0</span>; <span class="vr">i</span> <span class="op">&lt;</span> <span class="vr">n</span>; <span class="vr">i</span><span class="op">++</span>) {`},
+          {t:"blank", ph:"//   skip already visited nodes...", ans:"if (visited[i]) continue;", hint:"Already processed this component"},
+          {t:"blank", ph:"//   seed with {node, parent=-1} + mark visited ON PUSH...", ans:"q.push({i, -1}); visited[i] = true;", hint:"-1 as parent for root node. Mark visited ON PUSH."},
+          {t:"fixed", code:`    <span class="kw">while</span> (!<span class="vr">q</span>.empty()) {`},
+          {t:"blank", ph:"//     pop {curr, parent}...", ans:"auto [curr, parent] = q.front(); q.pop();", hint:"Unpack node and who we came from"},
+        ]
+      },
+      { z:3, tag:"changes — skip parent, detect back edge",
+        lines:[
+          {t:"fixed", code:`        <span class="kw">for</span> (<span class="ty">int</span> <span class="vr">nb</span> : graph[<span class="vr">curr</span>]) {`},
+          {t:"blank", ph:"//       skip parent edge (not a cycle)...", ans:"if (nb == parent) continue;", hint:"In undirected graph, edge back to parent is not a cycle"},
+          {t:"blank", ph:"//       visited non-parent neighbor = cycle...", ans:"if (visited[nb]) return true;", hint:"Already visited node that isn't our parent = back edge = cycle"},
+          {t:"blank", ph:"//       unvisited — mark + push with curr as parent...", ans:"visited[nb] = true; q.push({nb, curr});", hint:"Mark visited ON PUSH. Pass curr as parent to prevent false cycle."},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return false — no cycle found",
+        lines:[
+          {t:"blank", ph:"// all components explored with no back edges...", ans:"return false;", hint:"No cycle found in any component of the graph"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames = ['Init + Seed Queue','Pop Front + Process','Expand Neighbors','Return'];
+const zoneCls   = ['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums  = ['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector() {
+  const sel = document.getElementById('selector');
+  sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i);
+    sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx) {
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+
+  const zonesEl=document.getElementById('zones');
+  zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div');
+    div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p);
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p) {
+  const viz=document.getElementById('viz');
+  viz.innerHTML=`
+    <span class="viz-label">queue:</span>
+    <div class="viz-queue">
+      <div class="viz-level">
+        <span style="font-size:10px;color:var(--muted);width:40px">L0:</span>
+        <div class="viz-node current">src</div>
+      </div>
+      <div class="viz-level">
+        <span style="font-size:10px;color:var(--muted);width:40px">L1:</span>
+        <div class="viz-node queued">nb1</div>
+        <div class="viz-node queued">nb2</div>
+        <div class="viz-node queued">nb3</div>
+      </div>
+      <div class="viz-level">
+        <span style="font-size:10px;color:var(--muted);width:40px">L2:</span>
+        <div class="viz-node">...</div>
+      </div>
+    </div>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-left:16px;align-self:center">
+      🟠 processing &nbsp; 🔵 in queue &nbsp; ⬜ unvisited<br>
+      <span style="color:var(--c3)">★ mark visited ON PUSH — not on pop</span>
+    </span>`;
+}
+
+function normalise(s) {
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+\s*/g,'++').replace(/--\s*/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+
+function checkSingle(el){
+  const key=el.dataset.key;
+  if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+buildSelector();
+loadPattern(0);
+</script>
+</body>
+</html>
