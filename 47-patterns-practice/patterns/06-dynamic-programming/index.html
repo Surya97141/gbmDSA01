@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Programming — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(167,139,250,0.07) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c1);border:1px solid rgba(167,139,250,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c1) 40%,var(--c3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c1);color:var(--text);}
+.sel-btn.active{background:rgba(167,139,250,0.1);border-color:var(--c1);color:var(--c1);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c1);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(167,139,250,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c1);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);display:flex;flex-direction:column;}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.7;text-align:right;max-width:340px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.cm{color:#3d4f5c;font-style:italic;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c1);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(167,139,250,0.06);border-bottom-color:var(--c1);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(167,139,250,0.1);color:var(--c1);border-color:rgba(167,139,250,0.4);}
+.btn-check:hover{background:rgba(167,139,250,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c1);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{display:flex;align-items:flex-start;gap:16px;padding:12px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;flex-wrap:wrap;}
+.viz-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;padding-top:4px;}
+.dp-cells{display:flex;gap:3px;align-items:flex-end;}
+.dp-cell{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.dp-box{width:34px;height:28px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--border);border-radius:3px;color:var(--muted);}
+.dp-box.base{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.08);}
+.dp-box.filled{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.08);}
+.dp-box.ans{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.1);}
+.dp-idx{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .vr{color:#eeffff} .fn{color:#7dd3fc}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 06 — Practice Mode</div>
+    <h1>Dynamic Programming</h1>
+    <p>// define state → base case → transition → return · master all 11 manifestations</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// DYNAMIC PROGRAMMING — 11 Manifestations
+// 4 Blocks (the universal DP thought process):
+//   ① STATE     — dp array declaration: what dp[...] means + dimensions + type
+//   ② BASE CASE — smallest known subproblems, filled before main loop
+//   ③ TRANSITION — main loop(s): recurrence formula + iteration direction
+//   ④ RETURN    — which cell/index holds the answer
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── 1D DP ─────────────────────────────────────────────────────────────
+  {
+    id:1, title:"1D DP", badge:"LINEAR", badgeColor:"var(--c1)",
+    viz:[
+      {v:"0",cls:"base",i:"0"},{v:"1",cls:"base",i:"1"},
+      {v:"2",cls:"filled",i:"2"},{v:"3",cls:"filled",i:"3"},
+      {v:"5",cls:"ans",i:"n"}
+    ],
+    hint:"dp[i] = best answer considering first i elements. Each cell depends only on a fixed number of previous cells.",
+    zones:[
+      { z:1, tag:"dp[i] = max sum ending at index i",
+        lines:[
+          {t:"blank", ph:"// function signature — e.g. max subarray sum...", ans:"int maxSubarray(vector<int>& nums) {", hint:"Classic 1D DP: Kadane's algorithm"},
+          {t:"blank", ph:"// edge case...", ans:"if (nums.empty()) return 0;", hint:"Guard empty input"},
+          {t:"blank", ph:"// STATE: dp[i] = max subarray sum ending at index i...", ans:"int n = nums.size(); vector<int> dp(n);", hint:"dp has same length as input — one cell per element"},
+        ]
+      },
+      { z:2, tag:"base case — single element",
+        lines:[
+          {t:"blank", ph:"// base case: first element starts its own subarray...", ans:"dp[0] = nums[0];", hint:"Subarray ending at index 0 has only one choice: nums[0] itself"},
+          {t:"blank", ph:"// track global max (answer may not be at dp[n-1])...", ans:"int maxSum = dp[0];", hint:"Global answer — 1D DP answer is often max over all dp[i], not just dp[n-1]"},
+        ]
+      },
+      { z:3, tag:"transition: extend previous OR start fresh",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">1</span>; i <span class="op">&lt;</span> n; i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   extend previous subarray OR start fresh at i...", ans:"dp[i] = max(nums[i], dp[i-1] + nums[i]);", hint:"Either begin new subarray at i, or extend the best one ending at i-1"},
+          {t:"blank", ph:"//   update global max...", ans:"maxSum = max(maxSum, dp[i]);", hint:"Answer could be at any position — track running maximum"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return global max — not dp[n-1]",
+        lines:[
+          {t:"blank", ph:"// return global maximum (not dp[n-1])...", ans:"return maxSum;", hint:"For 1D DP: answer is max across ALL dp[i], not just the last cell"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── 2D Grid DP ─────────────────────────────────────────────────────────
+  {
+    id:2, title:"2D Grid DP", badge:"GRID PATH", badgeColor:"var(--c2)",
+    viz:[
+      {v:"1",cls:"base",i:"[0][0]"},{v:"2",cls:"filled",i:"[0][j]"},
+      {v:"3",cls:"filled",i:"[i][0]"},{v:"6",cls:"ans",i:"[m][n]"}
+    ],
+    hint:"dp[i][j] = best path to reach cell (i,j). Can only come from top or left. Fill row by row.",
+    zones:[
+      { z:1, tag:"dp[i][j] = min cost path to (i,j)",
+        lines:[
+          {t:"blank", ph:"// function signature — min path sum...", ans:"int minPathSum(vector<vector<int>>& grid) {", hint:"Returns minimum sum path from top-left to bottom-right"},
+          {t:"blank", ph:"// edge case...", ans:"if (grid.empty()) return 0;", hint:"Guard empty grid"},
+          {t:"blank", ph:"// STATE: dp[i][j] = min cost to reach cell (i,j)...", ans:"int m = grid.size(), n = grid[0].size(); vector<vector<int>> dp(m, vector<int>(n, 0));", hint:"2D dp array same size as grid"},
+        ]
+      },
+      { z:2, tag:"base cases — first row + first column",
+        lines:[
+          {t:"blank", ph:"// top-left corner...", ans:"dp[0][0] = grid[0][0];", hint:"Starting cell has only one value"},
+          {t:"blank", ph:"// first row — can only come from left...", ans:"for (int j=1;j<n;j++) dp[0][j] = dp[0][j-1] + grid[0][j];", hint:"First row: no top neighbor, accumulate from left"},
+          {t:"blank", ph:"// first column — can only come from above...", ans:"for (int i=1;i<m;i++) dp[i][0] = dp[i-1][0] + grid[i][0];", hint:"First column: no left neighbor, accumulate from above"},
+        ]
+      },
+      { z:3, tag:"transition: min(from top, from left) + current cell",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span><span class="nm">1</span>;i<span class="op">&lt;</span>m;i<span class="op">++</span>) {`},
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> j<span class="op">=</span><span class="nm">1</span>;j<span class="op">&lt;</span>n;j<span class="op">++</span>) {`},
+          {t:"blank", ph:"//     min of top or left + current cell cost...", ans:"dp[i][j] = min(dp[i-1][j], dp[i][j-1]) + grid[i][j];", hint:"Best path to (i,j) = cheaper of coming from above or from left"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return bottom-right corner",
+        lines:[
+          {t:"blank", ph:"// answer is always bottom-right corner...", ans:"return dp[m-1][n-1];", hint:"Destination cell holds minimum cost of complete path"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Knapsack 0/1 ──────────────────────────────────────────────────────
+  {
+    id:3, title:"Knapsack 0/1", badge:"PICK/SKIP", badgeColor:"var(--c3)",
+    viz:[
+      {v:"0",cls:"base",i:"w=0"},{v:"0",cls:"base",i:"i=0"},
+      {v:"?",cls:"filled",i:"[i][w]"},{v:"★",cls:"ans",i:"[n][W]"}
+    ],
+    hint:"Each item: take it (dp[i-1][w-wt[i]] + val[i]) OR skip it (dp[i-1][w]). Item can only be used ONCE — look back to i-1.",
+    zones:[
+      { z:1, tag:"dp[i][w] = max value using first i items, capacity w",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int knapsack(vector<int>& wt, vector<int>& val, int W) {", hint:"wt=weights, val=values, W=max capacity. Returns max value."},
+          {t:"blank", ph:"// n items...", ans:"int n = wt.size();", hint:"Number of items available"},
+          {t:"blank", ph:"// STATE: dp[i][w] = max value, first i items, capacity w...", ans:"vector<vector<int>> dp(n+1, vector<int>(W+1, 0));", hint:"n+1 rows (0 items to n items), W+1 cols (capacity 0 to W)"},
+        ]
+      },
+      { z:2, tag:"base case — zero items or zero capacity = 0",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// dp[0][w]=0 (no items) and dp[i][0]=0 (no capacity) — already set by initialisation</span>`},
+          {t:"blank", ph:"// state the semantic meaning as a comment...", ans:"// dp[i][w] = best value picking from items 0..i-1 with weight limit w", hint:"Writing the definition in plain English before coding prevents mistakes"},
+        ]
+      },
+      { z:3, tag:"transition: skip item i OR take item i (if it fits)",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span><span class="nm">1</span>;i<span class="op">&lt;=</span>n;i<span class="op">++</span>) {`},
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> w<span class="op">=</span><span class="nm">0</span>;w<span class="op">&lt;=</span>W;w<span class="op">++</span>) {`},
+          {t:"blank", ph:"//     always can skip item i...", ans:"dp[i][w] = dp[i-1][w];", hint:"Skip: best value without item i = same as first i-1 items"},
+          {t:"blank", ph:"//     take item i only if it fits...", ans:"if (wt[i-1] <= w) dp[i][w] = max(dp[i][w], dp[i-1][w-wt[i-1]] + val[i-1]);", hint:"Take: use i-1 row (each item once!) — remaining capacity = w-wt[i-1]"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return dp[n][W]",
+        lines:[
+          {t:"blank", ph:"// answer: all n items considered, full capacity W...", ans:"return dp[n][W];", hint:"Bottom-right of dp table = max value using all items at full capacity"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Unbounded Knapsack ────────────────────────────────────────────────
+  {
+    id:4, title:"Unbounded Knapsack", badge:"REPEAT OK", badgeColor:"var(--c4)",
+    viz:[
+      {v:"0",cls:"base",i:"w=0"},{v:"?",cls:"filled",i:"w=1"},
+      {v:"?",cls:"filled",i:"w=2"},{v:"★",cls:"ans",i:"w=W"}
+    ],
+    hint:"Item can be used unlimited times — 1D dp array, iterate weight FORWARD. dp[w] = max(dp[w], dp[w-wt[i]] + val[i]).",
+    zones:[
+      { z:1, tag:"dp[w] = max value with exactly capacity w (1D — items repeat)",
+        lines:[
+          {t:"blank", ph:"// function signature — coin change / rod cutting variant...", ans:"int unboundedKnapsack(vector<int>& wt, vector<int>& val, int W) {", hint:"Unlimited use of each item — classic: coin change for max value"},
+          {t:"blank", ph:"// n items...", ans:"int n = wt.size();", hint:"Number of item types"},
+          {t:"blank", ph:"// STATE: 1D dp[w] — items can repeat so no item dimension needed...", ans:"vector<int> dp(W+1, 0);", hint:"1D is enough — same item can contribute multiple times"},
+        ]
+      },
+      { z:2, tag:"base case — zero capacity = zero value",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// dp[0] = 0 — zero capacity holds zero value — set by initialisation</span>`},
+          {t:"blank", ph:"// comment why 1D works here but not in 0/1 knapsack...", ans:"// 1D + forward iteration means dp[w-wt[i]] already uses item i → allows repeats", hint:"This is THE key insight: forward iteration lets the same item be counted again"},
+        ]
+      },
+      { z:3, tag:"transition: outer=items, inner=weight FORWARD",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span><span class="nm">0</span>;i<span class="op">&lt;</span>n;i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   inner loop: weight forward (allows item reuse)...", ans:"for (int w=wt[i];w<=W;w++) {", hint:"Start from wt[i] (item must fit). Forward order = can reuse same item."},
+          {t:"blank", ph:"//     take item i (repeat allowed)...", ans:"dp[w] = max(dp[w], dp[w-wt[i]] + val[i]);", hint:"dp[w-wt[i]] already updated in this pass — so item i can be used again"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return dp[W]",
+        lines:[
+          {t:"blank", ph:"// max value achievable with capacity W...", ans:"return dp[W];", hint:"dp[W] = best value filling exactly capacity W with repeated items"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Interval DP ───────────────────────────────────────────────────────
+  {
+    id:5, title:"Interval DP", badge:"SPLIT POINT", badgeColor:"var(--c1)",
+    viz:[
+      {v:"0",cls:"base",i:"len=1"},{v:"?",cls:"filled",i:"len=2"},
+      {v:"?",cls:"filled",i:"len=3"},{v:"★",cls:"ans",i:"[0][n-1]"}
+    ],
+    hint:"Iterate by INTERVAL LENGTH, not by index. Split interval [i,j] at every k between i and j. Smaller intervals solved first.",
+    zones:[
+      { z:1, tag:"dp[i][j] = optimal cost for interval [i..j]",
+        lines:[
+          {t:"blank", ph:"// function signature — e.g. matrix chain multiplication...", ans:"int matrixChain(vector<int>& dims) {", hint:"dims[i] = dimension — matrix i has dims[i] x dims[i+1] shape"},
+          {t:"blank", ph:"// n matrices...", ans:"int n = dims.size() - 1;", hint:"n matrices means n+1 dimension values"},
+          {t:"blank", ph:"// STATE: dp[i][j] = min multiplications for matrices i..j...", ans:"vector<vector<int>> dp(n, vector<int>(n, 0));", hint:"n×n table — dp[i][j] covers subchain from matrix i to matrix j"},
+        ]
+      },
+      { z:2, tag:"base case — single matrix costs 0",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// dp[i][i] = 0 — single matrix needs no multiplication — set by init</span>`},
+          {t:"blank", ph:"// iteration order: by LENGTH of interval, not by i or j...", ans:"// outer loop = length, inner = starting index i, j = i+len-1", hint:"Must solve all length-2 intervals before length-3 — subproblem ordering"},
+        ]
+      },
+      { z:3, tag:"transition: try every split point k in [i,j-1]",
+        lines:[
+          {t:"blank", ph:"// outer loop: interval length from 2 to n...", ans:"for (int len=2;len<=n;len++) {", hint:"Start at length 2 — length 1 already handled as base case"},
+          {t:"blank", ph:"//   starting index i, ending index j...", ans:"for (int i=0;i<=n-len;i++) { int j=i+len-1; dp[i][j]=INT_MAX;", hint:"j = i + len - 1. Initialise to INT_MAX before minimising."},
+          {t:"blank", ph:"//     try every split point k between i and j...", ans:"for (int k=i;k<j;k++) {", hint:"k splits [i..j] into [i..k] and [k+1..j]"},
+          {t:"blank", ph:"//       cost = left chain + right chain + merge cost...", ans:"dp[i][j] = min(dp[i][j], dp[i][k] + dp[k+1][j] + dims[i]*dims[k+1]*dims[j+1]);", hint:"Merge cost = rows of left × shared dim × cols of right"},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return dp[0][n-1] — full chain",
+        lines:[
+          {t:"blank", ph:"// answer covers full interval [0..n-1]...", ans:"return dp[0][n-1];", hint:"Optimal cost for multiplying all n matrices in the chain"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── String DP ─────────────────────────────────────────────────────────
+  {
+    id:6, title:"String DP (LCS / Edit Distance)", badge:"TWO STRINGS", badgeColor:"var(--c2)",
+    viz:[
+      {v:"0",cls:"base",i:"i=0"},{v:"0",cls:"base",i:"j=0"},
+      {v:"?",cls:"filled",i:"[i][j]"},{v:"★",cls:"ans",i:"[m][n]"}
+    ],
+    hint:"dp[i][j] = answer for first i chars of s1 and first j chars of s2. Match → diagonal. Mismatch → min of three neighbors.",
+    zones:[
+      { z:1, tag:"dp[i][j] = edit distance between s1[0..i-1] and s2[0..j-1]",
+        lines:[
+          {t:"blank", ph:"// function signature — edit distance...", ans:"int editDistance(string s1, string s2) {", hint:"Returns min insert/delete/replace operations to turn s1 into s2"},
+          {t:"blank", ph:"// lengths...", ans:"int m = s1.size(), n = s2.size();", hint:"m = length of s1, n = length of s2"},
+          {t:"blank", ph:"// STATE: dp[i][j] = edit distance for s1[0..i-1] vs s2[0..j-1]...", ans:"vector<vector<int>> dp(m+1, vector<int>(n+1, 0));", hint:"(m+1)×(n+1) to accommodate empty string prefix (index 0)"},
+        ]
+      },
+      { z:2, tag:"base cases — empty string transformations",
+        lines:[
+          {t:"blank", ph:"// turning s1[0..i-1] into empty string = i deletions...", ans:"for (int i=0;i<=m;i++) dp[i][0] = i;", hint:"dp[i][0] = i: delete all i characters from s1"},
+          {t:"blank", ph:"// turning empty string into s2[0..j-1] = j insertions...", ans:"for (int j=0;j<=n;j++) dp[0][j] = j;", hint:"dp[0][j] = j: insert all j characters to build s2"},
+        ]
+      },
+      { z:3, tag:"transition: match=diagonal, mismatch=1+min(3 neighbors)",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span><span class="nm">1</span>;i<span class="op">&lt;=</span>m;i<span class="op">++</span>) {`},
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> j<span class="op">=</span><span class="nm">1</span>;j<span class="op">&lt;=</span>n;j<span class="op">++</span>) {`},
+          {t:"blank", ph:"//     characters match — free diagonal move...", ans:"if (s1[i-1] == s2[j-1]) dp[i][j] = dp[i-1][j-1];", hint:"Same char: no operation needed — inherit diagonal value"},
+          {t:"blank", ph:"//     mismatch — 1 + min(replace, delete, insert)...", ans:"else dp[i][j] = 1 + min({dp[i-1][j-1], dp[i-1][j], dp[i][j-1]});", hint:"Replace=diagonal+1, Delete=up+1, Insert=left+1 — take minimum"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return dp[m][n]",
+        lines:[
+          {t:"blank", ph:"// edit distance for full strings...", ans:"return dp[m][n];", hint:"Bottom-right cell = min edits to transform entire s1 into entire s2"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Bitmask DP ────────────────────────────────────────────────────────
+  {
+    id:7, title:"Bitmask DP", badge:"SUBSET STATE", badgeColor:"var(--c3)",
+    viz:[
+      {v:"0",cls:"base",i:"000"},{v:"?",cls:"filled",i:"001"},
+      {v:"?",cls:"filled",i:"011"},{v:"★",cls:"ans",i:"111"}
+    ],
+    hint:"mask = which items/nodes visited. Iterate from 0 to (1<<n)-1. Add item i to mask only if bit i not already set.",
+    zones:[
+      { z:1, tag:"dp[mask][i] = min cost visiting nodes in mask, ending at i",
+        lines:[
+          {t:"blank", ph:"// function signature — travelling salesman / assignment...", ans:"int tsp(vector<vector<int>>& dist) {", hint:"Classic TSP: minimum cost tour visiting all n cities"},
+          {t:"blank", ph:"// n cities...", ans:"int n = dist.size();", hint:"Number of cities/nodes"},
+          {t:"blank", ph:"// STATE: dp[mask][i] = min cost, visited cities=mask, currently at i...", ans:"vector<vector<int>> dp(1<<n, vector<int>(n, INT_MAX));", hint:"1<<n = 2^n possible subsets. INT_MAX = not yet reachable."},
+        ]
+      },
+      { z:2, tag:"base case — start at city 0, only city 0 visited",
+        lines:[
+          {t:"blank", ph:"// start at city 0, mask has only bit 0 set...", ans:"dp[1][0] = 0;", hint:"mask=1 means only city 0 visited (bit 0 set). Cost=0 to start there."},
+        ]
+      },
+      { z:3, tag:"transition: for each mask, extend to unvisited city",
+        lines:[
+          {t:"blank", ph:"// iterate all subsets...", ans:"for (int mask=1;mask<(1<<n);mask++) {", hint:"All 2^n possible subsets of cities"},
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span><span class="nm">0</span>;i<span class="op">&lt;</span>n;i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//     skip if city i not in current mask or not reachable...", ans:"if (!(mask>>i&1) || dp[mask][i]==INT_MAX) continue;", hint:"bit i must be set in mask, and this state must be reachable"},
+          {t:"fixed", code:`        <span class="kw">for</span> (<span class="ty">int</span> j<span class="op">=</span><span class="nm">0</span>;j<span class="op">&lt;</span>n;j<span class="op">++</span>) {`},
+          {t:"blank", ph:"//         skip if city j already visited...", ans:"if (mask>>j&1) continue;", hint:"j already in mask — can't visit again"},
+          {t:"blank", ph:"//         transition: add city j to tour...", ans:"dp[mask|(1<<j)][j] = min(dp[mask|(1<<j)][j], dp[mask][i]+dist[i][j]);", hint:"New mask = old mask with bit j set. Cost = current cost + travel to j."},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return min cost completing tour back to city 0",
+        lines:[
+          {t:"blank", ph:"// all cities visited (mask = all 1s) + return to start...", ans:"int full = (1<<n)-1; int ans = INT_MAX; for (int i=1;i<n;i++) if (dp[full][i]!=INT_MAX) ans=min(ans,dp[full][i]+dist[i][0]); return ans;", hint:"full mask = visited all cities. Add cost to return to city 0."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Tree DP ───────────────────────────────────────────────────────────
+  {
+    id:8, title:"Tree DP", badge:"POST-ORDER", badgeColor:"var(--c4)",
+    viz:[
+      {v:"?",cls:"base",i:"leaf"},{v:"?",cls:"filled",i:"child"},
+      {v:"?",cls:"filled",i:"node"},{v:"★",cls:"ans",i:"root"}
+    ],
+    hint:"DFS post-order: compute children first, then combine at parent. dp[node] = aggregate of dp[children] + node's own value.",
+    zones:[
+      { z:1, tag:"dp[node] = max independent set size in subtree rooted at node",
+        lines:[
+          {t:"blank", ph:"// function signature — max independent set on tree...", ans:"int dfs(int node, int parent, vector<vector<int>>& adj, vector<int>& val) {", hint:"Returns max sum independent set in subtree. No two adjacent nodes selected."},
+          {t:"blank", ph:"// STATE: dp stored as return value — include or exclude current node...", ans:"int include = val[node], exclude = 0;", hint:"include = take this node (can't take children). exclude = skip this node."},
+        ]
+      },
+      { z:2, tag:"base case — leaf node returns val[node] or 0",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// leaf: no children to loop over — include/exclude already initialised above</span>`},
+        ]
+      },
+      { z:3, tag:"transition: post-order — children contribute upward",
+        lines:[
+          {t:"blank", ph:"// iterate children (skip parent to avoid going back up)...", ans:"for (int child : adj[node]) {", hint:"Loop over all neighbors — skip parent to treat as rooted tree"},
+          {t:"blank", ph:"//   skip parent edge...", ans:"if (child == parent) continue;", hint:"Without this, DFS would revisit parent and loop infinitely"},
+          {t:"blank", ph:"//   get child's best result recursively...", ans:"int childResult = dfs(child, node, adj, val);", hint:"Post-order: child fully resolved before parent uses its value"},
+          {t:"blank", ph:"//   if we INCLUDE current node — can't include child...", ans:"include += 0;", hint:"When node is selected, children contribute 0 (they can't be selected)"},
+          {t:"blank", ph:"//   if we EXCLUDE current node — take best of child...", ans:"exclude += childResult;", hint:"When node is skipped, child can be freely included or excluded"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return max(include, exclude) upward",
+        lines:[
+          {t:"blank", ph:"// return best choice for this subtree...", ans:"return max(include, exclude);", hint:"Parent will use this value in its own include/exclude decision"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Digit DP ──────────────────────────────────────────────────────────
+  {
+    id:9, title:"Digit DP", badge:"DIGIT BY DIGIT", badgeColor:"var(--c1)",
+    viz:[
+      {v:"?",cls:"base",i:"pos=0"},{v:"?",cls:"filled",i:"pos=1"},
+      {v:"?",cls:"filled",i:"pos=2"},{v:"★",cls:"ans",i:"pos=d"}
+    ],
+    hint:"Build number digit by digit. 'tight' = are we still bounded by N's digits? Once tight=false, any digit 0-9 is valid.",
+    zones:[
+      { z:1, tag:"dp[pos][tight][state] — count numbers up to N with property",
+        lines:[
+          {t:"blank", ph:"// function signature — count numbers 1..N with digit sum = S...", ans:"int countNumbers(int N, int S) {", hint:"Classic digit DP: count integers from 1 to N whose digits sum to S"},
+          {t:"blank", ph:"// convert N to string of digits...", ans:"string num = to_string(N); int d = num.size();", hint:"Work digit by digit on string representation"},
+          {t:"blank", ph:"// STATE: dp[pos][tight][sum] — memoisation table...", ans:"vector<vector<vector<int>>> dp(d, vector<vector<int>>(2, vector<int>(S+1, -1)));", hint:"pos=digit position, tight=0/1 bound flag, sum=digit sum so far"},
+        ]
+      },
+      { z:2, tag:"base case — handled by recursion terminal condition",
+        lines:[
+          {t:"blank", ph:"// recursive solve function with memoisation...", ans:"function<int(int,bool,int)> solve = [&](int pos, bool tight, int sum) -> int {", hint:"Lambda captures num, d, S, dp by reference for memoisation"},
+          {t:"blank", ph:"//   terminal: processed all digits — valid if sum matches target...", ans:"if (pos == d) return sum == S ? 1 : 0;", hint:"Reached end of number — check if accumulated digit sum equals S"},
+          {t:"blank", ph:"//   return cached result if available...", ans:"if (dp[pos][tight][sum] != -1) return dp[pos][tight][sum];", hint:"Memoisation: same (pos, tight, sum) state returns same answer"},
+        ]
+      },
+      { z:3, tag:"transition: try each valid digit at current position",
+        lines:[
+          {t:"blank", ph:"//   max digit at this position — bounded by N if tight...", ans:"int limit = tight ? (num[pos]-'0') : 9;", hint:"If tight, can't exceed N's digit here. If not tight, any digit 0-9 works."},
+          {t:"blank", ph:"//   accumulate result over all valid digits...", ans:"int res = 0; for (int dig=0;dig<=limit;dig++) {", hint:"Try placing each valid digit at current position"},
+          {t:"blank", ph:"//     recurse: next pos, update tight, add digit to sum...", ans:"if (sum+dig <= S) res += solve(pos+1, tight&&(dig==limit), sum+dig);", hint:"New tight = still tight AND placed the maximum allowed digit"},
+          {t:"fixed", code:`    }`},
+          {t:"blank", ph:"//   memoise and return...", ans:"return dp[pos][tight][sum] = res;", hint:"Store computed result before returning"},
+          {t:"fixed", code:`};`},
+        ]
+      },
+      { z:4, tag:"return solve(0, true, 0)",
+        lines:[
+          {t:"blank", ph:"// start from position 0, tight=true (bounded by N), sum=0...", ans:"return solve(0, true, 0);", hint:"tight=true initially because first digit is bounded by N's first digit"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Probability DP ────────────────────────────────────────────────────
+  {
+    id:10, title:"Probability DP", badge:"EXPECTED VALUE", badgeColor:"var(--c2)",
+    viz:[
+      {v:"1.0",cls:"base",i:"start"},{v:"0.5",cls:"filled",i:"mid"},
+      {v:"0.2",cls:"filled",i:"..."},  {v:"★",cls:"ans",i:"E[X]"}
+    ],
+    hint:"dp[i] = probability of being in state i OR expected value from state i. Use double. Transitions are weighted by probability.",
+    zones:[
+      { z:1, tag:"dp[i] = probability of reaching state i",
+        lines:[
+          {t:"blank", ph:"// function signature — dice roll probability...", ans:"double diceProbability(int n, int faces, int target) {", hint:"Probability that sum of n dice (each 1..faces) equals target"},
+          {t:"blank", ph:"// STATE: dp[s] = probability of achieving sum s with dice so far...", ans:"vector<double> dp(target+1, 0.0);", hint:"Floating point dp — probability accumulates as double"},
+          {t:"blank", ph:"// base case — before any dice, sum 0 has probability 1...", ans:"dp[0] = 1.0;", hint:"Start state: zero dice rolled, sum is 0 with certainty"},
+        ]
+      },
+      { z:2, tag:"base case — dp[0] = 1.0 already set",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// dp[0] = 1.0 set above — probability 1 of having sum 0 before any roll</span>`},
+          {t:"blank", ph:"// probability of each face outcome...", ans:"double p = 1.0 / faces;", hint:"Each face equally likely — uniform distribution over 1..faces"},
+        ]
+      },
+      { z:3, tag:"transition: for each die, spread probability forward",
+        lines:[
+          {t:"blank", ph:"// for each of the n dice...", ans:"for (int d=0;d<n;d++) {", hint:"Roll dice one at a time — update dp after each die"},
+          {t:"blank", ph:"//   new dp table for this round...", ans:"vector<double> ndp(target+1, 0.0);", hint:"Must use new table — updating in-place would corrupt in-round results"},
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> s<span class="op">=</span><span class="nm">0</span>;s<span class="op">&lt;=</span>target;s<span class="op">++</span>) {`},
+          {t:"blank", ph:"//     spread to all faces from current sum s...", ans:"for (int f=1;f<=faces&&s+f<=target;f++) ndp[s+f] += dp[s]*p;", hint:"Each face f adds its probability weight to the next sum"},
+          {t:"fixed", code:`    }`},
+          {t:"blank", ph:"//   swap new table in...", ans:"dp = ndp;", hint:"Replace old distribution with new after this die's contribution"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return dp[target]",
+        lines:[
+          {t:"blank", ph:"// probability that sum of all dice equals target...", ans:"return dp[target];", hint:"dp[target] accumulates all ways to reach the target sum"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 11 ── DP on DAG ─────────────────────────────────────────────────────────
+  {
+    id:11, title:"DP on DAG", badge:"TOPO ORDER", badgeColor:"var(--c3)",
+    viz:[
+      {v:"0",cls:"base",i:"src"},{v:"?",cls:"filled",i:"mid1"},
+      {v:"?",cls:"filled",i:"mid2"},{v:"★",cls:"ans",i:"dst"}
+    ],
+    hint:"Process nodes in TOPOLOGICAL ORDER. dp[v] = best answer reaching v. Transition along directed edges from u → v.",
+    zones:[
+      { z:1, tag:"dp[node] = longest path ending at this node",
+        lines:[
+          {t:"blank", ph:"// function signature — longest path in DAG...", ans:"int longestPathDAG(int n, vector<vector<int>>& graph) {", hint:"Returns length of longest path in directed acyclic graph"},
+          {t:"blank", ph:"// compute topological order first...", ans:"vector<int> indegree(n,0); for(int u=0;u<n;u++) for(int v:graph[u]) indegree[v]++;", hint:"Indegree for Kahn's algorithm — needed for topological sort"},
+          {t:"blank", ph:"// STATE: dp[i] = longest path ending at node i...", ans:"vector<int> dp(n, 0);", hint:"All nodes start with path length 0 (just themselves)"},
+        ]
+      },
+      { z:2, tag:"base case — source nodes (indegree 0) have dp=0",
+        lines:[
+          {t:"blank", ph:"// topological sort via BFS (Kahn's)...", ans:"queue<int> q; for(int i=0;i<n;i++) if(indegree[i]==0) q.push(i);", hint:"Seed Kahn's BFS with all zero-indegree nodes — they're DAG sources"},
+          {t:"fixed", code:`<span class="cm">// dp[source] = 0 already — no edges lead into source nodes</span>`},
+        ]
+      },
+      { z:3, tag:"transition: process in topological order, relax edges",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!q.empty()) {`},
+          {t:"blank", ph:"//   pop next node in topological order...", ans:"int u = q.front(); q.pop();", hint:"Process in topological order — all predecessors already resolved"},
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> v : graph[u]) {`},
+          {t:"blank", ph:"//     relax edge u→v: update dp[v] if longer path found...", ans:"dp[v] = max(dp[v], dp[u] + 1);", hint:"Longest path to v = max over all predecessors u of (dp[u] + 1)"},
+          {t:"blank", ph:"//     decrement indegree — push v when all predecessors done...", ans:"if (--indegree[v] == 0) q.push(v);", hint:"When indegree hits 0, all edges into v processed — safe to push"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return max over all dp[i]",
+        lines:[
+          {t:"blank", ph:"// longest path ends at whichever node has maximum dp...", ans:"return *max_element(dp.begin(), dp.end());", hint:"Longest path may end at any node — take global maximum"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames = ['State Definition','Base Case','Transition (recurrence)','Return'];
+const zoneCls   = ['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums  = ['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector');
+  sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i);
+    sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+
+  const zonesEl=document.getElementById('zones');
+  zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div');
+    div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p);
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  let cells=p.viz.map(c=>`
+    <div class="dp-cell">
+      <div class="dp-box ${c.cls}">${c.v}</div>
+      <div class="dp-idx">${c.i}</div>
+    </div>`).join('');
+  viz.innerHTML=`
+    <span class="viz-label">dp table:</span>
+    <div class="dp-cells">${cells}</div>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-left:16px;align-self:center;line-height:1.8">
+      <span style="color:var(--c2)">■</span> base case &nbsp;
+      <span style="color:var(--c1)">■</span> filled by transition &nbsp;
+      <span style="color:var(--c4)">■</span> answer cell
+    </span>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+\s*/g,'++').replace(/--\s*/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+
+function checkSingle(el){
+  const key=el.dataset.key;
+  if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+buildSelector();
+loadPattern(0);
+</script>
+</body>
+</html>

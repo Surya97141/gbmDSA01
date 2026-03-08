@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greedy — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(251,146,60,0.07) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c3);border:1px solid rgba(251,146,60,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c3) 45%,var(--c4) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c3);color:var(--text);}
+.sel-btn.active{background:rgba(251,146,60,0.1);border-color:var(--c3);color:var(--c3);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c3);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(251,146,60,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c3);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);display:flex;flex-direction:column;}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:360px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.cm{color:#3d4f5c;font-style:italic;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c3);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(251,146,60,0.06);border-bottom-color:var(--c3);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(251,146,60,0.1);color:var(--c3);border-color:rgba(251,146,60,0.4);}
+.btn-check:hover{background:rgba(251,146,60,0.2);}
+.btn-reveal{background:rgba(167,139,250,0.08);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-reveal:hover{background:rgba(167,139,250,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c3);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{display:flex;align-items:flex-start;gap:16px;padding:12px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;flex-wrap:wrap;}
+.viz-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;padding-top:4px;}
+.viz-items{display:flex;gap:4px;align-items:flex-end;}
+.viz-item{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.viz-box{height:28px;min-width:34px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;border:1px solid var(--border);border-radius:3px;color:var(--muted);white-space:nowrap;}
+.viz-box.sorted{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.08);}
+.viz-box.picked{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.08);}
+.viz-box.skipped{border-color:var(--muted);color:var(--muted);opacity:.4;}
+.viz-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .vr{color:#eeffff} .fn{color:#7dd3fc}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 07 — Practice Mode</div>
+    <h1>Greedy</h1>
+    <p>// sort by the right metric → sweep → commit locally → win globally</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// GREEDY — 10 Manifestations
+// 4 Blocks:
+//   ① SORT / ORGANIZE  — impose order; the comparator IS the greedy insight
+//   ② GREEDY PASS      — one linear sweep making irrevocable local choices
+//   ③ RUNNING STATE    — one or two tracker variables carrying the frontier
+//   ④ RETURN RESULT    — the accumulator or final tracker value
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Interval Scheduling ───────────────────────────────────────────────
+  {
+    id:1, title:"Interval Scheduling", badge:"SORT END TIME", badgeColor:"var(--c3)",
+    viz:[
+      {v:"[1,3]",cls:"picked",l:"✓"},{v:"[2,4]",cls:"skipped",l:"✗"},
+      {v:"[3,6]",cls:"picked",l:"✓"},{v:"[5,7]",cls:"skipped",l:"✗"},
+      {v:"[6,9]",cls:"picked",l:"✓"}
+    ],
+    hint:"Sort by END time. Greedily pick earliest-finishing interval. An interval that ends sooner leaves more room for future choices.",
+    zones:[
+      { z:1, tag:"sort by END time — the greedy insight",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int maxNonOverlapping(vector<vector<int>>& intervals) {", hint:"Returns max number of non-overlapping intervals"},
+          {t:"blank", ph:"// edge case...", ans:"if (intervals.empty()) return 0;", hint:"Nothing to schedule"},
+          {t:"blank", ph:"// SORT BY END TIME — earliest finish = greedy choice...", ans:"sort(intervals.begin(), intervals.end(), [](auto& a, auto& b){ return a[1] < b[1]; });", hint:"The comparator encodes the greedy strategy: end time ascending"},
+        ]
+      },
+      { z:2, tag:"greedy pass — pick if start >= lastEnd",
+        lines:[
+          {t:"blank", ph:"// init: count of picked intervals + lastEnd tracker...", ans:"int count = 0, lastEnd = INT_MIN;", hint:"count = answer accumulator. lastEnd = end time of last picked interval."},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="kw">auto</span><span class="op">&</span> interval : intervals) {`},
+          {t:"blank", ph:"//   pick interval if it doesn't overlap last picked...", ans:"if (interval[0] >= lastEnd) {", hint:"Non-overlapping condition: this interval starts after last one ended"},
+        ]
+      },
+      { z:3, tag:"running state — update lastEnd on each pick",
+        lines:[
+          {t:"blank", ph:"//     commit: update lastEnd and increment count...", ans:"lastEnd = interval[1]; count++;", hint:"Irrevocable greedy commit — update frontier to new end time"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return count of selected intervals",
+        lines:[
+          {t:"blank", ph:"// return max non-overlapping count...", ans:"return count;", hint:"Number of intervals we greedily selected"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Activity Selection ────────────────────────────────────────────────
+  {
+    id:2, title:"Activity Selection", badge:"SORT END TIME", badgeColor:"var(--c4)",
+    viz:[
+      {v:"[1,2]",cls:"picked",l:"✓"},{v:"[3,4]",cls:"picked",l:"✓"},
+      {v:"[0,6]",cls:"skipped",l:"✗"},{v:"[5,7]",cls:"picked",l:"✓"},
+      {v:"[8,9]",cls:"picked",l:"✓"}
+    ],
+    hint:"Same greedy strategy as interval scheduling — sort by finish time, pick greedily. Return the selected activity indices.",
+    zones:[
+      { z:1, tag:"sort by finish time — earliest finish first",
+        lines:[
+          {t:"blank", ph:"// function signature — return selected activity indices...", ans:"vector<int> activitySelection(vector<int>& start, vector<int>& finish) {", hint:"Returns indices of maximum set of compatible activities"},
+          {t:"blank", ph:"// n activities...", ans:"int n = start.size();", hint:"Total number of activities"},
+          {t:"blank", ph:"// create index array to sort by finish time...", ans:"vector<int> idx(n); iota(idx.begin(), idx.end(), 0);", hint:"Sort indices rather than modifying original arrays"},
+          {t:"blank", ph:"// sort indices by finish time...", ans:"sort(idx.begin(), idx.end(), [&](int a, int b){ return finish[a] < finish[b]; });", hint:"Indirect sort: comparator uses finish[] via captured reference"},
+        ]
+      },
+      { z:2, tag:"greedy pass — collect compatible activities",
+        lines:[
+          {t:"blank", ph:"// result container + lastFinish tracker...", ans:"vector<int> selected; int lastFinish = -1;", hint:"selected = indices of chosen activities. lastFinish = frontier."},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i : idx) {`},
+          {t:"blank", ph:"//   activity compatible if starts after last one finishes...", ans:"if (start[i] >= lastFinish) {", hint:"No overlap: this activity starts at or after last selected one ends"},
+        ]
+      },
+      { z:3, tag:"running state — record selection + advance frontier",
+        lines:[
+          {t:"blank", ph:"//     record this activity's index + advance frontier...", ans:"selected.push_back(i); lastFinish = finish[i];", hint:"Commit greedily — add to result, update lastFinish to new frontier"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return selected activity indices",
+        lines:[
+          {t:"blank", ph:"// return indices of max compatible activity set...", ans:"return selected;", hint:"Indices of all greedily selected non-overlapping activities"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Fractional Knapsack ───────────────────────────────────────────────
+  {
+    id:3, title:"Fractional Knapsack", badge:"VALUE DENSITY", badgeColor:"var(--c1)",
+    viz:[
+      {v:"60/10",cls:"picked",l:"6.0"},{v:"100/20",cls:"picked",l:"5.0"},
+      {v:"120/30",cls:"sorted",l:"4.0"},{v:"50/15",cls:"skipped",l:"3.3"}
+    ],
+    hint:"Sort by value/weight ratio descending. Take as much as possible of each item. Fraction allowed — so last item may be partial.",
+    zones:[
+      { z:1, tag:"sort by value/weight ratio — density is the greedy metric",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"double fractionalKnapsack(vector<int>& wt, vector<int>& val, int W) {", hint:"Returns maximum value — double because fractions of items allowed"},
+          {t:"blank", ph:"// n items...", ans:"int n = wt.size();", hint:"Number of items"},
+          {t:"blank", ph:"// pair items as {val, wt} for sorting...", ans:"vector<pair<int,int>> items(n); for(int i=0;i<n;i++) items[i]={val[i],wt[i]};", hint:"Bundle value and weight together so they move together when sorted"},
+          {t:"blank", ph:"// sort by value/weight ratio descending — highest density first...", ans:"sort(items.begin(),items.end(),[](auto& a,auto& b){ return a.first*b.second > b.first*a.second; });", hint:"Cross-multiply to avoid division: a.val/a.wt > b.val/b.wt ↔ a.val*b.wt > b.val*a.wt"},
+        ]
+      },
+      { z:2, tag:"greedy pass — take full item or fraction",
+        lines:[
+          {t:"blank", ph:"// running state: remaining capacity + accumulated value...", ans:"double totalVal = 0.0; int remaining = W;", hint:"remaining tracks how much capacity is left. totalVal accumulates answer."},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="kw">auto</span><span class="op">&</span> [v, w] : items) {`},
+          {t:"blank", ph:"//   if whole item fits — take it entirely...", ans:"if (w <= remaining) { totalVal += v; remaining -= w; }", hint:"Full item fits: take all of it, reduce remaining capacity"},
+        ]
+      },
+      { z:3, tag:"running state — take fraction of last item",
+        lines:[
+          {t:"blank", ph:"//   else take fraction that fills remaining capacity...", ans:"else { totalVal += (double)remaining / w * v; remaining = 0; break; }", hint:"Take (remaining/w) fraction of item — fills knapsack exactly. Then stop."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return total value accumulated",
+        lines:[
+          {t:"blank", ph:"// return maximum achievable value...", ans:"return totalVal;", hint:"Sum of values of all fully/partially taken items"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Huffman Encoding ──────────────────────────────────────────────────
+  {
+    id:4, title:"Huffman Encoding", badge:"MIN HEAP", badgeColor:"var(--c2)",
+    viz:[
+      {v:"f:5",cls:"picked",l:"merge"},{v:"e:9",cls:"picked",l:"merge"},
+      {v:"c:12",cls:"sorted",l:"next"},{v:"b:13",cls:"sorted",l:"next"},
+      {v:"d:16",cls:"skipped",l:"..."},{v:"a:45",cls:"skipped",l:"..."}
+    ],
+    hint:"Min-heap by frequency. Always merge the TWO cheapest nodes. The merged node's frequency = sum of children. Repeat until one node remains.",
+    zones:[
+      { z:1, tag:"min-heap by frequency — cheapest pair merged first",
+        lines:[
+          {t:"blank", ph:"// function signature — returns min encoding cost...", ans:"int huffmanCost(vector<int>& freq) {", hint:"Returns total cost of building Huffman tree (sum of all merge costs)"},
+          {t:"blank", ph:"// edge case — single symbol...", ans:"if (freq.size() == 1) return freq[0];", hint:"Single symbol: code length is 1, total cost is just its frequency"},
+          {t:"blank", ph:"// min-heap (priority queue, smallest first)...", ans:"priority_queue<int, vector<int>, greater<int>> minHeap(freq.begin(), freq.end());", hint:"greater<int> makes it a min-heap — smallest frequency at top"},
+        ]
+      },
+      { z:2, tag:"greedy pass — merge two cheapest repeatedly",
+        lines:[
+          {t:"blank", ph:"// accumulate total merge cost...", ans:"int totalCost = 0;", hint:"Each merge costs the sum of the two merged frequencies"},
+          {t:"blank", ph:"// keep merging until one node remains...", ans:"while (minHeap.size() > 1) {", hint:"Stop when only the root remains — the complete Huffman tree"},
+          {t:"blank", ph:"//   extract two cheapest nodes...", ans:"int first = minHeap.top(); minHeap.pop(); int second = minHeap.top(); minHeap.pop();", hint:"Greedy: always take the two lowest-frequency nodes"},
+        ]
+      },
+      { z:3, tag:"running state — merged node re-enters heap",
+        lines:[
+          {t:"blank", ph:"//   merge cost = sum of two frequencies...", ans:"int merged = first + second;", hint:"New internal node has frequency = sum of its two children"},
+          {t:"blank", ph:"//   add merged node back to heap + accumulate cost...", ans:"minHeap.push(merged); totalCost += merged;", hint:"Merged node re-enters competition. Its cost is added to total."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return total merge cost",
+        lines:[
+          {t:"blank", ph:"// total cost = sum of all merge operations...", ans:"return totalCost;", hint:"Equals the weighted path length of the optimal Huffman tree"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Job Sequencing with Deadlines ─────────────────────────────────────
+  {
+    id:5, title:"Job Sequencing with Deadlines", badge:"SORT PROFIT", badgeColor:"var(--c3)",
+    viz:[
+      {v:"J1:100,d2",cls:"picked",l:"slot2"},{v:"J2:85,d1",cls:"picked",l:"slot1"},
+      {v:"J3:60,d3",cls:"picked",l:"slot3"},{v:"J4:45,d1",cls:"skipped",l:"✗"}
+    ],
+    hint:"Sort jobs by profit descending. For each job, find the latest available slot ≤ deadline. Use a slot array to track occupancy.",
+    zones:[
+      { z:1, tag:"sort by profit descending — highest value first",
+        lines:[
+          {t:"blank", ph:"// function signature — jobs as {profit, deadline}...", ans:"int jobSequencing(vector<pair<int,int>>& jobs) {", hint:"Returns max profit scheduling jobs (each takes 1 unit time) before deadlines"},
+          {t:"blank", ph:"// sort by profit descending — greediest first...", ans:"sort(jobs.begin(), jobs.end(), [](auto& a, auto& b){ return a.first > b.first; });", hint:"Process most profitable jobs first — they get first pick of slots"},
+          {t:"blank", ph:"// find max deadline to size slot array...", ans:"int maxD = 0; for (auto& [p,d] : jobs) maxD = max(maxD, d);", hint:"Slots array needs to cover deadline range [1..maxDeadline]"},
+          {t:"blank", ph:"// slot array — false means slot is free...", ans:"vector<bool> slot(maxD+1, false);", hint:"slot[t] = true means time slot t is already occupied"},
+        ]
+      },
+      { z:2, tag:"greedy pass — assign to latest free slot ≤ deadline",
+        lines:[
+          {t:"blank", ph:"// total profit accumulator...", ans:"int totalProfit = 0;", hint:"Running sum of profits of all scheduled jobs"},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="kw">auto</span><span class="op">&</span> [profit, deadline] : jobs) {`},
+          {t:"blank", ph:"//   scan from deadline backwards for latest free slot...", ans:"for (int t = deadline; t >= 1; t--) {", hint:"Latest slot first: leaves earlier slots open for tighter-deadline jobs"},
+        ]
+      },
+      { z:3, tag:"running state — occupy slot, accumulate profit",
+        lines:[
+          {t:"blank", ph:"//     found free slot — occupy it + add profit...", ans:"if (!slot[t]) { slot[t] = true; totalProfit += profit; break; }", hint:"Commit to this slot, mark occupied, accumulate profit, stop scanning"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return total profit",
+        lines:[
+          {t:"blank", ph:"// return maximum achievable profit...", ans:"return totalProfit;", hint:"Sum of profits of all successfully scheduled jobs"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Minimum Platforms ─────────────────────────────────────────────────
+  {
+    id:6, title:"Minimum Platforms", badge:"TIMELINE SWEEP", badgeColor:"var(--c4)",
+    viz:[
+      {v:"arr↑",cls:"sorted",l:"sort"},{v:"dep↑",cls:"sorted",l:"sort"},
+      {v:"i=0",cls:"picked",l:"sweep"},{v:"peak",cls:"picked",l:"ans"}
+    ],
+    hint:"Sort arrivals and departures separately. Use two pointers on the timeline. Overlap count peaks = min platforms needed.",
+    zones:[
+      { z:1, tag:"sort arrivals AND departures independently",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int minPlatforms(vector<int>& arr, vector<int>& dep) {", hint:"Returns minimum railway platforms needed for given arrival/departure schedule"},
+          {t:"blank", ph:"// edge case...", ans:"if (arr.empty()) return 0;", hint:"No trains — no platforms needed"},
+          {t:"blank", ph:"// sort both arrays independently...", ans:"sort(arr.begin(), arr.end()); sort(dep.begin(), dep.end());", hint:"Key insight: sort arrivals and departures separately — they're independent events"},
+        ]
+      },
+      { z:2, tag:"sweep with two pointers on sorted timelines",
+        lines:[
+          {t:"blank", ph:"// two pointers + platform trackers...", ans:"int i=0, j=0, platforms=0, maxPlatforms=0;", hint:"i=arrival pointer, j=departure pointer, platforms=current count, max=answer"},
+          {t:"blank", ph:"// n trains...", ans:"int n = arr.size();", hint:"Total number of trains"},
+          {t:"blank", ph:"// sweep timeline while arrivals remain...", ans:"while (i < n) {", hint:"Process all arrival events"},
+        ]
+      },
+      { z:3, tag:"running state — increment or decrement platform count",
+        lines:[
+          {t:"blank", ph:"//   next event is an arrival — need one more platform...", ans:"if (arr[i] <= dep[j]) { platforms++; i++; }", hint:"Train arrives before next departure — need an extra platform"},
+          {t:"blank", ph:"//   next event is a departure — free up a platform...", ans:"else { platforms--; j++; }", hint:"Train departs before next arrival — one platform freed"},
+          {t:"blank", ph:"//   track peak simultaneous platform usage...", ans:"maxPlatforms = max(maxPlatforms, platforms);", hint:"Peak overlap = minimum platforms required"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return peak platform count",
+        lines:[
+          {t:"blank", ph:"// return minimum platforms needed...", ans:"return maxPlatforms;", hint:"Maximum simultaneous trains at station = platforms required"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Gas Station Circular Tour ─────────────────────────────────────────
+  {
+    id:7, title:"Gas Station Circular Tour", badge:"SINGLE PASS", badgeColor:"var(--c1)",
+    viz:[
+      {v:"net=-2",cls:"skipped",l:"reset"},{v:"net=+3",cls:"picked",l:"start"},
+      {v:"net=+1",cls:"picked",l:"+"},{v:"net=-1",cls:"sorted",l:"ok"},
+      {v:"net=+2",cls:"picked",l:"✓"}
+    ],
+    hint:"If tank goes negative at station i, reset start to i+1. The total net gain ≥ 0 guarantees a solution exists.",
+    zones:[
+      { z:1, tag:"no sort needed — natural left-to-right order",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int canCompleteCircuit(vector<int>& gas, vector<int>& cost) {", hint:"Returns starting station index for complete circular tour, or -1"},
+          {t:"blank", ph:"// edge case — total gas < total cost means impossible...", ans:"int totalGas = 0, totalCost = 0; for(int i=0;i<gas.size();i++){totalGas+=gas[i];totalCost+=cost[i];} if(totalGas<totalCost) return -1;", hint:"If net gas over whole circuit < 0, no starting point can work"},
+        ]
+      },
+      { z:2, tag:"single pass — reset start when tank goes negative",
+        lines:[
+          {t:"blank", ph:"// running state: current tank + candidate start...", ans:"int tank = 0, start = 0;", hint:"tank = fuel accumulated from candidate start. start = current candidate."},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> gas.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   add net gain at this station...", ans:"tank += gas[i] - cost[i];", hint:"Net gain at station i = gas gained minus cost to reach next station"},
+        ]
+      },
+      { z:3, tag:"running state — reset start when tank goes negative",
+        lines:[
+          {t:"blank", ph:"//   tank negative — current start can't work, reset...", ans:"if (tank < 0) { start = i + 1; tank = 0; }", hint:"Greedy insight: if we can't reach i+1 from start, try i+1 as new start"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return start — guaranteed valid if total gas >= total cost",
+        lines:[
+          {t:"blank", ph:"// start is the valid starting station...", ans:"return start;", hint:"Since total gas >= total cost (checked above), start is always valid"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Jump Game ──────────────────────────────────────────────────────────
+  {
+    id:8, title:"Jump Game", badge:"MAX REACH", badgeColor:"var(--c2)",
+    viz:[
+      {v:"2",cls:"picked",l:"reach=2"},{v:"3",cls:"picked",l:"reach=4"},
+      {v:"1",cls:"picked",l:"reach=4"},{v:"1",cls:"picked",l:"reach=5"},
+      {v:"4",cls:"picked",l:"✓"}
+    ],
+    hint:"At each index, update maxReach = max(maxReach, i + nums[i]). If i ever exceeds maxReach — stuck. If maxReach >= n-1 — success.",
+    zones:[
+      { z:1, tag:"no sort — sweep left to right extending max reach",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"bool canJump(vector<int>& nums) {", hint:"Returns true if you can reach the last index from index 0"},
+          {t:"blank", ph:"// edge case — single element...", ans:"if (nums.size() == 1) return true;", hint:"Already at the last index — trivially reachable"},
+          {t:"blank", ph:"// running state: farthest index reachable from any visited index...", ans:"int maxReach = 0;", hint:"maxReach = the furthest right we can currently reach"},
+        ]
+      },
+      { z:2, tag:"greedy pass — extend maxReach at each step",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> nums.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   if current index is beyond reach — stuck...", ans:"if (i > maxReach) return false;", hint:"Can't reach index i — there's a gap we can't cross"},
+        ]
+      },
+      { z:3, tag:"running state — greedily extend farthest reach",
+        lines:[
+          {t:"blank", ph:"//   update farthest reachable index...", ans:"maxReach = max(maxReach, i + nums[i]);", hint:"From index i we can jump up to i+nums[i] — update global max reach"},
+          {t:"blank", ph:"//   early exit — already reached the end...", ans:"if (maxReach >= (int)nums.size()-1) return true;", hint:"Once maxReach covers last index, no need to continue scanning"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return false — couldn't reach end",
+        lines:[
+          {t:"blank", ph:"// loop completed without reaching end...", ans:"return false;", hint:"Every index was reachable but last index never entered maxReach — impossible"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Candy Distribution ────────────────────────────────────────────────
+  {
+    id:9, title:"Candy Distribution", badge:"TWO PASSES", badgeColor:"var(--c3)",
+    viz:[
+      {v:"1",cls:"base",l:"init"},{v:"L→R",cls:"sorted",l:"pass1"},
+      {v:"R→L",cls:"picked",l:"pass2"},{v:"sum",cls:"picked",l:"ans"}
+    ],
+    hint:"Two-pass greedy. Pass 1: left-to-right — give +1 candy if rating > left neighbor. Pass 2: right-to-left — enforce right neighbor constraint.",
+    zones:[
+      { z:1, tag:"no sort — two-pass greedy on natural order",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int candy(vector<int>& ratings) {", hint:"Returns minimum total candies satisfying: higher-rated child gets more than neighbors"},
+          {t:"blank", ph:"// n children...", ans:"int n = ratings.size();", hint:"Number of children in the line"},
+          {t:"blank", ph:"// everyone starts with 1 candy (minimum)...", ans:"vector<int> candies(n, 1);", hint:"Base: each child must have at least 1 candy"},
+        ]
+      },
+      { z:2, tag:"pass 1 — left to right: satisfy left neighbor",
+        lines:[
+          {t:"blank", ph:"// pass 1: left → right — fix left-neighbor constraint...", ans:"for (int i=1;i<n;i++) {", hint:"Scan forward: if child i has higher rating than left neighbor, give one more"},
+          {t:"blank", ph:"//   higher rating than left → must get more candy than left...", ans:"if (ratings[i] > ratings[i-1]) candies[i] = candies[i-1] + 1;", hint:"Only update when rating strictly increases — otherwise keep default 1"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"pass 2 — right to left: satisfy right neighbor",
+        lines:[
+          {t:"blank", ph:"// pass 2: right → left — fix right-neighbor constraint...", ans:"for (int i=n-2;i>=0;i--) {", hint:"Scan backward: if child i has higher rating than right neighbor"},
+          {t:"blank", ph:"//   higher rating than right → must get more than right (take max)...", ans:"if (ratings[i] > ratings[i+1]) candies[i] = max(candies[i], candies[i+1]+1);", hint:"max() preserves pass-1 result if it already satisfies right constraint"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return sum of all candies",
+        lines:[
+          {t:"blank", ph:"// sum of all candy allocations...", ans:"return accumulate(candies.begin(), candies.end(), 0);", hint:"Total minimum candies needed satisfying both neighbor constraints"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Minimum Coins ─────────────────────────────────────────────────────
+  {
+    id:10, title:"Minimum Coins", badge:"SORT DESC", badgeColor:"var(--c4)",
+    viz:[
+      {v:"25¢",cls:"picked",l:"×2"},{v:"10¢",cls:"picked",l:"×1"},
+      {v:"5¢",cls:"skipped",l:"✗"},{v:"1¢",cls:"skipped",l:"✗"}
+    ],
+    hint:"Sort coins descending. Take as many of the largest coin as fit, then move to the next. Only works for canonical coin systems (not arbitrary).",
+    zones:[
+      { z:1, tag:"sort coins descending — largest coin greedily first",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int minCoins(vector<int>& coins, int amount) {", hint:"Returns minimum coins to make amount. Greedy works for standard denominations."},
+          {t:"blank", ph:"// edge case...", ans:"if (amount == 0) return 0;", hint:"Zero amount needs zero coins"},
+          {t:"blank", ph:"// sort coins largest first — greedy takes biggest denomination first...", ans:"sort(coins.begin(), coins.end(), greater<int>());", hint:"Descending sort: try largest coins first to minimise count"},
+        ]
+      },
+      { z:2, tag:"greedy pass — take as many of each coin as possible",
+        lines:[
+          {t:"blank", ph:"// coin count accumulator + remaining amount...", ans:"int count = 0, remaining = amount;", hint:"count = total coins used. remaining = what's left to make."},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> coin : coins) {`},
+          {t:"blank", ph:"//   take as many of this coin as fit...", ans:"if (remaining <= 0) break;", hint:"Early exit once amount fully made"},
+        ]
+      },
+      { z:3, tag:"running state — greedily use maximum of each denomination",
+        lines:[
+          {t:"blank", ph:"//   number of this coin we can use...", ans:"int use = remaining / coin;", hint:"Integer division: how many times does this coin fit in remaining?"},
+          {t:"blank", ph:"//   accumulate coin count + reduce remaining...", ans:"count += use; remaining -= use * coin;", hint:"Commit greedily: use maximum possible of current denomination"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"return count or -1 if not exact",
+        lines:[
+          {t:"blank", ph:"// return count if exact, -1 if amount not fully made...", ans:"return remaining == 0 ? count : -1;", hint:"remaining>0 means amount couldn't be made exactly with given coins"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames = ['Sort / Organize','Greedy Pass','Running State','Return Result'];
+const zoneCls   = ['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums  = ['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector');
+  sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i);
+    sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+
+  const zonesEl=document.getElementById('zones');
+  zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div');
+    div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p);
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const cells=p.viz.map(c=>`
+    <div class="viz-item">
+      <div class="viz-box ${c.cls}">${c.v}</div>
+      <div class="viz-lbl">${c.l}</div>
+    </div>`).join('');
+  viz.innerHTML=`
+    <span class="viz-label">sorted:</span>
+    <div class="viz-items">${cells}</div>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-left:16px;align-self:center;line-height:1.8">
+      <span style="color:var(--c4)">■</span> picked &nbsp;
+      <span style="color:var(--c3)">■</span> in heap/sorted &nbsp;
+      <span style="color:var(--muted)">■</span> skipped<br>
+      <span style="color:var(--c3)">★ the comparator encodes the greedy strategy</span>
+    </span>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+\s*/g,'++').replace(/--\s*/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+
+function checkSingle(el){
+  const key=el.dataset.key;
+  if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+buildSelector();
+loadPattern(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Divide & Conquer — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(56,189,248,0.07) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c2);border:1px solid rgba(56,189,248,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c2) 40%,var(--c1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c2);color:var(--text);}
+.sel-btn.active{background:rgba(56,189,248,0.1);border-color:var(--c2);color:var(--c2);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c2);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(56,189,248,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c2);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);display:flex;flex-direction:column;}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:360px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.cm{color:#3d4f5c;font-style:italic;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c2);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(56,189,248,0.06);border-bottom-color:var(--c2);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(167,139,250,0.07);border-bottom-color:var(--c1)!important;color:var(--c1);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(56,189,248,0.1);color:var(--c2);border-color:rgba(56,189,248,0.4);}
+.btn-check:hover{background:rgba(56,189,248,0.2);}
+.btn-reveal{background:rgba(167,139,250,0.08);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-reveal:hover{background:rgba(167,139,250,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c2);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{display:flex;align-items:flex-start;gap:16px;padding:12px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;flex-wrap:wrap;}
+.viz-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;padding-top:4px;}
+.viz-tree{display:flex;flex-direction:column;gap:6px;}
+.viz-level{display:flex;gap:6px;align-items:center;}
+.viz-node{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;border:1px solid var(--border);border-radius:3px;color:var(--muted);white-space:nowrap;}
+.viz-node.divide{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.viz-node.recurse{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.07);}
+.viz-node.combine{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.07);}
+.viz-arrow{color:var(--muted);font-size:11px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .vr{color:#eeffff} .fn{color:#7dd3fc}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:var(--c1);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 08 — Practice Mode</div>
+    <h1>Divide &amp; Conquer</h1>
+    <p>// base case → split at mid → recurse both halves → combine results</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// DIVIDE & CONQUER — 10 Manifestations
+// 4 Blocks:
+//   ① BASE CASE + SIGNATURE  — if (lo >= hi) return base; — always first line
+//   ② DIVIDE                 — mid = lo + (hi-lo)/2  — universal split point
+//   ③ RECURSE                — solve(lo,mid) + solve(mid+1,hi) — both halves
+//   ④ COMBINE                — the entire intellectual content — varies wildly
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Merge Sort ─────────────────────────────────────────────────────────
+  {
+    id:1, title:"Merge Sort", badge:"O(n log n)", badgeColor:"var(--c2)",
+    hint:"Combine = merge two sorted halves. Use a temp array. Two pointers walk left and right half simultaneously.",
+    zones:[
+      { z:1, tag:"base case — single element already sorted",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"void mergeSort(vector<int>& arr, int lo, int hi) {", hint:"void — sorts in place. lo and hi are inclusive indices."},
+          {t:"blank", ph:"// base case — single element or invalid range...", ans:"if (lo >= hi) return;", hint:"lo >= hi means 0 or 1 elements — already sorted, nothing to do"},
+        ]
+      },
+      { z:2, tag:"DIVIDE — split at midpoint",
+        lines:[
+          {t:"blank", ph:"// compute midpoint — avoid overflow...", ans:"int mid = lo + (hi - lo) / 2;", hint:"lo+(hi-lo)/2 is overflow-safe. Never write (lo+hi)/2 — can overflow."},
+        ]
+      },
+      { z:3, tag:"RECURSE — sort both halves independently",
+        lines:[
+          {t:"blank", ph:"// recurse left half...", ans:"mergeSort(arr, lo, mid);", hint:"Sort everything from lo to mid (inclusive)"},
+          {t:"blank", ph:"// recurse right half...", ans:"mergeSort(arr, mid+1, hi);", hint:"Sort everything from mid+1 to hi (inclusive)"},
+        ]
+      },
+      { z:4, tag:"COMBINE — merge two sorted halves",
+        lines:[
+          {t:"blank", ph:"// temp array for merge...", ans:"vector<int> tmp(hi - lo + 1);", hint:"Temporary storage for merged result — size = range length"},
+          {t:"blank", ph:"// two pointers: i for left half, j for right half...", ans:"int i = lo, j = mid+1, k = 0;", hint:"i walks [lo..mid], j walks [mid+1..hi], k fills tmp"},
+          {t:"fixed", code:`<span class="kw">while</span> (i <span class="op">&lt;=</span> mid <span class="op">&amp;&amp;</span> j <span class="op">&lt;=</span> hi)`},
+          {t:"blank", ph:"//   pick smaller of the two front elements...", ans:"tmp[k++] = (arr[i] <= arr[j]) ? arr[i++] : arr[j++];", hint:"Stable merge: left element wins ties (arr[i] <= arr[j])"},
+          {t:"blank", ph:"// drain remaining left half...", ans:"while (i <= mid)  tmp[k++] = arr[i++];", hint:"Right half exhausted — copy remaining left elements"},
+          {t:"blank", ph:"// drain remaining right half...", ans:"while (j <= hi)   tmp[k++] = arr[j++];", hint:"Left half exhausted — copy remaining right elements"},
+          {t:"blank", ph:"// copy tmp back into original array...", ans:"for (int x=0;x<k;x++) arr[lo+x] = tmp[x];", hint:"Write merged result back to arr[lo..hi]"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Quick Sort ─────────────────────────────────────────────────────────
+  {
+    id:2, title:"Quick Sort", badge:"PARTITION", badgeColor:"var(--c3)",
+    hint:"Partition IS the work — no separate combine step. Pivot ends up in final position. Recurse on both sides of pivot.",
+    zones:[
+      { z:1, tag:"base case — single element already in place",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"void quickSort(vector<int>& arr, int lo, int hi) {", hint:"void — sorts in place. lo/hi inclusive."},
+          {t:"blank", ph:"// base case...", ans:"if (lo >= hi) return;", hint:"0 or 1 elements — nothing to sort"},
+        ]
+      },
+      { z:2, tag:"DIVIDE — partition around pivot, get pivot index",
+        lines:[
+          {t:"blank", ph:"// partition: place pivot in correct position, return its index...", ans:"int pivot = arr[hi];", hint:"Lomuto partition: choose last element as pivot"},
+          {t:"blank", ph:"// i tracks boundary of elements <= pivot...", ans:"int i = lo - 1;", hint:"Everything left of i+1 is <= pivot"},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> j <span class="op">=</span> lo; j <span class="op">&lt;</span> hi; j<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   element <= pivot — expand left partition...", ans:"if (arr[j] <= pivot) swap(arr[++i], arr[j]);", hint:"Pre-increment i then swap — element j joins the left partition"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// place pivot in its final sorted position...", ans:"swap(arr[i+1], arr[hi]); int pivotIdx = i+1;", hint:"Pivot swaps into position i+1 — everything left <= pivot, right > pivot"},
+        ]
+      },
+      { z:3, tag:"RECURSE — sort both sides of pivot",
+        lines:[
+          {t:"blank", ph:"// recurse left of pivot...", ans:"quickSort(arr, lo, pivotIdx - 1);", hint:"Elements smaller than pivot — pivot excluded (already in place)"},
+          {t:"blank", ph:"// recurse right of pivot...", ans:"quickSort(arr, pivotIdx + 1, hi);", hint:"Elements larger than pivot — pivot excluded (already in place)"},
+        ]
+      },
+      { z:4, tag:"COMBINE — nothing! partition already placed pivot correctly",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// no combine needed — partition IS the work</span>`},
+          {t:"fixed", code:`<span class="cm">// pivot is already in its final sorted position</span>`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Count Inversions ───────────────────────────────────────────────────
+  {
+    id:3, title:"Count Inversions", badge:"MERGE COUNT", badgeColor:"var(--c1)",
+    hint:"Inversion = pair where arr[i] > arr[j] and i < j. Count them DURING the merge step. When right element is picked over left, all remaining left elements form inversions.",
+    zones:[
+      { z:1, tag:"base case — single element has zero inversions",
+        lines:[
+          {t:"blank", ph:"// function signature — returns inversion count...", ans:"long long countInversions(vector<int>& arr, int lo, int hi) {", hint:"Returns number of inversions. long long — count can reach O(n²)."},
+          {t:"blank", ph:"// base case — no inversions in single element...", ans:"if (lo >= hi) return 0;", hint:"Single element: no pairs exist, so zero inversions"},
+        ]
+      },
+      { z:2, tag:"DIVIDE — same midpoint as merge sort",
+        lines:[
+          {t:"blank", ph:"// midpoint...", ans:"int mid = lo + (hi - lo) / 2;", hint:"Same split as merge sort — this IS merge sort with a counter"},
+        ]
+      },
+      { z:3, tag:"RECURSE — count inversions in each half",
+        lines:[
+          {t:"blank", ph:"// count inversions in left half...", ans:"long long count = countInversions(arr, lo, mid);", hint:"All inversions entirely within the left half"},
+          {t:"blank", ph:"// add inversions in right half...", ans:"count += countInversions(arr, mid+1, hi);", hint:"All inversions entirely within the right half"},
+        ]
+      },
+      { z:4, tag:"COMBINE — count cross inversions during merge",
+        lines:[
+          {t:"blank", ph:"// merge + count cross-half inversions...", ans:"vector<int> tmp; int i=lo, j=mid+1;", hint:"tmp for merged result. i walks left half, j walks right half."},
+          {t:"fixed", code:`<span class="kw">while</span> (i <span class="op">&lt;=</span> mid <span class="op">&amp;&amp;</span> j <span class="op">&lt;=</span> hi) {`},
+          {t:"blank", ph:"//   left <= right: no inversion, pick left...", ans:"if (arr[i] <= arr[j]) { tmp.push_back(arr[i++]); }", hint:"Left element is smaller — no inversion with this right element"},
+          {t:"blank", ph:"//   right < left: ALL remaining left elements invert with arr[j]...", ans:"else { count += (mid - i + 1); tmp.push_back(arr[j++]); }", hint:"arr[j] < arr[i..mid]: (mid-i+1) elements in left all invert with arr[j]"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// drain remaining elements...", ans:"while(i<=mid) tmp.push_back(arr[i++]); while(j<=hi) tmp.push_back(arr[j++]);", hint:"Copy remaining elements from either half"},
+          {t:"blank", ph:"// copy back to arr...", ans:"for(int x=0;x<(int)tmp.size();x++) arr[lo+x]=tmp[x];", hint:"Write sorted merged result back — required for recursion to work correctly"},
+          {t:"blank", ph:"// return total count...", ans:"return count;", hint:"Sum of: left-half inversions + right-half inversions + cross inversions"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Closest Pair of Points ─────────────────────────────────────────────
+  {
+    id:4, title:"Closest Pair of Points", badge:"STRIP CHECK", badgeColor:"var(--c4)",
+    hint:"Split by x-coordinate. δ = min(left closest, right closest). Check strip of width 2δ around dividing line — at most 8 points in any δ×2δ rectangle.",
+    zones:[
+      { z:1, tag:"base case — brute force for ≤ 3 points",
+        lines:[
+          {t:"blank", ph:"// function signature — points sorted by x...", ans:"double closestPair(vector<pair<double,double>>& pts, int lo, int hi) {", hint:"Returns minimum distance. pts must be sorted by x-coordinate beforehand."},
+          {t:"blank", ph:"// base case — brute force small ranges...", ans:"if (hi - lo <= 2) { double d=DBL_MAX; for(int i=lo;i<=hi;i++) for(int j=i+1;j<=hi;j++) d=min(d,hypot(pts[i].first-pts[j].first,pts[i].second-pts[j].second)); return d; }", hint:"≤3 points: check all pairs directly. hypot computes Euclidean distance."},
+        ]
+      },
+      { z:2, tag:"DIVIDE — split points by x-coordinate midpoint",
+        lines:[
+          {t:"blank", ph:"// midpoint index...", ans:"int mid = lo + (hi - lo) / 2;", hint:"Split the x-sorted array in half"},
+          {t:"blank", ph:"// x-coordinate of dividing line...", ans:"double midX = pts[mid].first;", hint:"The vertical dividing line — used later to filter strip points"},
+        ]
+      },
+      { z:3, tag:"RECURSE — closest in each half",
+        lines:[
+          {t:"blank", ph:"// closest pair in left half...", ans:"double dL = closestPair(pts, lo, mid);", hint:"Minimum distance among points entirely in left half"},
+          {t:"blank", ph:"// closest pair in right half...", ans:"double dR = closestPair(pts, mid+1, hi);", hint:"Minimum distance among points entirely in right half"},
+          {t:"blank", ph:"// best distance so far...", ans:"double delta = min(dL, dR);", hint:"δ = best known distance — strip width = 2δ"},
+        ]
+      },
+      { z:4, tag:"COMBINE — check 2δ-wide strip around dividing line",
+        lines:[
+          {t:"blank", ph:"// collect points within δ of dividing line...", ans:"vector<pair<double,double>> strip; for(int i=lo;i<=hi;i++) if(abs(pts[i].first-midX)<delta) strip.push_back(pts[i]);", hint:"Only points within horizontal distance δ from midX can beat current δ"},
+          {t:"blank", ph:"// sort strip by y-coordinate for efficient checking...", ans:"sort(strip.begin(),strip.end(),[](auto&a,auto&b){return a.second<b.second;});", hint:"Y-sorted strip: for each point, only check next 7 points (geometric bound)"},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span><span class="nm">0</span>;i<span class="op">&lt;</span>(<span class="ty">int</span>)strip.size();i++) {`},
+          {t:"blank", ph:"//   check at most 7 next points in y-sorted strip...", ans:"for(int j=i+1;j<(int)strip.size()&&strip[j].second-strip[i].second<delta;j++)", hint:"At most 7 points can fit in the δ×2δ rectangle — provable geometric bound"},
+          {t:"blank", ph:"//     update delta with strip pair distance...", ans:"delta=min(delta,hypot(strip[i].first-strip[j].first,strip[i].second-strip[j].second));", hint:"Check if this cross-strip pair beats current best δ"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return minimum distance found...", ans:"return delta;", hint:"Minimum of: left-half closest, right-half closest, strip closest"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Binary Search (D&C view) ───────────────────────────────────────────
+  {
+    id:5, title:"Binary Search (D&C view)", badge:"DISCARD HALF", badgeColor:"var(--c2)",
+    hint:"D&C where ONLY ONE half is recursed. No combine step — the answer is found directly. Divide + discard = O(log n).",
+    zones:[
+      { z:1, tag:"base case — range empty means not found",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int binarySearch(vector<int>& arr, int lo, int hi, int target) {", hint:"Recursive D&C view of binary search — same as iterative but shows D&C structure"},
+          {t:"blank", ph:"// base case — empty range — target not present...", ans:"if (lo > hi) return -1;", hint:"lo > hi means we've exhausted the search space — target absent"},
+        ]
+      },
+      { z:2, tag:"DIVIDE — split at midpoint, check mid",
+        lines:[
+          {t:"blank", ph:"// midpoint...", ans:"int mid = lo + (hi - lo) / 2;", hint:"Same overflow-safe midpoint calculation"},
+          {t:"blank", ph:"// found target at mid — return immediately...", ans:"if (arr[mid] == target) return mid;", hint:"Direct hit — no recursion needed"},
+        ]
+      },
+      { z:3, tag:"RECURSE — only ONE half, discard the other",
+        lines:[
+          {t:"blank", ph:"// target in right half — discard left...", ans:"if (arr[mid] < target) return binarySearch(arr, mid+1, hi, target);", hint:"arr[mid] too small — target must be in right half [mid+1..hi]"},
+          {t:"blank", ph:"// target in left half — discard right...", ans:"return binarySearch(arr, lo, mid-1, target);", hint:"arr[mid] too large — target must be in left half [lo..mid-1]"},
+        ]
+      },
+      { z:4, tag:"COMBINE — nothing! one half discarded, answer propagates up",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// no combine — only ONE half recursed</span>`},
+          {t:"fixed", code:`<span class="cm">// answer index propagates directly up the call stack</span>`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Maximum Subarray (D&C) ─────────────────────────────────────────────
+  {
+    id:6, title:"Maximum Subarray (D&C)", badge:"CROSS MAX", badgeColor:"var(--c3)",
+    hint:"Answer is max of: best in left half, best in right half, or best crossing the midpoint. Cross = expand from mid outward in both directions.",
+    zones:[
+      { z:1, tag:"base case — single element is its own max subarray",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int maxSubarray(vector<int>& arr, int lo, int hi) {", hint:"Returns maximum subarray sum in arr[lo..hi]"},
+          {t:"blank", ph:"// base case — single element...", ans:"if (lo == hi) return arr[lo];", hint:"A single element is both the only and best subarray"},
+        ]
+      },
+      { z:2, tag:"DIVIDE — split at midpoint",
+        lines:[
+          {t:"blank", ph:"// midpoint...", ans:"int mid = lo + (hi - lo) / 2;", hint:"Standard midpoint split"},
+        ]
+      },
+      { z:3, tag:"RECURSE — max subarray in each half",
+        lines:[
+          {t:"blank", ph:"// max subarray entirely in left half...", ans:"int leftMax = maxSubarray(arr, lo, mid);", hint:"Best subarray that fits entirely within [lo..mid]"},
+          {t:"blank", ph:"// max subarray entirely in right half...", ans:"int rightMax = maxSubarray(arr, mid+1, hi);", hint:"Best subarray that fits entirely within [mid+1..hi]"},
+        ]
+      },
+      { z:4, tag:"COMBINE — compute cross-midpoint max then take overall max",
+        lines:[
+          {t:"blank", ph:"// cross max: expand left from mid...", ans:"int leftSum=0,bestLeft=INT_MIN; for(int i=mid;i>=lo;i--) { leftSum+=arr[i]; bestLeft=max(bestLeft,leftSum); }", hint:"Expand leftward from mid — track max prefix sum going left"},
+          {t:"blank", ph:"// cross max: expand right from mid+1...", ans:"int rightSum=0,bestRight=INT_MIN; for(int i=mid+1;i<=hi;i++) { rightSum+=arr[i]; bestRight=max(bestRight,rightSum); }", hint:"Expand rightward from mid+1 — track max prefix sum going right"},
+          {t:"blank", ph:"// cross max = best left extension + best right extension...", ans:"int crossMax = bestLeft + bestRight;", hint:"The crossing subarray spans from somewhere in left half to somewhere in right"},
+          {t:"blank", ph:"// answer = max of all three candidates...", ans:"return max({leftMax, rightMax, crossMax});", hint:"Any maximum subarray is either in left half, right half, or crosses mid"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Matrix Multiplication (Strassen) ──────────────────────────────────
+  {
+    id:7, title:"Strassen Matrix Multiply", badge:"7 not 8", badgeColor:"var(--c1)",
+    hint:"Classic D&C uses 8 recursive multiplications. Strassen reduces to 7 via algebraic identities. Each Mi is one multiplication of sums/differences.",
+    zones:[
+      { z:1, tag:"base case — 1×1 matrix: just multiply scalars",
+        lines:[
+          {t:"blank", ph:"// function signature — square matrices as 2D vectors...", ans:"vector<vector<long long>> strassen(vector<vector<long long>>& A, vector<vector<long long>>& B) {", hint:"Returns A×B using Strassen's 7-multiplication algorithm"},
+          {t:"blank", ph:"// base case — 1×1 matrix...", ans:"int n = A.size(); if (n == 1) return {{ A[0][0] * B[0][0] }};", hint:"1×1: multiplication is just scalar product, no recursion needed"},
+        ]
+      },
+      { z:2, tag:"DIVIDE — split each matrix into 4 quadrants",
+        lines:[
+          {t:"blank", ph:"// half size for quadrant split...", ans:"int h = n / 2;", hint:"Each n×n matrix splits into four (n/2)×(n/2) quadrants"},
+          {t:"blank", ph:"// extract quadrants A11,A12,A21,A22,B11,B12,B21,B22...", ans:"auto split=[&](auto& M,int r,int c){ vector<vector<long long>> S(h,vector<long long>(h)); for(int i=0;i<h;i++) for(int j=0;j<h;j++) S[i][j]=M[r+i][c+j]; return S; };", hint:"Lambda to extract h×h submatrix starting at (r,c)"},
+          {t:"blank", ph:"// extract all 8 quadrants...", ans:"auto A11=split(A,0,0),A12=split(A,0,h),A21=split(A,h,0),A22=split(A,h,h); auto B11=split(B,0,0),B12=split(B,0,h),B21=split(B,h,0),B22=split(B,h,h);", hint:"Top-left, top-right, bottom-left, bottom-right for both A and B"},
+        ]
+      },
+      { z:3, tag:"RECURSE — 7 multiplications (not 8)",
+        lines:[
+          {t:"blank", ph:"// helper: add two matrices...", ans:"auto add=[&](auto& X,auto& Y){ auto R=X; for(int i=0;i<h;i++) for(int j=0;j<h;j++) R[i][j]+=Y[i][j]; return R; };", hint:"Matrix addition — needed to form the 7 Strassen products"},
+          {t:"blank", ph:"// helper: subtract two matrices...", ans:"auto sub=[&](auto& X,auto& Y){ auto R=X; for(int i=0;i<h;i++) for(int j=0;j<h;j++) R[i][j]-=Y[i][j]; return R; };", hint:"Matrix subtraction — needed to form the 7 Strassen products"},
+          {t:"blank", ph:"// 7 Strassen products (key insight: saves one multiplication)...", ans:"auto M1=strassen(add(A11,A22),add(B11,B22)); auto M2=strassen(add(A21,A22),B11); auto M3=strassen(A11,sub(B12,B22)); auto M4=strassen(A22,sub(B21,B11)); auto M5=strassen(add(A11,A12),B22); auto M6=strassen(sub(A21,A11),add(B11,B12)); auto M7=strassen(sub(A12,A22),add(B21,B22));", hint:"M1-M7 are Strassen's seven products. Each is one recursive matrix multiply."},
+        ]
+      },
+      { z:4, tag:"COMBINE — assemble result from the 7 products",
+        lines:[
+          {t:"blank", ph:"// C11 = M1+M4-M5+M7...", ans:"auto C11=add(sub(add(M1,M4),M5),M7);", hint:"Top-left quadrant of result"},
+          {t:"blank", ph:"// C12 = M3+M5...", ans:"auto C12=add(M3,M5);", hint:"Top-right quadrant"},
+          {t:"blank", ph:"// C21 = M2+M4...", ans:"auto C21=add(M2,M4);", hint:"Bottom-left quadrant"},
+          {t:"blank", ph:"// C22 = M1-M2+M3+M6...", ans:"auto C22=add(sub(add(M1,M3),M2),M6);", hint:"Bottom-right quadrant"},
+          {t:"blank", ph:"// assemble quadrants into result matrix...", ans:"vector<vector<long long>> C(n,vector<long long>(n,0)); for(int i=0;i<h;i++) for(int j=0;j<h;j++){C[i][j]=C11[i][j];C[i][j+h]=C12[i][j];C[i+h][j]=C21[i][j];C[i+h][j+h]=C22[i][j];} return C;", hint:"Place each quadrant into its correct position in n×n result"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Fast Fourier Transform ─────────────────────────────────────────────
+  {
+    id:8, title:"Fast Fourier Transform", badge:"EVEN/ODD SPLIT", badgeColor:"var(--c4)",
+    hint:"Split polynomial into even and odd indexed coefficients (not first/second half). Butterfly combine: F[k] = F_even[k] + w^k * F_odd[k].",
+    zones:[
+      { z:1, tag:"base case — single coefficient needs no transform",
+        lines:[
+          {t:"blank", ph:"// function signature — in-place FFT...", ans:"void fft(vector<complex<double>>& a, bool invert) {", hint:"a = coefficient array (size must be power of 2). invert=true for IFFT."},
+          {t:"blank", ph:"// base case — single element...", ans:"int n = a.size(); if (n == 1) return;", hint:"Single element DFT is the element itself — no work needed"},
+        ]
+      },
+      { z:2, tag:"DIVIDE — split into EVEN and ODD indexed coefficients",
+        lines:[
+          {t:"blank", ph:"// separate even and odd indexed coefficients...", ans:"vector<complex<double>> even(n/2), odd(n/2);", hint:"NOT first/second half — interleaved split by index parity"},
+          {t:"blank", ph:"// split by index parity...", ans:"for(int i=0;i<n/2;i++){ even[i]=a[2*i]; odd[i]=a[2*i+1]; }", hint:"even[i] = a[2i], odd[i] = a[2i+1] — Cooley-Tukey split"},
+        ]
+      },
+      { z:3, tag:"RECURSE — FFT on each half independently",
+        lines:[
+          {t:"blank", ph:"// FFT on even-indexed coefficients...", ans:"fft(even, invert);", hint:"Recursively compute DFT of even-indexed subsequence"},
+          {t:"blank", ph:"// FFT on odd-indexed coefficients...", ans:"fft(odd, invert);", hint:"Recursively compute DFT of odd-indexed subsequence"},
+        ]
+      },
+      { z:4, tag:"COMBINE — butterfly: F[k] = F_even[k] + w^k * F_odd[k]",
+        lines:[
+          {t:"blank", ph:"// primitive n-th root of unity...", ans:"double ang = 2*M_PI/n * (invert ? -1 : 1);", hint:"Negative angle for inverse FFT. This is ω = e^(2πi/n)."},
+          {t:"blank", ph:"// twiddle factor w = e^(iθ), starts at 1...", ans:"complex<double> w(1), wn(cos(ang), sin(ang));", hint:"wn is the primitive root. w starts at w^0 = 1, multiplied each iteration."},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> k<span class="op">=</span><span class="nm">0</span>; k<span class="op">&lt;</span>n<span class="op">/</span><span class="nm">2</span>; k<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   butterfly combine: a[k] and a[k+n/2]...", ans:"a[k]=even[k]+w*odd[k]; a[k+n/2]=even[k]-w*odd[k];", hint:"Butterfly: upper output = even+w*odd, lower = even-w*odd"},
+          {t:"blank", ph:"//   advance twiddle factor...", ans:"w *= wn;", hint:"w = w^(k+1) for next iteration"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// normalise if inverse FFT...", ans:"if (invert) for(auto& x:a) x/=n;", hint:"IFFT requires dividing by n to invert the transform"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Median of Medians ──────────────────────────────────────────────────
+  {
+    id:9, title:"Median of Medians", badge:"PIVOT SELECT", badgeColor:"var(--c1)",
+    hint:"Groups of 5 → find each group's median → recursively find median of those medians → use as pivot. Guarantees O(n) worst-case selection.",
+    zones:[
+      { z:1, tag:"base case — small array: sort and return kth element",
+        lines:[
+          {t:"blank", ph:"// function signature — kth smallest (0-indexed)...", ans:"int medianOfMedians(vector<int>& arr, int lo, int hi, int k) {", hint:"Returns k-th smallest element in arr[lo..hi] in O(n) worst case"},
+          {t:"blank", ph:"// base case — small range: sort and return directly...", ans:"if (hi - lo < 5) { sort(arr.begin()+lo, arr.begin()+hi+1); return arr[lo+k]; }", hint:"≤5 elements: brute force sort is O(1) — base of recursion"},
+        ]
+      },
+      { z:2, tag:"DIVIDE — split into groups of 5, find each group's median",
+        lines:[
+          {t:"blank", ph:"// collect medians of each group of 5...", ans:"vector<int> medians;", hint:"Will hold the median of each group of 5 elements"},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span>lo; i<span class="op">&lt;=</span>hi; i<span class="op">+=</span><span class="nm">5</span>) {`},
+          {t:"blank", ph:"//   sort group of 5 (or fewer) and take middle element...", ans:"int groupEnd=min(i+4,hi); sort(arr.begin()+i,arr.begin()+groupEnd+1); medians.push_back(arr[(i+groupEnd)/2]);", hint:"Each group of ≤5 sorted, middle element = median of that group"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"RECURSE — find median of medians recursively",
+        lines:[
+          {t:"blank", ph:"// recursively find median of the medians array...", ans:"int pivot = medianOfMedians(medians, 0, medians.size()-1, medians.size()/2);", hint:"Recurse on the medians array — this gives a good pivot guarantee"},
+          {t:"blank", ph:"// partition arr around pivot, get pivot's final index...", ans:"int pivotIdx = partition(arr, lo, hi, pivot);", hint:"Standard partition placing pivot in its correct sorted position"},
+          {t:"blank", ph:"// rank of pivot in arr[lo..hi]...", ans:"int rank = pivotIdx - lo;", hint:"How many elements are smaller than pivot in this range"},
+        ]
+      },
+      { z:4, tag:"COMBINE — recurse on correct partition side",
+        lines:[
+          {t:"blank", ph:"// found kth element...", ans:"if (rank == k) return pivot;", hint:"Pivot landed exactly at position k — done"},
+          {t:"blank", ph:"// kth element is in left partition...", ans:"else if (k < rank) return medianOfMedians(arr, lo, pivotIdx-1, k);", hint:"k is less than pivot's rank — answer is in left partition"},
+          {t:"blank", ph:"// kth element is in right partition...", ans:"else return medianOfMedians(arr, pivotIdx+1, hi, k-rank-1);", hint:"k is greater than pivot's rank — recurse right with adjusted k"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Painting Fence Problem ─────────────────────────────────────────────
+  {
+    id:10, title:"Painting Fence Problem", badge:"SEGMENT SPLIT", badgeColor:"var(--c2)",
+    hint:"Find minimum height bar in range. Horizontal strokes = minHeight × width. Vertical: split at min, recurse on both sides. Take min of horizontal vs two verticals.",
+    zones:[
+      { z:1, tag:"base case — empty range needs zero paint",
+        lines:[
+          {t:"blank", ph:"// function signature — min paint to fill histogram...", ans:"int paintFence(vector<int>& h, int lo, int hi) {", hint:"Returns minimum area of rectangles needed to cover histogram bars h[lo..hi]"},
+          {t:"blank", ph:"// base case — empty range...", ans:"if (lo > hi) return 0;", hint:"No bars to paint — zero cost"},
+          {t:"blank", ph:"// base case — single bar...", ans:"if (lo == hi) return h[lo];", hint:"Single bar: one horizontal stroke of height h[lo], width 1"},
+        ]
+      },
+      { z:2, tag:"DIVIDE — find minimum height bar in range",
+        lines:[
+          {t:"blank", ph:"// find index of minimum height bar in [lo..hi]...", ans:"int minIdx = lo; for(int i=lo+1;i<=hi;i++) if(h[i]<h[minIdx]) minIdx=i;", hint:"Minimum bar is the bottleneck — forces a horizontal stroke across full width"},
+          {t:"blank", ph:"// midpoint for even split alternative...", ans:"int mid = lo + (hi - lo) / 2;", hint:"Used for the alternative even-split strategy"},
+        ]
+      },
+      { z:3, tag:"RECURSE — two strategies: split at min OR split at mid",
+        lines:[
+          {t:"blank", ph:"// strategy 1: horizontal stroke across all + recurse two sides of min...", ans:"int horizontal = h[minIdx]*(hi-lo+1) + paintFence(h,lo,minIdx-1) + paintFence(h,minIdx+1,hi);", hint:"Min bar defines max horizontal coverage. Recurse on left and right of min."},
+          {t:"blank", ph:"// strategy 2: split evenly at mid (avoids O(n²) worst case)...", ans:"int splitMid = paintFence(h,lo,mid) + paintFence(h,mid+1,hi);", hint:"Even split ensures O(n log n) in typical cases"},
+        ]
+      },
+      { z:4, tag:"COMBINE — take minimum of both strategies",
+        lines:[
+          {t:"blank", ph:"// minimum cost strategy wins...", ans:"return min(horizontal, splitMid);", hint:"Greedy-ish combine: whichever strategy uses less paint"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames = ['Base Case + Signature','Divide','Recurse','Combine'];
+const zoneCls   = ['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums  = ['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector');
+  sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i);
+    sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_').replace(/&/g,'and')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+
+  const zonesEl=document.getElementById('zones');
+  zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div');
+    div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz();
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(){
+  const viz=document.getElementById('viz');
+  viz.innerHTML=`
+    <span class="viz-label">structure:</span>
+    <div class="viz-tree">
+      <div class="viz-level">
+        <div class="viz-node divide">[lo ────── mid ────── hi]</div>
+      </div>
+      <div class="viz-level">
+        <div class="viz-node recurse">[lo..mid]</div>
+        <span class="viz-arrow">+</span>
+        <div class="viz-node recurse">[mid+1..hi]</div>
+      </div>
+      <div class="viz-level">
+        <div class="viz-node combine">combine( left result , right result )</div>
+      </div>
+    </div>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-left:16px;align-self:center;line-height:1.8">
+      <span style="color:var(--c2)">■</span> divide &nbsp;
+      <span style="color:var(--c1)">■</span> recurse &nbsp;
+      <span style="color:var(--c4)">■</span> combine<br>
+      <span style="color:var(--c2)">★ mid = lo+(hi-lo)/2 — universal across all 10</span>
+    </span>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+\s*/g,'++').replace(/--\s*/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+
+function checkSingle(el){
+  const key=el.dataset.key;
+  if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+buildSelector();
+loadPattern(0);
+</script>
+</body>
+</html>

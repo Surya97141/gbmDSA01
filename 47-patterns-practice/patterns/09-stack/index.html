@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stack — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(167,139,250,0.07) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c1);border:1px solid rgba(167,139,250,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c1) 40%,var(--c3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c1);color:var(--text);}
+.sel-btn.active{background:rgba(167,139,250,0.1);border-color:var(--c1);color:var(--c1);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c1);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(167,139,250,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c1);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);display:flex;flex-direction:column;}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:380px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.cm{color:#3d4f5c;font-style:italic;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c1);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(167,139,250,0.06);border-bottom-color:var(--c1);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(167,139,250,0.1);color:var(--c1);border-color:rgba(167,139,250,0.4);}
+.btn-check:hover{background:rgba(167,139,250,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c1);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{display:flex;align-items:flex-start;gap:16px;padding:12px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;flex-wrap:wrap;}
+.viz-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;padding-top:4px;}
+.stk-viz{display:flex;flex-direction:column-reverse;gap:3px;min-width:60px;}
+.stk-cell{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:3px;color:var(--muted);text-align:center;}
+.stk-cell.waiting{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.08);}
+.stk-cell.popped{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.08);}
+.stk-cell.pushed{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.08);}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .vr{color:#eeffff} .fn{color:#7dd3fc}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 09 — Practice Mode</div>
+    <h1>Stack</h1>
+    <p>// elements wait on stack · pop condition = the whole problem · push after</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// STACK — 10 Manifestations
+// 4 Blocks:
+//   ① INIT + SIGNATURE   — stack<T> + result container + edge guards
+//   ② LINEAR SWEEP       — for i in 0..n  [FIXED — always single left→right pass]
+//   ③ POP CONDITION      — while(!stk.empty() && COND) { record; pop }
+//                          THE CONDITION is the entire intellectual content
+//   ④ PUSH + POST-PROCESS — push current; drain remaining stack after loop
+//
+// CORE INSIGHT: stack = waiting room
+//   Elements sit waiting for their answer.
+//   Current element satisfies their condition → pop + record answer.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Balanced Parentheses ───────────────────────────────────────────────
+  {
+    id:1, title:"Balanced Parentheses", badge:"MATCHING", badgeColor:"var(--c4)",
+    hint:"Push opening brackets. On closing bracket: check top is matching opener. Mismatch or empty stack = unbalanced.",
+    viz:['(','[','{','·','·','·'],
+    zones:[
+      { z:1, tag:"stack<char> — stores unmatched opening brackets",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"bool isBalanced(string s) {", hint:"Returns true if all brackets are correctly matched and nested"},
+          {t:"blank", ph:"// stack holds unmatched opening brackets...", ans:"stack<char> stk;", hint:"Opening brackets wait on stack for their matching closer"},
+        ]
+      },
+      { z:2, tag:"FIXED — single left-to-right sweep over characters",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">char</span> c : s) {`},
+          {t:"blank", ph:"//   opening bracket — push onto stack...", ans:"if (c=='(' || c=='[' || c=='{') stk.push(c);", hint:"Any opening bracket enters the waiting room"},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — matching opener on top?",
+        lines:[
+          {t:"blank", ph:"//   closing bracket — check for match...", ans:"else {", hint:"Closing bracket triggers a pop attempt"},
+          {t:"blank", ph:"//     stack empty or top doesn't match → unbalanced...", ans:"if (stk.empty()) return false;", hint:"Nothing waiting to be closed — extra closing bracket"},
+          {t:"blank", ph:"//     check match and pop...", ans:"if ((c==')' && stk.top()!='(') || (c==']' && stk.top()!='[') || (c=='}' && stk.top()!='{')) return false;", hint:"Wrong opener on top — mismatched brackets"},
+          {t:"blank", ph:"//     matched — pop the opener...", ans:"stk.pop();", hint:"Opener and closer matched — remove opener from waiting room"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"POST-PROCESS — unmatched openers remain?",
+        lines:[
+          {t:"blank", ph:"// any remaining openers = unmatched = unbalanced...", ans:"return stk.empty();", hint:"Valid only if every opener got matched — empty stack = fully balanced"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Next Greater Element ───────────────────────────────────────────────
+  {
+    id:2, title:"Next Greater Element", badge:"MONOTONE ↓", badgeColor:"var(--c3)",
+    hint:"Stack holds indices waiting for their NGE. When arr[i] > arr[top], that's top's NGE. Pop and record. Push i after.",
+    viz:['2','1','5','3','6'],
+    zones:[
+      { z:1, tag:"stack<int> holds INDICES — result array initialised to -1",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> nextGreater(vector<int>& arr) {", hint:"Returns array where result[i] = next greater element to the right of arr[i]"},
+          {t:"blank", ph:"// result array — -1 means no greater element exists...", ans:"int n = arr.size(); vector<int> result(n, -1);", hint:"-1 is the default — only updated when a greater element is found"},
+          {t:"blank", ph:"// stack holds indices (not values) awaiting their NGE...", ans:"stack<int> stk;", hint:"Store indices so we can update result[stk.top()] when NGE found"},
+        ]
+      },
+      { z:2, tag:"FIXED — single left-to-right sweep",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> n; i<span class="op">++</span>) {`},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — arr[i] > arr[stk.top()]",
+        lines:[
+          {t:"blank", ph:"//   pop all indices whose NGE is arr[i]...", ans:"while (!stk.empty() && arr[i] > arr[stk.top()]) {", hint:"Current element is greater than stack top — it's the NGE for top"},
+          {t:"blank", ph:"//     record NGE for popped index...", ans:"result[stk.top()] = arr[i];", hint:"arr[i] is the next greater element for the index sitting on top"},
+          {t:"blank", ph:"//     pop — question answered...", ans:"stk.pop();", hint:"This index's NGE question is answered — leave the waiting room"},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"PUSH current index — POST: remaining have no NGE",
+        lines:[
+          {t:"blank", ph:"//   push current index — awaits its own NGE...", ans:"stk.push(i);", hint:"i joins the waiting room — its NGE not yet found"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// remaining in stack have no NGE — already -1...", ans:"// indices still in stack have no greater element to their right", hint:"Their result[i] stays -1 — set by initialisation"},
+          {t:"blank", ph:"// return result array...", ans:"return result;", hint:"Each position holds the next greater element value, or -1"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Previous Smaller Element ───────────────────────────────────────────
+  {
+    id:3, title:"Previous Smaller Element", badge:"MONOTONE ↑", badgeColor:"var(--c1)",
+    hint:"Mirror of NGE but looking LEFT. Pop while stack top >= current. After popping, top (if any) is the previous smaller. Push current.",
+    viz:['3','1','4','1','5'],
+    zones:[
+      { z:1, tag:"stack<int> holds INDICES — result array initialised to -1",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> prevSmaller(vector<int>& arr) {", hint:"Returns array where result[i] = previous smaller element to the left of arr[i]"},
+          {t:"blank", ph:"// result array — -1 means no smaller element to the left...", ans:"int n = arr.size(); vector<int> result(n, -1);", hint:"-1 default: updated only if a smaller left neighbor is found"},
+          {t:"blank", ph:"// stack holds indices of candidates for previous smaller...", ans:"stack<int> stk;", hint:"Maintains increasing order — top is always the closest smaller candidate"},
+        ]
+      },
+      { z:2, tag:"FIXED — single left-to-right sweep",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> n; i<span class="op">++</span>) {`},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — arr[stk.top()] >= arr[i]",
+        lines:[
+          {t:"blank", ph:"//   pop while top is >= current (can't be previous smaller)...", ans:"while (!stk.empty() && arr[stk.top()] >= arr[i]) stk.pop();", hint:"Any element >= current can never be a previous smaller for future elements either"},
+        ]
+      },
+      { z:4, tag:"PUSH — top after popping IS the previous smaller",
+        lines:[
+          {t:"blank", ph:"//   top (if any) is now the previous smaller element...", ans:"if (!stk.empty()) result[i] = arr[stk.top()];", hint:"After popping all >= elements, top is the nearest smaller to the left"},
+          {t:"blank", ph:"//   push current index for future elements to reference...", ans:"stk.push(i);", hint:"Current element may be the previous smaller for future elements"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return result...", ans:"return result;", hint:"result[i] = nearest smaller element to the left of arr[i]"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Largest Rectangle in Histogram ────────────────────────────────────
+  {
+    id:4, title:"Largest Rectangle in Histogram", badge:"AREA COMPUTE", badgeColor:"var(--c3)",
+    hint:"Stack holds bar indices in increasing height order. When current bar < top, the top bar's rectangle width is computable: right boundary=i, left boundary=new top+1.",
+    viz:['2','1','5','6','2','3'],
+    zones:[
+      { z:1, tag:"stack<int> holds indices — bars wait for their right boundary",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int largestRectangle(vector<int>& heights) {", hint:"Returns area of largest rectangle that fits within histogram bars"},
+          {t:"blank", ph:"// append sentinel 0 to flush all bars at end...", ans:"heights.push_back(0);", hint:"Sentinel height 0 forces all remaining bars to be popped at the end"},
+          {t:"blank", ph:"// stack + max area tracker...", ans:"int n = heights.size(); stack<int> stk; int maxArea = 0;", hint:"Stack holds indices. maxArea tracks best rectangle found."},
+        ]
+      },
+      { z:2, tag:"FIXED — sweep including sentinel at end",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> n; i<span class="op">++</span>) {`},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — heights[i] < heights[stk.top()]",
+        lines:[
+          {t:"blank", ph:"//   current bar shorter than top — top's right boundary found...", ans:"while (!stk.empty() && heights[i] < heights[stk.top()]) {", hint:"Current shorter bar is the right boundary for the bar on top"},
+          {t:"blank", ph:"//     height of rectangle = height of popped bar...", ans:"int h = heights[stk.top()]; stk.pop();", hint:"This bar's height defines the rectangle height"},
+          {t:"blank", ph:"//     width = from new top+1 to i-1...", ans:"int w = stk.empty() ? i : i - stk.top() - 1;", hint:"Left boundary = new top index + 1 (or 0 if stack empty). Width = i - left."},
+          {t:"blank", ph:"//     update max area...", ans:"maxArea = max(maxArea, h * w);", hint:"Area of rectangle with this bar as the shortest"},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"PUSH current — return max area",
+        lines:[
+          {t:"blank", ph:"//   push current bar index...", ans:"stk.push(i);", hint:"Current bar enters waiting room — awaits its right boundary"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return maximum rectangle area...", ans:"return maxArea;", hint:"Largest rectangle found during the sweep"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Stock Span Problem ─────────────────────────────────────────────────
+  {
+    id:5, title:"Stock Span Problem", badge:"SPAN COUNT", badgeColor:"var(--c4)",
+    hint:"Span[i] = consecutive days to the left where price <= price[i]. Stack holds indices of unspanned days. Pop while top price <= current.",
+    viz:['100','80','60','70','60','75','85'],
+    zones:[
+      { z:1, tag:"stack<int> holds indices of unspanned days",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> stockSpan(vector<int>& prices) {", hint:"Returns span array: span[i] = max consecutive days ending at i with price <= prices[i]"},
+          {t:"blank", ph:"// result span array + stack of indices...", ans:"int n = prices.size(); vector<int> span(n); stack<int> stk;", hint:"span[i] will hold count of consecutive days. Stack tracks unspanned indices."},
+        ]
+      },
+      { z:2, tag:"FIXED — single left-to-right sweep",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> n; i<span class="op">++</span>) {`},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — prices[stk.top()] <= prices[i]",
+        lines:[
+          {t:"blank", ph:"//   pop while top day's price <= today's price...", ans:"while (!stk.empty() && prices[stk.top()] <= prices[i]) stk.pop();", hint:"Days with price <= today's price are 'spanned' by today — pop them"},
+        ]
+      },
+      { z:4, tag:"PUSH — span = distance to nearest unspanned day",
+        lines:[
+          {t:"blank", ph:"//   span = distance to first unspanned day (or full range)...", ans:"span[i] = stk.empty() ? i+1 : i - stk.top();", hint:"If stack empty: span covers all days 0..i. Else: span from top+1 to i."},
+          {t:"blank", ph:"//   push current index — may block future spans...", ans:"stk.push(i);", hint:"Today's index enters waiting room as potential left boundary for future"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return span array...", ans:"return span;", hint:"span[i] = number of consecutive days (including today) price was <= prices[i]"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Monotonic Stack ────────────────────────────────────────────────────
+  {
+    id:6, title:"Monotonic Stack", badge:"ORDER PROPERTY", badgeColor:"var(--c2)",
+    hint:"Maintain strict increasing or decreasing order in stack at all times. Pop violators before pushing. Stack always reflects a monotone subsequence.",
+    viz:['3','1','4','1','5','9','2'],
+    zones:[
+      { z:1, tag:"stack<int> — maintains monotone invariant",
+        lines:[
+          {t:"blank", ph:"// function signature — build monotone increasing stack...", ans:"vector<int> monoStack(vector<int>& arr) {", hint:"Returns elements that survive the monotone increasing filter (removes dominated elements)"},
+          {t:"blank", ph:"// stack maintains increasing order bottom-to-top...", ans:"stack<int> stk;", hint:"Invariant: stk[bottom] < ... < stk[top] at all times"},
+        ]
+      },
+      { z:2, tag:"FIXED — single left-to-right sweep",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> x : arr) {`},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — violates monotone property",
+        lines:[
+          {t:"blank", ph:"//   pop while top violates increasing order...", ans:"while (!stk.empty() && stk.top() >= x) stk.pop();", hint:"Pop anything >= x: they can never contribute to an increasing sequence after x"},
+        ]
+      },
+      { z:4, tag:"PUSH — invariant restored before every push",
+        lines:[
+          {t:"blank", ph:"//   push current — stack is increasing after this...", ans:"stk.push(x);", hint:"After popping all violators, x is now the largest element — invariant holds"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// collect surviving elements from stack...", ans:"vector<int> result; while(!stk.empty()){result.push_back(stk.top());stk.pop();} reverse(result.begin(),result.end()); return result;", hint:"Stack holds the monotone increasing subsequence — reverse for left-to-right order"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Expression Evaluation ──────────────────────────────────────────────
+  {
+    id:7, title:"Expression Evaluation", badge:"POSTFIX EVAL", badgeColor:"var(--c3)",
+    hint:"Postfix (RPN): push operands, pop two on operator, push result. No precedence needed — order is already encoded in postfix.",
+    viz:['3','4','2','*','+'],
+    zones:[
+      { z:1, tag:"stack<int> — operand stack for postfix evaluation",
+        lines:[
+          {t:"blank", ph:"// function signature — evaluate postfix expression...", ans:"int evalPostfix(vector<string>& tokens) {", hint:"Evaluates Reverse Polish Notation expression. e.g. [3,4,2,*,+] = 11"},
+          {t:"blank", ph:"// operand stack...", ans:"stack<int> stk;", hint:"Numbers push onto stack. Operators pop two numbers and push result."},
+        ]
+      },
+      { z:2, tag:"FIXED — sweep through tokens left to right",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="kw">auto</span><span class="op">&</span> tok : tokens) {`},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — token is an operator: pop two operands",
+        lines:[
+          {t:"blank", ph:"//   check if token is an operator...", ans:"if (tok==\"+\" || tok==\"-\" || tok==\"*\" || tok==\"/\") {", hint:"Four arithmetic operators trigger a pop-compute-push cycle"},
+          {t:"blank", ph:"//     pop right operand first (was pushed last)...", ans:"int b = stk.top(); stk.pop();", hint:"Second operand — pushed after first, so on top"},
+          {t:"blank", ph:"//     pop left operand...", ans:"int a = stk.top(); stk.pop();", hint:"First operand — pushed first, now on top after b removed"},
+          {t:"blank", ph:"//     apply operator and push result...", ans:"if(tok==\"+\")stk.push(a+b); else if(tok==\"-\")stk.push(a-b); else if(tok==\"*\")stk.push(a*b); else stk.push(a/b);", hint:"Compute a op b and push result back — it becomes operand for future ops"},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"PUSH operands — final result is last remaining element",
+        lines:[
+          {t:"blank", ph:"//   not an operator — push as integer operand...", ans:"else stk.push(stoi(tok));", hint:"Convert string token to integer and push onto operand stack"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// final result is the only element left on stack...", ans:"return stk.top();", hint:"Valid postfix expression leaves exactly one value — the answer"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Asteroid Collision ─────────────────────────────────────────────────
+  {
+    id:8, title:"Asteroid Collision", badge:"COLLISION", badgeColor:"var(--c1)",
+    hint:"Positive = moving right, negative = moving left. Collision only when top > 0 AND current < 0. Larger asteroid survives. Equal = both destroyed.",
+    viz:['+5','+10','-5','+8','-8','-3'],
+    zones:[
+      { z:1, tag:"stack<int> holds surviving asteroids",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> asteroidCollision(vector<int>& asteroids) {", hint:"Returns surviving asteroids after all collisions resolve"},
+          {t:"blank", ph:"// stack of surviving asteroids...", ans:"stack<int> stk;", hint:"Stack holds asteroids moving right (positive) or already survived left-movers"},
+        ]
+      },
+      { z:2, tag:"FIXED — sweep through asteroids left to right",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> a : asteroids) {`},
+          {t:"blank", ph:"//   collision possible flag...", ans:"bool destroyed = false;", hint:"Track if current asteroid gets destroyed in collisions"},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — top > 0 AND current < 0 (head-on)",
+        lines:[
+          {t:"blank", ph:"//   while collision possible: top moving right, current moving left...", ans:"while (!stk.empty() && a < 0 && stk.top() > 0) {", hint:"Only right-mover vs left-mover collides. Same direction: no collision."},
+          {t:"blank", ph:"//     top smaller — top destroyed, current continues...", ans:"if (stk.top() < -a) { stk.pop(); continue; }", hint:"Current asteroid larger in magnitude — top destroyed, keep checking"},
+          {t:"blank", ph:"//     equal size — both destroyed...", ans:"else if (stk.top() == -a) { stk.pop(); destroyed = true; break; }", hint:"Equal magnitude: mutual destruction"},
+          {t:"blank", ph:"//     top larger — current destroyed...", ans:"else { destroyed = true; break; }", hint:"Stack top larger — current asteroid destroyed, top survives"},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"PUSH survivor — collect stack as result",
+        lines:[
+          {t:"blank", ph:"//   push current if it survived all collisions...", ans:"if (!destroyed) stk.push(a);", hint:"Only push if asteroid wasn't destroyed during collision resolution"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// collect survivors from stack into result...", ans:"vector<int> result; while(!stk.empty()){result.push_back(stk.top());stk.pop();} reverse(result.begin(),result.end()); return result;", hint:"Stack order is bottom-to-top; reverse to get left-to-right order"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Remove K Digits ────────────────────────────────────────────────────
+  {
+    id:9, title:"Remove K Digits", badge:"MIN NUMBER", badgeColor:"var(--c4)",
+    hint:"Pop top digit if top > current AND k > 0. Result is the smallest possible number. Handle leading zeros and remaining k after loop.",
+    viz:['1','4','3','2','5'],
+    zones:[
+      { z:1, tag:"stack<char> builds result digit by digit",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"string removeKDigits(string num, int k) {", hint:"Remove k digits to make smallest possible number"},
+          {t:"blank", ph:"// stack builds the result number...", ans:"stack<char> stk;", hint:"Each digit pushed; popped when a smaller digit arrives and k > 0"},
+        ]
+      },
+      { z:2, tag:"FIXED — sweep through digits left to right",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">char</span> d : num) {`},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — top > current digit AND k > 0",
+        lines:[
+          {t:"blank", ph:"//   pop larger digits while we still have removals left...", ans:"while (!stk.empty() && k > 0 && stk.top() > d) {", hint:"Top digit is larger than current — removing it makes number smaller"},
+          {t:"blank", ph:"//     remove top digit — use one removal...", ans:"stk.pop(); k--;", hint:"Pop larger digit and decrement k — one removal used"},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"PUSH digit — post: remove trailing, handle leading zeros",
+        lines:[
+          {t:"blank", ph:"//   push current digit...", ans:"stk.push(d);", hint:"Current digit (smallest seen so far at this position) enters result"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// remove remaining k digits from the end (they're the largest)...", ans:"while (k-- > 0) stk.pop();", hint:"If k > 0 still, the number is non-decreasing — remove from tail"},
+          {t:"blank", ph:"// build result string from stack...", ans:"string result; while(!stk.empty()){result+=stk.top();stk.pop();} reverse(result.begin(),result.end());", hint:"Stack is bottom=front, top=back — reverse after collecting"},
+          {t:"blank", ph:"// remove leading zeros, handle empty case...", ans:"int start=result.find_first_not_of('0'); return start==string::npos ? \"0\" : result.substr(start);", hint:"Strip leading zeros. If all zeros, return \"0\"."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Decode Nested Strings ──────────────────────────────────────────────
+  {
+    id:10, title:"Decode Nested Strings", badge:"NESTED DECODE", badgeColor:"var(--c2)",
+    hint:"On '[': push (currentString, currentCount) onto stack. On ']': pop count and prev string, repeat current string count times and append to prev.",
+    viz:['3','[','a','2','[','b',']',']'],
+    zones:[
+      { z:1, tag:"stack<pair<string,int>> — saves context on '['",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"string decodeString(string s) {", hint:"Decodes strings like '3[a2[b]]' → 'abbabbabb'"},
+          {t:"blank", ph:"// stack holds (partial_string, repeat_count) pairs...", ans:"stack<pair<string,int>> stk;", hint:"Each '[' pushes current context. Each ']' pops and expands."},
+          {t:"blank", ph:"// current string being built + current number...", ans:"string curr = \"\"; int num = 0;", hint:"curr accumulates characters. num accumulates multi-digit numbers."},
+        ]
+      },
+      { z:2, tag:"FIXED — sweep characters left to right",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">char</span> c : s) {`},
+          {t:"blank", ph:"//   digit — accumulate multi-digit number...", ans:"if (isdigit(c)) num = num*10 + (c-'0');", hint:"Handles numbers like 12 in '12[ab]' — multiply and add"},
+        ]
+      },
+      { z:3, tag:"POP CONDITION — ']' triggers pop + expand",
+        lines:[
+          {t:"blank", ph:"//   '[' — push context onto stack, reset...", ans:"else if (c=='[') { stk.push({curr,num}); curr=\"\"; num=0; }", hint:"Save current state, start fresh for nested content"},
+          {t:"blank", ph:"//   ']' — pop context, repeat curr and append...", ans:"else if (c==']') { auto [prev,k]=stk.top(); stk.pop(); string rep=\"\"; for(int i=0;i<k;i++) rep+=curr; curr=prev+rep; }", hint:"Repeat curr k times, prepend the saved prev string"},
+        ]
+      },
+      { z:4, tag:"PUSH chars normally — return final curr",
+        lines:[
+          {t:"blank", ph:"//   regular character — append to current string...", ans:"else curr += c;", hint:"Literal character — just build up current string"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return decoded string...", ans:"return curr;", hint:"After processing all chars, curr holds the fully decoded result"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames = ['Init + Signature','Linear Sweep (FIXED)','Pop Condition','Push + Post-process'];
+const zoneCls   = ['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums  = ['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector');
+  sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i);
+    sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+
+  const zonesEl=document.getElementById('zones');
+  zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div');
+    div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p);
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const cells = p.viz.map((v,i)=>{
+    const cls = i<2?'waiting':i===2?'popped':'pushed';
+    return `<div class="stk-cell ${cls}">${v}</div>`;
+  }).reverse().join('');
+  viz.innerHTML=`
+    <span class="viz-label">stack:</span>
+    <div class="stk-viz">${cells}</div>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-left:20px;align-self:center;line-height:2">
+      <span style="color:var(--c1)">■</span> waiting for answer<br>
+      <span style="color:var(--c3)">■</span> being popped (answered)<br>
+      <span style="color:var(--c4)">■</span> just pushed<br>
+      <span style="color:var(--c1)">★ pop condition = the whole problem</span>
+    </span>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+\s*/g,'++').replace(/--\s*/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+
+function checkSingle(el){
+  const key=el.dataset.key;
+  if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+buildSelector();
+loadPattern(0);
+</script>
+</body>
+</html>
