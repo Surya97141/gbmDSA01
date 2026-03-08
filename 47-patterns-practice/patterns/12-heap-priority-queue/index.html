@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heap / Priority Queue — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(251,146,60,0.06) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c3);border:1px solid rgba(251,146,60,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c3) 40%,var(--c1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c3);color:var(--text);}
+.sel-btn.active{background:rgba(251,146,60,0.1);border-color:var(--c3);color:var(--c3);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c3);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(251,146,60,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c3);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:380px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.cm{color:#3d4f5c;font-style:italic;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c3);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(251,146,60,0.06);border-bottom-color:var(--c3);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(251,146,60,0.1);color:var(--c3);border-color:rgba(251,146,60,0.4);}
+.btn-check:hover{background:rgba(251,146,60,0.2);}
+.btn-reveal{background:rgba(167,139,250,0.08);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-reveal:hover{background:rgba(167,139,250,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c3);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{display:flex;align-items:center;gap:16px;padding:12px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;flex-wrap:wrap;}
+.heap-viz{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.heap-level{display:flex;gap:6px;justify-content:center;}
+.heap-node{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid;border-radius:3px;white-space:nowrap;}
+.heap-node.top{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.1);}
+.heap-node.mid{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.heap-node.bot{border-color:var(--border);color:var(--muted);}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.9;margin-left:8px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .fn{color:#7dd3fc}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 12 — Practice Mode</div>
+    <h1>Heap / Priority Queue</h1>
+    <p>// push → trim/rebalance → pop best → query top · answer always at top</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// HEAP / PRIORITY QUEUE — 10 Manifestations
+// 4 Blocks:
+//   ① INIT + TYPE      — priority_queue declaration (min/max, T type)
+//   ② PUSH + CONTROL   — push item; trim to size k (Family A) or seed (Family B/C)
+//   ③ POP + PROCESS    — top()+pop(); stale-skip (Dijkstra); rebalance (two-heap)
+//   ④ QUERY TOP        — return pq.top() — answer ALWAYS at top, never search
+//
+// THREE FAMILIES:
+//   A: Fixed-size k  — push all, pop when size>k, top=kth
+//   B: Global min    — pop cheapest, push neighbors, skip stale
+//   C: Two-heap      — max-heap(lower) + min-heap(upper), balance ≤ 1
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Kth Largest Element ────────────────────────────────────────────────
+  {
+    id:1, title:"Kth Largest Element", badge:"FAMILY-A SIZE-K", badgeColor:"var(--c4)",
+    hint:"Min-heap of size k. Push every element. When size > k, pop the smallest. Top = kth largest (k-1 elements larger than it remain outside).",
+    viz:[['top=kth'],['·','·'],['·','·','·']],
+    zones:[
+      { z:1, tag:"min-heap size k — top = kth largest at all times",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int findKthLargest(vector<int>& nums, int k) {", hint:"Returns the kth largest element in the array"},
+          {t:"blank", ph:"// min-heap — smaller elements pop first...", ans:"priority_queue<int, vector<int>, greater<int>> minHeap;", hint:"greater<int> makes it a min-heap. We want to expel small elements."},
+        ]
+      },
+      { z:2, tag:"PUSH + TRIM — maintain exactly k elements",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> x : nums) {`},
+          {t:"blank", ph:"//   push element...", ans:"minHeap.push(x);", hint:"Every element enters the heap"},
+          {t:"blank", ph:"//   trim: if size > k, pop smallest (can't be kth largest)...", ans:"if ((int)minHeap.size() > k) minHeap.pop();", hint:"Heap exceeds k — remove smallest. Top always = kth largest."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"no extra processing — trim does all the work",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// min-heap invariant: top = kth largest after every push+trim</span>`},
+          {t:"fixed", code:`<span class="cm">// elements larger than top pushed out the 'wrong' end — impossible</span>`},
+          {t:"fixed", code:`<span class="cm">// elements smaller than top evicted immediately when size > k</span>`},
+        ]
+      },
+      { z:4, tag:"QUERY TOP — top of min-heap = kth largest",
+        lines:[
+          {t:"blank", ph:"// top = kth largest (k-1 larger elements were never evicted)...", ans:"return minHeap.top();", hint:"Exactly k elements remain. Top is smallest of those k = kth largest overall."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Merge K Sorted Lists ───────────────────────────────────────────────
+  {
+    id:2, title:"Merge K Sorted Lists", badge:"FAMILY-B GLOBAL MIN", badgeColor:"var(--c2)",
+    hint:"Seed min-heap with head of each list. Always pop global minimum. Push its next node. Repeat until heap empty.",
+    viz:[['list1[0]'],['list2[0]','list3[0]'],['...']],
+    zones:[
+      { z:1, tag:"min-heap of (val, listIdx, nodePtr) — one per list",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"ListNode* mergeKLists(vector<ListNode*>& lists) {", hint:"Merges k sorted linked lists into one sorted list"},
+          {t:"blank", ph:"// min-heap: {value, list_index, node_ptr}...", ans:"using T = tuple<int,int,ListNode*>; priority_queue<T,vector<T>,greater<T>> minHeap;", hint:"Tuple comparison uses first element (value) — gives global minimum"},
+          {t:"blank", ph:"// seed with head of each non-empty list...", ans:"for(int i=0;i<(int)lists.size();i++) if(lists[i]) minHeap.push({lists[i]->val,i,lists[i]});", hint:"One entry per list — the current front element of each"},
+        ]
+      },
+      { z:2, tag:"PUSH — always push next node from same list",
+        lines:[
+          {t:"blank", ph:"// dummy head for result list...", ans:"ListNode dummy(0); ListNode* cur = &dummy;", hint:"Dummy node avoids special-casing the first element"},
+          {t:"fixed", code:`<span class="kw">while</span> (!minHeap.empty()) {`},
+          {t:"blank", ph:"//   pop global minimum...", ans:"auto [val, idx, node] = minHeap.top(); minHeap.pop();", hint:"Structured binding: unpack tuple into val, list index, node pointer"},
+        ]
+      },
+      { z:3, tag:"POP + PROCESS — append node, advance that list",
+        lines:[
+          {t:"blank", ph:"//   append to result...", ans:"cur->next = node; cur = cur->next;", hint:"Add minimum node to merged list, advance result pointer"},
+          {t:"blank", ph:"//   push next node from same list if it exists...", ans:"if (node->next) minHeap.push({node->next->val, idx, node->next});", hint:"Same list index — advance that list's pointer in the heap"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — dummy.next is head of merged list",
+        lines:[
+          {t:"blank", ph:"// return merged sorted list...", ans:"return dummy.next;", hint:"dummy.next points to first actual node of the merged result"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Dijkstra's Algorithm ───────────────────────────────────────────────
+  {
+    id:3, title:"Dijkstra's Algorithm", badge:"FAMILY-B SHORTEST PATH", badgeColor:"var(--c3)",
+    hint:"Min-heap of (dist, node). Pop cheapest. Skip if already visited (stale entry). Relax all neighbors. Push improved distances.",
+    viz:[['src=0'],['nb:d1','nb:d2'],['...']],
+    zones:[
+      { z:1, tag:"min-heap of (dist, node) + dist array",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> dijkstra(int n, int src, vector<vector<pair<int,int>>>& graph) {", hint:"Returns shortest distances from src to all nodes. graph[u]={(v,w),...}"},
+          {t:"blank", ph:"// dist array — INT_MAX = unvisited...", ans:"vector<int> dist(n, INT_MAX); dist[src] = 0;", hint:"Initialise all distances to infinity except source"},
+          {t:"blank", ph:"// min-heap seeded with source at cost 0...", ans:"priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> pq; pq.push({0,src});", hint:"{dist, node} pair — min-heap orders by dist ascending"},
+        ]
+      },
+      { z:2, tag:"POP — always process cheapest unprocessed node",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!pq.empty()) {`},
+          {t:"blank", ph:"//   pop {dist, node}...", ans:"auto [d, u] = pq.top(); pq.pop();", hint:"d = distance from src to u via this heap entry"},
+          {t:"blank", ph:"//   stale entry — already found shorter path, skip...", ans:"if (d > dist[u]) continue;", hint:"If d > dist[u], we already processed u with a shorter path — discard"},
+        ]
+      },
+      { z:3, tag:"PROCESS — relax all neighbors, push improvements",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="kw">auto</span> [v, w] : graph[u]) {`},
+          {t:"blank", ph:"//     found shorter path to v — relax and push...", ans:"if (dist[u] + w < dist[v]) {", hint:"Relaxation: new path through u is shorter than known best for v"},
+          {t:"blank", ph:"//       update dist[v] and push improved entry...", ans:"dist[v] = dist[u] + w; pq.push({dist[v], v});", hint:"Push new (shorter) dist entry. Old entry becomes stale — will be skipped."},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — dist array holds all shortest distances",
+        lines:[
+          {t:"blank", ph:"// return shortest distances from src...", ans:"return dist;", hint:"dist[i] = shortest path weight from src to node i. INT_MAX = unreachable."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Median of Stream ───────────────────────────────────────────────────
+  {
+    id:4, title:"Median of Stream", badge:"FAMILY-C TWO-HEAP", badgeColor:"var(--c1)",
+    hint:"Lower half in max-heap, upper half in min-heap. After each insert: rebalance so sizes differ by at most 1. Median = top of larger heap or average of both tops.",
+    viz:[['maxH.top','minH.top'],['lower·half','upper·half']],
+    zones:[
+      { z:1, tag:"max-heap (lower half) + min-heap (upper half)",
+        lines:[
+          {t:"blank", ph:"// class definition...", ans:"class MedianFinder {", hint:"Supports addNum() and findMedian() in O(log n) and O(1)"},
+          {t:"blank", ph:"// max-heap for lower half, min-heap for upper half...", ans:"priority_queue<int> maxH; priority_queue<int,vector<int>,greater<int>> minH;", hint:"maxH.top() = largest of lower half. minH.top() = smallest of upper half."},
+        ]
+      },
+      { z:2, tag:"PUSH — route to correct heap then rebalance",
+        lines:[
+          {t:"blank", ph:"// addNum — insert into correct heap...", ans:"void addNum(int num) {", hint:"Always push to maxH first, then fix order and balance"},
+          {t:"blank", ph:"//   push to maxH first...", ans:"maxH.push(num);", hint:"All elements enter lower half first"},
+          {t:"blank", ph:"//   fix order: if maxH top > minH top, move it up...", ans:"if (!minH.empty() && maxH.top() > minH.top()) { minH.push(maxH.top()); maxH.pop(); }", hint:"Max of lower half must never exceed min of upper half"},
+        ]
+      },
+      { z:3, tag:"REBALANCE — sizes must differ by at most 1",
+        lines:[
+          {t:"blank", ph:"//   rebalance: if sizes differ by more than 1...", ans:"if (maxH.size() > minH.size()+1) { minH.push(maxH.top()); maxH.pop(); }", hint:"Lower half has 2+ more elements — move top to upper half"},
+          {t:"blank", ph:"//   rebalance other direction...", ans:"if (minH.size() > maxH.size()) { maxH.push(minH.top()); minH.pop(); }", hint:"Upper half larger — move its min to lower half"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — top of larger heap or average",
+        lines:[
+          {t:"blank", ph:"// findMedian — top of larger heap or average...", ans:"double findMedian() {", hint:"O(1) — answer is always at the top(s)"},
+          {t:"blank", ph:"//   odd total: larger heap has extra element = median...", ans:"if (maxH.size() > minH.size()) return maxH.top();", hint:"Lower half has one more element — its top is the middle element"},
+          {t:"blank", ph:"//   even total: average of both tops...", ans:"return (maxH.top() + minH.top()) / 2.0;", hint:"Equal sizes — median = average of the two middle elements"},
+          {t:"fixed", code:`}`},
+          {t:"fixed", code:`};`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Task Scheduler ─────────────────────────────────────────────────────
+  {
+    id:5, title:"Task Scheduler", badge:"FAMILY-B MAX-HEAP", badgeColor:"var(--c4)",
+    hint:"Max-heap by frequency. Each cycle: run up to n+1 tasks (most frequent first). Tasks not run this cycle get cooldown. Idle if heap empty mid-cycle.",
+    viz:[['max-freq'],['freq2','freq3'],['...','...','...']],
+    zones:[
+      { z:1, tag:"max-heap of frequencies + cooldown queue",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int leastInterval(vector<char>& tasks, int n) {", hint:"Min intervals to execute all tasks with n-cooldown between same tasks"},
+          {t:"blank", ph:"// count frequencies...", ans:"unordered_map<char,int> freq; for(char t:tasks) freq[t]++;", hint:"How many times each task type must run"},
+          {t:"blank", ph:"// max-heap of frequencies (task identity doesn't matter)...", ans:"priority_queue<int> maxHeap; for(auto& [c,f]:freq) maxHeap.push(f);", hint:"Push counts only — always run the most frequent available task"},
+          {t:"blank", ph:"// cooldown queue: {remaining_count, available_at_time}...", ans:"queue<pair<int,int>> cooldown; int time=0;", hint:"Tasks in cooldown can't run until their available_at_time"},
+        ]
+      },
+      { z:2, tag:"PUSH — release cooled tasks back to heap each tick",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!maxHeap.empty() <span class="op">||</span> !cooldown.empty()) {`},
+          {t:"blank", ph:"//   advance clock...", ans:"time++;", hint:"One CPU tick per iteration"},
+          {t:"blank", ph:"//   release any tasks whose cooldown just expired...", ans:"if (!cooldown.empty() && cooldown.front().second==time) { maxHeap.push(cooldown.front().first); cooldown.pop(); }", hint:"Task becomes available — re-enter competition in max-heap"},
+        ]
+      },
+      { z:3, tag:"POP + PROCESS — run most frequent, send to cooldown",
+        lines:[
+          {t:"blank", ph:"//   run most frequent task if available...", ans:"if (!maxHeap.empty()) {", hint:"Heap non-empty: a task is ready to run"},
+          {t:"blank", ph:"//     decrement frequency...", ans:"int cnt = maxHeap.top()-1; maxHeap.pop();", hint:"Task ran once — remaining count decreases"},
+          {t:"blank", ph:"//     if more remaining, send to cooldown...", ans:"if (cnt>0) cooldown.push({cnt, time+n+1});", hint:"Task has more runs needed — available again after n+1 ticks"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — time = total intervals including idle",
+        lines:[
+          {t:"blank", ph:"// return total CPU time...", ans:"return time;", hint:"Includes idle cycles where heap was empty but cooldown queue wasn't"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Top K Frequent Elements ────────────────────────────────────────────
+  {
+    id:6, title:"Top K Frequent Elements", badge:"FAMILY-A SIZE-K", badgeColor:"var(--c3)",
+    hint:"Count frequencies. Min-heap of (freq, element) size k. Push each unique element. Pop when size > k. Heap contains k most frequent elements.",
+    viz:[['top=kth-freq'],['·','·'],['·','·','·']],
+    zones:[
+      { z:1, tag:"min-heap of (freq, val) size k — same shape as kth largest",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> topKFrequent(vector<int>& nums, int k) {", hint:"Returns k elements with highest frequency"},
+          {t:"blank", ph:"// build frequency map...", ans:"unordered_map<int,int> freq; for(int x:nums) freq[x]++;", hint:"Count occurrences of each unique element"},
+          {t:"blank", ph:"// min-heap ordered by frequency — {freq, value}...", ans:"priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> minHeap;", hint:"Min-heap: least frequent element at top — easy to evict"},
+        ]
+      },
+      { z:2, tag:"PUSH + TRIM — maintain k most frequent",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="kw">auto</span><span class="op">&</span> [val,f] : freq) {`},
+          {t:"blank", ph:"//   push {frequency, value}...", ans:"minHeap.push({f, val});", hint:"Each unique element enters the heap with its frequency"},
+          {t:"blank", ph:"//   trim: evict least frequent when size > k...", ans:"if ((int)minHeap.size() > k) minHeap.pop();", hint:"Pop least frequent — it can't be in the top-k"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"collect k elements from heap",
+        lines:[
+          {t:"blank", ph:"// collect k elements from heap into result...", ans:"vector<int> result;", hint:"Heap contains exactly k most frequent elements"},
+          {t:"fixed", code:`<span class="kw">while</span> (!minHeap.empty()) {`},
+          {t:"blank", ph:"//   extract element value (second of pair)...", ans:"result.push_back(minHeap.top().second); minHeap.pop();", hint:"Extract the value part of {freq, value} pair"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — result holds top k frequent elements",
+        lines:[
+          {t:"blank", ph:"// return top k frequent elements...", ans:"return result;", hint:"Order within result doesn't matter — any k most frequent elements"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Minimum Cost to Connect Ropes ─────────────────────────────────────
+  {
+    id:7, title:"Minimum Cost to Connect Ropes", badge:"FAMILY-B GREEDY HEAP", badgeColor:"var(--c1)",
+    hint:"Min-heap. Repeatedly merge two cheapest ropes. Cost = sum of two. Push merged rope back. Total cost = sum of all merge operations.",
+    viz:[['min1'],['min2','min3'],['...','...','...']],
+    zones:[
+      { z:1, tag:"min-heap seeds with all rope lengths",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int connectRopes(vector<int>& ropes) {", hint:"Returns minimum total cost to connect all ropes into one"},
+          {t:"blank", ph:"// edge case — single rope needs no connecting...", ans:"if (ropes.size()<=1) return 0;", hint:"0 or 1 rope — cost is 0"},
+          {t:"blank", ph:"// min-heap seeded with all rope lengths...", ans:"priority_queue<int,vector<int>,greater<int>> minHeap(ropes.begin(),ropes.end());", hint:"Range constructor seeds heap. Always merge two cheapest = greedy optimal."},
+        ]
+      },
+      { z:2, tag:"PUSH — push merged rope back into heap",
+        lines:[
+          {t:"blank", ph:"// total cost accumulator...", ans:"int totalCost = 0;", hint:"Sum of all individual merge costs"},
+          {t:"fixed", code:`<span class="kw">while</span> (minHeap.size() <span class="op">&gt;</span> <span class="nm">1</span>) {`},
+          {t:"blank", ph:"//   extract two cheapest ropes...", ans:"int first=minHeap.top(); minHeap.pop(); int second=minHeap.top(); minHeap.pop();", hint:"Two cheapest ropes — greedy: always merge the two shortest"},
+        ]
+      },
+      { z:3, tag:"POP + PROCESS — merge cost, push result",
+        lines:[
+          {t:"blank", ph:"//   merge cost = sum of two ropes...", ans:"int merged = first + second;", hint:"Cost to connect = total length of both ropes being connected"},
+          {t:"blank", ph:"//   accumulate cost + push merged rope back...", ans:"totalCost += merged; minHeap.push(merged);", hint:"Merged rope re-enters competition. Its cost is added to total."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — total cost of all merges",
+        lines:[
+          {t:"blank", ph:"// return total connection cost...", ans:"return totalCost;", hint:"Sum of all merge operations = minimum possible total cost"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Sliding Window Median ──────────────────────────────────────────────
+  {
+    id:8, title:"Sliding Window Median", badge:"FAMILY-C LAZY DEL", badgeColor:"var(--c2)",
+    hint:"Two heaps + lazy deletion map. When window slides: mark outgoing element as 'deleted'. Skip deleted elements when they reach the top. Rebalance after each step.",
+    viz:[['maxH.top','minH.top'],['tombstones','lazy-del']],
+    zones:[
+      { z:1, tag:"two heaps + tombstone map for lazy deletion",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<double> medianSlidingWindow(vector<int>& nums, int k) {", hint:"Returns median of every window of size k"},
+          {t:"blank", ph:"// max-heap lower + min-heap upper + lazy deletion map...", ans:"priority_queue<int> maxH; priority_queue<int,vector<int>,greater<int>> minH; unordered_map<int,int> lazy;", hint:"lazy[x] = how many times x has been 'deleted' but not yet physically removed"},
+          {t:"blank", ph:"// seed first window...", ans:"for(int i=0;i<k;i++) maxH.push(nums[i]); for(int i=0;i<k/2;i++){minH.push(maxH.top());maxH.pop();}",hint:"Seed first k elements, then move k/2 to upper half"},
+        ]
+      },
+      { z:2, tag:"PUSH + LAZY REMOVE — add new, mark old as deleted",
+        lines:[
+          {t:"blank", ph:"// helper to get current median...", ans:"auto getMedian=[&]()->double{ return k%2==1 ? maxH.top() : (maxH.top()+(double)minH.top())/2; };", hint:"Odd k: lower half has one extra = median. Even k: average of two middles."},
+          {t:"blank", ph:"// result + collect first window median...", ans:"vector<double> result; result.push_back(getMedian());", hint:"First window already seeded — record its median"},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> k; i <span class="op">&lt;</span> (<span class="ty">int</span>)nums.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   mark outgoing element as lazily deleted...", ans:"lazy[nums[i-k]]++;", hint:"nums[i-k] leaves the window — mark it deleted (don't physically remove yet)"},
+        ]
+      },
+      { z:3, tag:"REBALANCE — clean tops, fix heap sizes",
+        lines:[
+          {t:"blank", ph:"//   add incoming element to correct heap...", ans:"if (nums[i]>=minH.top()) minH.push(nums[i]); else maxH.push(nums[i]);", hint:"Route to upper or lower half based on comparison with boundary"},
+          {t:"blank", ph:"//   purge lazily deleted elements from tops...", ans:"auto purge=[&](){ while(!maxH.empty()&&lazy[maxH.top()]>0){lazy[maxH.top()]--;maxH.pop();} while(!minH.empty()&&lazy[minH.top()]>0){lazy[minH.top()]--;minH.pop();} };", hint:"Physically remove tombstoned elements only when they surface at the top"},
+          {t:"blank", ph:"//   purge then rebalance sizes...", ans:"purge(); if((int)maxH.size()>k-k/2){minH.push(maxH.top());maxH.pop();} else if((int)minH.size()>k/2){maxH.push(minH.top());minH.pop();} purge();", hint:"Maintain size invariant: maxH = ceil(k/2), minH = floor(k/2)"},
+          {t:"blank", ph:"//   record median for this window...", ans:"result.push_back(getMedian());", hint:"After rebalancing, tops are clean and sizes correct — median is valid"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — getMedian() always O(1) after purge",
+        lines:[
+          {t:"blank", ph:"// return all window medians...", ans:"return result;", hint:"One median per valid window position"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Event-Based Simulation ─────────────────────────────────────────────
+  {
+    id:9, title:"Event-Based Simulation", badge:"FAMILY-B TIMESTAMP", badgeColor:"var(--c3)",
+    hint:"Min-heap ordered by event timestamp. Always process earliest event. Processing an event may generate future events — push them with their timestamps.",
+    viz:[['t=0'],['t=3','t=5'],['t=8','t=12','...']],
+    zones:[
+      { z:1, tag:"min-heap of (timestamp, event) — earliest first",
+        lines:[
+          {t:"blank", ph:"// function signature — simulate task queue with deadlines...", ans:"int minTimeToFinish(vector<pair<int,int>>& events) {", hint:"events = {arrival_time, duration}. Returns time when all tasks finish."},
+          {t:"blank", ph:"// min-heap: {timestamp, event_id} — process by time...", ans:"priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> pq;", hint:"Earliest timestamp at top — guarantees chronological processing"},
+          {t:"blank", ph:"// seed all initial events with their arrival times...", ans:"for(int i=0;i<(int)events.size();i++) pq.push({events[i].first, i});", hint:"Each event enters with its arrival timestamp"},
+        ]
+      },
+      { z:2, tag:"POP — always process earliest pending event",
+        lines:[
+          {t:"blank", ph:"// current simulation time + result...", ans:"int curTime=0, lastFinish=0;", hint:"curTime tracks CPU. lastFinish tracks when last task completes."},
+          {t:"fixed", code:`<span class="kw">while</span> (!pq.empty()) {`},
+          {t:"blank", ph:"//   pop earliest event...", ans:"auto [t, id] = pq.top(); pq.pop();", hint:"t = when this event is scheduled, id = which event"},
+        ]
+      },
+      { z:3, tag:"PROCESS — advance time, compute finish, push dependents",
+        lines:[
+          {t:"blank", ph:"//   can't start before arrival — advance time if needed...", ans:"curTime = max(curTime, t);", hint:"If CPU free before arrival, jump forward to arrival time"},
+          {t:"blank", ph:"//   compute finish time for this task...", ans:"curTime += events[id].second; lastFinish = max(lastFinish, curTime);", hint:"Task runs for its duration. Update global last finish time."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — lastFinish = simulation end time",
+        lines:[
+          {t:"blank", ph:"// return time when all events processed...", ans:"return lastFinish;", hint:"Time when the last task in the simulation completes"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── A* Pathfinding ─────────────────────────────────────────────────────
+  {
+    id:10, title:"A* Pathfinding", badge:"FAMILY-B HEURISTIC", badgeColor:"var(--c4)",
+    hint:"Like Dijkstra but orders by f = g + h where g = actual cost so far and h = heuristic estimate to goal. Min-heap on f. Admissible h guarantees optimal path.",
+    viz:[['f=g+h'],['h:est','g:real'],['start','...','goal']],
+    zones:[
+      { z:1, tag:"min-heap of (f_cost, node) — f = g + h",
+        lines:[
+          {t:"blank", ph:"// function signature — grid A* with Manhattan heuristic...", ans:"int aStarPath(vector<vector<int>>& grid, pair<int,int> start, pair<int,int> goal) {", hint:"Returns minimum cost path from start to goal on weighted grid"},
+          {t:"blank", ph:"// heuristic: Manhattan distance to goal...", ans:"auto h=[&](int r,int c){ return abs(r-goal.first)+abs(c-goal.second); };", hint:"Admissible heuristic: Manhattan never overestimates cost on grid"},
+          {t:"blank", ph:"// min-heap of {f, g, row, col}...", ans:"using T=tuple<int,int,int,int>; priority_queue<T,vector<T>,greater<T>> pq;", hint:"f = g + h orders the heap. g is actual cost so far."},
+          {t:"blank", ph:"// dist (g-cost) array + seed...", ans:"int m=grid.size(),n=grid[0].size(); vector<vector<int>> g(m,vector<int>(n,INT_MAX)); g[start.first][start.second]=0; pq.push({h(start.first,start.second),0,start.first,start.second});", hint:"g array tracks best known cost to each cell. Seed with start at cost 0."},
+        ]
+      },
+      { z:2, tag:"POP — always expand node with lowest f = g + h",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!pq.empty()) {`},
+          {t:"blank", ph:"//   pop {f, g_cost, row, col}...", ans:"auto [f, gc, r, c] = pq.top(); pq.pop();", hint:"f = g + h. gc = actual cost to reach (r,c) via this path."},
+          {t:"blank", ph:"//   reached goal...", ans:"if (make_pair(r,c)==goal) return gc;", hint:"Goal reached — gc is the optimal path cost (A* guarantees this)"},
+          {t:"blank", ph:"//   stale entry — already found better path...", ans:"if (gc > g[r][c]) continue;", hint:"Same as Dijkstra stale-skip — discard outdated heap entries"},
+        ]
+      },
+      { z:3, tag:"PROCESS — relax 4-directional neighbors",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="kw">auto</span> [dr,dc] : vector<pair<int,int>>{{1,0},{-1,0},{0,1},{0,-1}}) {`},
+          {t:"blank", ph:"//     neighbor position + bounds check...", ans:"int nr=r+dr, nc=c+dc; if(nr<0||nr>=m||nc<0||nc>=n||grid[nr][nc]<0) continue;", hint:"Stay in bounds and avoid walls (negative grid values)"},
+          {t:"blank", ph:"//     new g-cost = current g + cell cost...", ans:"int ng = gc + grid[nr][nc];", hint:"Actual cost to reach neighbor through current path"},
+          {t:"blank", ph:"//     if improved — update g and push with new f...", ans:"if(ng<g[nr][nc]){g[nr][nc]=ng; pq.push({ng+h(nr,nc),ng,nr,nc});}",hint:"New f = new g + h(neighbor). Push to heap for future expansion."},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — return -1 if goal unreachable",
+        lines:[
+          {t:"blank", ph:"// goal unreachable...", ans:"return -1;", hint:"Heap exhausted without reaching goal — no path exists"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Init + Type','Push + Control','Pop + Process','Query Top'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0,answered=new Set(),stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const levels=p.viz.map((level,li)=>{
+    const nodes=level.map((v,ni)=>{
+      const cls=li===0?'top':li===1?'mid':'bot';
+      return `<div class="heap-node ${cls}">${v}</div>`;
+    }).join('');
+    return `<div class="heap-level">${nodes}</div>`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="heap-viz">${levels}</div>
+    <div class="viz-legend">
+      <span style="color:var(--c3)">■</span> top = answer (always O(1))<br>
+      <span style="color:var(--c2)">■</span> middle levels<br>
+      <span style="color:var(--muted)">■</span> deeper levels<br>
+      <span style="color:var(--c3)">★ A:size-k trim &nbsp;|&nbsp; B:skip stale &nbsp;|&nbsp; C:two-heap balance</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

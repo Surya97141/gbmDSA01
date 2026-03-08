@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Union Find (DSU) — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(74,222,128,0.06) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c4);border:1px solid rgba(74,222,128,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c4) 40%,var(--c2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c4);color:var(--text);}
+.sel-btn.active{background:rgba(74,222,128,0.1);border-color:var(--c4);color:var(--c4);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c4);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(74,222,128,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c4);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:380px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.cm{color:#3d4f5c;font-style:italic;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c4);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(74,222,128,0.06);border-bottom-color:var(--c4);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.4);}
+.btn-check:hover{background:rgba(74,222,128,0.2);}
+.btn-reveal{background:rgba(167,139,250,0.08);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-reveal:hover{background:rgba(167,139,250,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(56,189,248,0.1);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-next:hover{background:rgba(56,189,248,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(74,222,128,0.05);border:1px solid rgba(74,222,128,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c4);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{display:flex;align-items:center;gap:16px;padding:12px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;flex-wrap:wrap;}
+.dsu-viz{display:flex;flex-direction:column;gap:6px;}
+.dsu-row{display:flex;gap:4px;align-items:center;}
+.dsu-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);width:52px;text-align:right;padding-right:6px;}
+.dsu-cell{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:3px;color:var(--muted);min-width:32px;text-align:center;}
+.dsu-cell.root{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.08);}
+.dsu-cell.child{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.dsu-cell.idx{border:none;color:var(--muted);font-size:10px;background:transparent;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.9;margin-left:12px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .fn{color:#7dd3fc}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 14 — Practice Mode</div>
+    <h1>Union Find (DSU)</h1>
+    <p>// parent[i]=i → find(path-compress) → unite(rank) → query root</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// UNION FIND (DSU) — 10 Manifestations
+// 4 Blocks:
+//   ① INIT          — parent[i]=i, rank[i]=0, iota fill
+//   ② find()        — path compression: parent[x]=find(parent[x]) IDENTICAL always
+//   ③ unite()       — union by rank + return bool (false = already same component)
+//   ④ QUERY         — count roots / check find(u)==find(v) / extract groups
+//
+// THE ONE QUESTION DSU ANSWERS: "Are these two in the same group?"
+//   false from unite() = already connected = cycle / redundant edge
+//   true  from unite() = successfully merged = new connection
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Connected Components ───────────────────────────────────────────────
+  {
+    id:1, title:"Connected Components", badge:"COUNT ROOTS", badgeColor:"var(--c4)",
+    hint:"After uniting all edges, count nodes where parent[i]==i. Each such node is a root = one component.",
+    zones:[
+      { z:1, tag:"parent[i]=i, rank[i]=0 — every node its own root",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int countComponents(int n, vector<vector<int>>& edges) {", hint:"Returns number of connected components in undirected graph"},
+          {t:"blank", ph:"// init: each node is its own parent...", ans:"vector<int> parent(n), rnk(n,0); iota(parent.begin(),parent.end(),0);", hint:"iota fills parent[0]=0,parent[1]=1,...parent[n-1]=n-1"},
+        ]
+      },
+      { z:2, tag:"find() — path compression flattens tree",
+        lines:[
+          {t:"blank", ph:"// find with path compression — IDENTICAL in every DSU...", ans:"function<int(int)> find=[&](int x)->int{ return parent[x]==x?x:(parent[x]=find(parent[x])); };", hint:"Two things at once: finds root AND flattens path. parent[x]=find(parent[x]) is the compression."},
+        ]
+      },
+      { z:3, tag:"unite() — union by rank, returns false if already same",
+        lines:[
+          {t:"blank", ph:"// unite with union by rank...", ans:"auto unite=[&](int x,int y){ int rx=find(x),ry=find(y); if(rx==ry)return false; if(rnk[rx]<rnk[ry])swap(rx,ry); parent[ry]=rx; if(rnk[rx]==rnk[ry])rnk[rx]++; return true; };", hint:"Attach smaller rank tree under larger. Rank only increases when two equal-rank trees merge."},
+          {t:"blank", ph:"// process all edges...", ans:"for(auto& e:edges) unite(e[0],e[1]);", hint:"Each edge potentially merges two components"},
+        ]
+      },
+      { z:4, tag:"QUERY — count nodes where parent[i]==i (roots)",
+        lines:[
+          {t:"blank", ph:"// count distinct roots = number of components...", ans:"int count=0; for(int i=0;i<n;i++) if(find(i)==i) count++; return count;", hint:"After path compression, find(i)==i iff i is a root. Each root = one component."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Cycle Detection Undirected ─────────────────────────────────────────
+  {
+    id:2, title:"Cycle Detection Undirected", badge:"UNITE RETURNS FALSE", badgeColor:"var(--c3)",
+    hint:"Process edges one by one. If unite(u,v) returns false, u and v were already in the same component — adding this edge creates a cycle.",
+    zones:[
+      { z:1, tag:"same DSU init — n nodes, no edges yet",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"bool hasCycle(int n, vector<vector<int>>& edges) {", hint:"Returns true if undirected graph contains any cycle"},
+          {t:"blank", ph:"// standard DSU init...", ans:"vector<int> parent(n), rnk(n,0); iota(parent.begin(),parent.end(),0);", hint:"Each node starts as its own component — no connections yet"},
+        ]
+      },
+      { z:2, tag:"find() — identical path compression",
+        lines:[
+          {t:"blank", ph:"// find with path compression...", ans:"function<int(int)> find=[&](int x)->int{ return parent[x]==x?x:(parent[x]=find(parent[x])); };", hint:"Same find() as always — path compression gives near-O(1) amortized"},
+        ]
+      },
+      { z:3, tag:"unite() — false return = cycle detected",
+        lines:[
+          {t:"blank", ph:"// unite — false means already connected = cycle...", ans:"auto unite=[&](int x,int y){ int rx=find(x),ry=find(y); if(rx==ry)return false; if(rnk[rx]<rnk[ry])swap(rx,ry); parent[ry]=rx; if(rnk[rx]==rnk[ry])rnk[rx]++; return true; };", hint:"Key insight: if find(u)==find(v) before uniting, u-v edge creates a cycle"},
+        ]
+      },
+      { z:4, tag:"QUERY — first false from unite = cycle found",
+        lines:[
+          {t:"blank", ph:"// process edges — false return = cycle...", ans:"for(auto& e:edges) if(!unite(e[0],e[1])) return true;", hint:"Short-circuit: return true immediately on first cycle detected"},
+          {t:"blank", ph:"// no cycle found...", ans:"return false;", hint:"All edges processed without any creating a cycle — graph is acyclic"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Kruskal's MST ──────────────────────────────────────────────────────
+  {
+    id:3, title:"Kruskal's MST", badge:"SORT + UNITE", badgeColor:"var(--c2)",
+    hint:"Sort edges by weight. Add edge only if it connects two different components (unite returns true). Stop after n-1 edges added. Total weight = MST cost.",
+    zones:[
+      { z:1, tag:"init + sort edges by weight ascending",
+        lines:[
+          {t:"blank", ph:"// function signature — edges as {weight, u, v}...", ans:"int kruskalMST(int n, vector<tuple<int,int,int>>& edges) {", hint:"Returns minimum spanning tree total weight"},
+          {t:"blank", ph:"// sort edges by weight — process cheapest first...", ans:"sort(edges.begin(),edges.end());", hint:"Tuple comparison uses first element (weight) — ascending order"},
+          {t:"blank", ph:"// standard DSU init...", ans:"vector<int> parent(n),rnk(n,0); iota(parent.begin(),parent.end(),0);", hint:"Each node starts in its own component"},
+        ]
+      },
+      { z:2, tag:"find() — path compression",
+        lines:[
+          {t:"blank", ph:"// find with path compression...", ans:"function<int(int)> find=[&](int x)->int{ return parent[x]==x?x:(parent[x]=find(parent[x])); };", hint:"Identical find() — DSU core never changes"},
+        ]
+      },
+      { z:3, tag:"unite() — only add edge if it joins different components",
+        lines:[
+          {t:"blank", ph:"// unite by rank...", ans:"auto unite=[&](int x,int y){ int rx=find(x),ry=find(y); if(rx==ry)return false; if(rnk[rx]<rnk[ry])swap(rx,ry); parent[ry]=rx; if(rnk[rx]==rnk[ry])rnk[rx]++; return true; };", hint:"unite returns true = edge added to MST. false = would create cycle, skip."},
+          {t:"blank", ph:"// accumulate MST weight — add edge only if it joins different components...", ans:"int mstWeight=0, edgesUsed=0; for(auto& [w,u,v]:edges){ if(unite(u,v)){mstWeight+=w; if(++edgesUsed==n-1) break;} }", hint:"MST has exactly n-1 edges. Break early once we have them all."},
+        ]
+      },
+      { z:4, tag:"QUERY — return MST weight (or -1 if disconnected)",
+        lines:[
+          {t:"blank", ph:"// return MST weight — -1 if graph disconnected...", ans:"return edgesUsed==n-1 ? mstWeight : -1;", hint:"If we couldn't get n-1 edges, graph is disconnected — no spanning tree"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Dynamic Connectivity ───────────────────────────────────────────────
+  {
+    id:4, title:"Dynamic Connectivity", badge:"ONLINE QUERIES", badgeColor:"var(--c1)",
+    hint:"Edges and queries arrive online. Each query asks: are u and v connected NOW? DSU handles both in near-O(1) — no need to re-run BFS/DFS for each query.",
+    zones:[
+      { z:1, tag:"DSU handles online edge additions + connectivity queries",
+        lines:[
+          {t:"blank", ph:"// function signature — mix of union and query operations...", ans:"vector<bool> dynamicConnectivity(int n, vector<tuple<int,int,int>>& ops) {", hint:"ops: {0,u,v}=union(u,v), {1,u,v}=query connected(u,v). Returns answers to queries."},
+          {t:"blank", ph:"// standard DSU init...", ans:"vector<int> parent(n),rnk(n,0); iota(parent.begin(),parent.end(),0);", hint:"Starts with n isolated nodes — connections built dynamically"},
+        ]
+      },
+      { z:2, tag:"find() — same path compression",
+        lines:[
+          {t:"blank", ph:"// find with path compression...", ans:"function<int(int)> find=[&](int x)->int{ return parent[x]==x?x:(parent[x]=find(parent[x])); };", hint:"O(α(n)) per operation — handles real-time queries efficiently"},
+        ]
+      },
+      { z:3, tag:"process operations: union or query",
+        lines:[
+          {t:"blank", ph:"// unite by rank...", ans:"auto unite=[&](int x,int y){ int rx=find(x),ry=find(y); if(rx==ry)return; if(rnk[rx]<rnk[ry])swap(rx,ry); parent[ry]=rx; if(rnk[rx]==rnk[ry])rnk[rx]++; };", hint:"Union: merge two components. No return value needed here."},
+          {t:"blank", ph:"// process each operation...", ans:"vector<bool> answers; for(auto& [type,u,v]:ops){ if(type==0) unite(u,v); else answers.push_back(find(u)==find(v)); } return answers;", hint:"Type 0=union, Type 1=query. Query answered in O(α(n)) via find comparison."},
+        ]
+      },
+      { z:4, tag:"QUERY — find(u)==find(v) answers each connectivity query",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// each query: find(u)==find(v) in O(α(n))</span>`},
+          {t:"fixed", code:`<span class="cm">// vs BFS/DFS: O(V+E) per query — DSU wins for online problems</span>`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Number of Islands Online ───────────────────────────────────────────
+  {
+    id:5, title:"Number of Islands Online", badge:"GRID DSU", badgeColor:"var(--c3)",
+    hint:"Add land cells one by one. Each new land cell starts as its own island. Union with adjacent land cells. Track island count: +1 on add, -1 per successful union.",
+    zones:[
+      { z:1, tag:"DSU on grid cells — flatten 2D to 1D index",
+        lines:[
+          {t:"blank", ph:"// function signature — cells added one by one...", ans:"vector<int> numIslands2(int m, int n, vector<pair<int,int>>& positions) {", hint:"After each land cell added, returns current island count"},
+          {t:"blank", ph:"// DSU for m*n grid — cell (r,c) = index r*n+c...", ans:"vector<int> parent(m*n,-1),rnk(m*n,0); int islands=0;", hint:"parent=-1 means water (unvisited). Land cells get parent[r*n+c]=r*n+c on add."},
+        ]
+      },
+      { z:2, tag:"find() — path compression on flattened grid",
+        lines:[
+          {t:"blank", ph:"// find with path compression...", ans:"function<int(int)> find=[&](int x)->int{ return parent[x]==x?x:(parent[x]=find(parent[x])); };", hint:"Same find() — works on flattened 1D indices of grid cells"},
+        ]
+      },
+      { z:3, tag:"add land cell — unite with 4-directional land neighbors",
+        lines:[
+          {t:"blank", ph:"// unite by rank...", ans:"auto unite=[&](int x,int y){ int rx=find(x),ry=find(y); if(rx==ry)return false; if(rnk[rx]<rnk[ry])swap(rx,ry); parent[ry]=rx; if(rnk[rx]==rnk[ry])rnk[rx]++; return true; };", hint:"Returns true = two islands merged into one"},
+          {t:"blank", ph:"// process each new land cell...", ans:"vector<int> result; for(auto& [r,c]:positions){ int idx=r*n+c; if(parent[idx]!=-1){result.push_back(islands);continue;} parent[idx]=idx; islands++;", hint:"New land cell: set as its own root, increment island count"},
+          {t:"blank", ph:"//   union with 4-directional land neighbors...", ans:"for(auto [dr,dc]:vector<pair<int,int>>{{0,1},{0,-1},{1,0},{-1,0}}){ int nr=r+dr,nc=c+dc,nidx=nr*n+nc; if(nr>=0&&nr<m&&nc>=0&&nc<n&&parent[nidx]!=-1&&unite(idx,nidx)) islands--; } result.push_back(islands); }", hint:"Each successful union merges two islands — decrement count. Push current count."},
+        ]
+      },
+      { z:4, tag:"QUERY — island count after each addition",
+        lines:[
+          {t:"blank", ph:"// return island counts after each addition...", ans:"return result;", hint:"result[i] = number of islands after processing positions[0..i]"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Account Merging ────────────────────────────────────────────────────
+  {
+    id:6, title:"Account Merging", badge:"EMAIL GROUPING", badgeColor:"var(--c4)",
+    hint:"Map each email to a DSU node. For each account, union all its emails together. Then group all emails sharing the same root. Attach account name to root's group.",
+    zones:[
+      { z:1, tag:"DSU on emails — map email string to integer id",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<vector<string>> accountsMerge(vector<vector<string>>& accounts) {", hint:"Merges accounts sharing any email. Returns sorted merged accounts."},
+          {t:"blank", ph:"// map email → id + DSU on ids...", ans:"unordered_map<string,int> emailId; int id=0; auto getId=[&](string& e)->int{ if(!emailId.count(e)) emailId[e]=id++; return emailId[e]; };", hint:"Each unique email gets an integer id for DSU indexing"},
+          {t:"blank", ph:"// assign ids to all emails first...", ans:"for(auto& acc:accounts) for(int i=1;i<(int)acc.size();i++) getId(acc[i]);", hint:"Pre-assign all ids so we know total count for DSU sizing"},
+        ]
+      },
+      { z:2, tag:"find() — path compression on email ids",
+        lines:[
+          {t:"blank", ph:"// init DSU with total email count...", ans:"vector<int> parent(id),rnk(id,0); iota(parent.begin(),parent.end(),0);", hint:"id = total unique emails found — size of DSU"},
+          {t:"blank", ph:"// find with path compression...", ans:"function<int(int)> find=[&](int x)->int{ return parent[x]==x?x:(parent[x]=find(parent[x])); };", hint:"Same find() — now operating on email ids instead of node ids"},
+        ]
+      },
+      { z:3, tag:"unite() — merge all emails in same account",
+        lines:[
+          {t:"blank", ph:"// unite by rank...", ans:"auto unite=[&](int x,int y){ int rx=find(x),ry=find(y); if(rx==ry)return; if(rnk[rx]<rnk[ry])swap(rx,ry); parent[ry]=rx; if(rnk[rx]==rnk[ry])rnk[rx]++; };", hint:"Merging emails: same account = same person = same component"},
+          {t:"blank", ph:"// union all emails within each account...", ans:"for(auto& acc:accounts){ int first=getId(acc[1]); for(int i=2;i<(int)acc.size();i++) unite(first,getId(acc[i])); }", hint:"All emails in one account chained together via their first email"},
+        ]
+      },
+      { z:4, tag:"QUERY — group emails by root, attach account names",
+        lines:[
+          {t:"blank", ph:"// group emails by their root + track name per root...", ans:"unordered_map<int,vector<string>> groups; unordered_map<int,string> rootName; for(auto& acc:accounts){ int root=find(getId(acc[1])); rootName[root]=acc[0]; for(int i=1;i<(int)acc.size();i++) groups[root].push_back(acc[i]); }", hint:"find(emailId) gives canonical root. All emails with same root = same person."},
+          {t:"blank", ph:"// sort emails in each group, prepend name, return...", ans:"vector<vector<string>> result; for(auto& [root,emails]:groups){ sort(emails.begin(),emails.end()); emails.erase(unique(emails.begin(),emails.end()),emails.end()); emails.insert(emails.begin(),rootName[root]); result.push_back(emails); } return result;", hint:"Sort + dedup emails (may appear in multiple accounts). Prepend name."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Redundant Connection ───────────────────────────────────────────────
+  {
+    id:7, title:"Redundant Connection", badge:"FIRST CYCLE EDGE", badgeColor:"var(--c2)",
+    hint:"Process edges in order. The first edge where unite() returns false connects two already-connected nodes — it's the redundant edge creating the cycle.",
+    zones:[
+      { z:1, tag:"DSU on n nodes — find first cycle-creating edge",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> findRedundantConnection(vector<vector<int>>& edges) {", hint:"Returns the last edge that can be removed to make graph a tree"},
+          {t:"blank", ph:"// 1-indexed nodes — DSU of size n+1...", ans:"int n=edges.size(); vector<int> parent(n+1),rnk(n+1,0); iota(parent.begin(),parent.end(),0);", hint:"n edges in a tree with n nodes means exactly one redundant edge"},
+        ]
+      },
+      { z:2, tag:"find() — same path compression",
+        lines:[
+          {t:"blank", ph:"// find with path compression...", ans:"function<int(int)> find=[&](int x)->int{ return parent[x]==x?x:(parent[x]=find(parent[x])); };", hint:"Identical find() — 1-indexed nodes work the same way"},
+        ]
+      },
+      { z:3, tag:"unite() — false = redundant edge found",
+        lines:[
+          {t:"blank", ph:"// unite by rank...", ans:"auto unite=[&](int x,int y){ int rx=find(x),ry=find(y); if(rx==ry)return false; if(rnk[rx]<rnk[ry])swap(rx,ry); parent[ry]=rx; if(rnk[rx]==rnk[ry])rnk[rx]++; return true; };", hint:"false return = both nodes already connected = this edge is redundant"},
+        ]
+      },
+      { z:4, tag:"QUERY — return first edge that fails to unite",
+        lines:[
+          {t:"blank", ph:"// return the redundant edge (first to create a cycle)...", ans:"for(auto& e:edges) if(!unite(e[0],e[1])) return e;", hint:"Edges processed in order — first unite failure = the redundant connection"},
+          {t:"blank", ph:"// should never reach here for valid input...", ans:"return {};", hint:"Problem guarantees exactly one redundant edge exists"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Smallest String with Swaps ────────────────────────────────────────
+  {
+    id:8, title:"Smallest String with Swaps", badge:"COMPONENT SORT", badgeColor:"var(--c1)",
+    hint:"Indices connected by swaps form a component. Characters within a component can be freely rearranged. Sort each component's characters, place smallest first.",
+    zones:[
+      { z:1, tag:"DSU on string indices — swappable = same component",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"string smallestStringWithSwaps(string s, vector<pair<int,int>>& pairs) {", hint:"Returns lexicographically smallest string achievable via given index swaps"},
+          {t:"blank", ph:"// DSU on string indices...", ans:"int n=s.size(); vector<int> parent(n),rnk(n,0); iota(parent.begin(),parent.end(),0);", hint:"Each index is a node. Swap pairs define which indices can exchange characters."},
+        ]
+      },
+      { z:2, tag:"find() — path compression on index nodes",
+        lines:[
+          {t:"blank", ph:"// find with path compression...", ans:"function<int(int)> find=[&](int x)->int{ return parent[x]==x?x:(parent[x]=find(parent[x])); };", hint:"Indices reachable via swap chains share a root — can freely rearrange"},
+        ]
+      },
+      { z:3, tag:"unite() — connect swappable index pairs",
+        lines:[
+          {t:"blank", ph:"// unite by rank...", ans:"auto unite=[&](int x,int y){ int rx=find(x),ry=find(y); if(rx==ry)return; if(rnk[rx]<rnk[ry])swap(rx,ry); parent[ry]=rx; if(rnk[rx]==rnk[ry])rnk[rx]++; };", hint:"Each swap pair joins two index groups"},
+          {t:"blank", ph:"// union all swappable index pairs...", ans:"for(auto& [i,j]:pairs) unite(i,j);", hint:"After all unions, connected indices can have characters sorted freely"},
+        ]
+      },
+      { z:4, tag:"QUERY — sort chars within each component, place smallest first",
+        lines:[
+          {t:"blank", ph:"// group indices by root, sort characters within each group...", ans:"unordered_map<int,vector<int>> groups; for(int i=0;i<n;i++) groups[find(i)].push_back(i);", hint:"All indices with same root form a group — their characters can be rearranged"},
+          {t:"blank", ph:"// for each group: sort indices, sort chars, assign smallest to earliest index...", ans:"string result=s; for(auto& [root,idxs]:groups){ vector<char> chars; for(int i:idxs) chars.push_back(s[i]); sort(idxs.begin(),idxs.end()); sort(chars.begin(),chars.end()); for(int k=0;k<(int)idxs.size();k++) result[idxs[k]]=chars[k]; } return result;", hint:"Sort both indices and chars, then zip: smallest char at earliest index"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Path Compression ───────────────────────────────────────────────────
+  {
+    id:9, title:"Path Compression Deep Dive", badge:"O(α) PROOF", badgeColor:"var(--c3)",
+    hint:"Demonstrate both compression variants: recursive (one-pass) and iterative (two-pass). Both achieve O(α(n)) amortized. Show tree flattening visually.",
+    zones:[
+      { z:1, tag:"without compression — O(n) worst case chain",
+        lines:[
+          {t:"blank", ph:"// naive find WITHOUT path compression — O(n) per call...", ans:"function<int(int)> findNaive=[&](int x)->int{ while(parent[x]!=x) x=parent[x]; return x; };", hint:"Walks chain to root but doesn't flatten. Can be O(n) if tree is a chain."},
+        ]
+      },
+      { z:2, tag:"find() — recursive path compression (one-pass)",
+        lines:[
+          {t:"blank", ph:"// recursive find WITH path compression — O(α(n)) amortized...", ans:"function<int(int)> findRC=[&](int x)->int{ return parent[x]==x?x:(parent[x]=find(parent[x])); };", hint:"parent[x]=find(parent[x]) simultaneously finds root AND flattens entire path to root"},
+          {t:"blank", ph:"// iterative two-pass compression (same result)...", ans:"auto findIter=[&](int x){ int root=x; while(parent[root]!=root) root=parent[root]; while(parent[x]!=root){int next=parent[x]; parent[x]=root; x=next;} return root; };", hint:"Pass 1: find root. Pass 2: point every node on path directly to root."},
+        ]
+      },
+      { z:3, tag:"union by size (alternative to union by rank)",
+        lines:[
+          {t:"blank", ph:"// union by SIZE — attach smaller tree under larger...", ans:"vector<int> sz(10,1);", hint:"sz[i] = number of nodes in component rooted at i"},
+          {t:"blank", ph:"// unite by size: merge smaller into larger...", ans:"auto uniteBySize=[&](int x,int y){ int rx=findRC(x),ry=findRC(y); if(rx==ry)return false; if(sz[rx]<sz[ry])swap(rx,ry); parent[ry]=rx; sz[rx]+=sz[ry]; return true; };", hint:"Size-based: sz[rx]+=sz[ry] instead of rank comparison. Equally optimal."},
+        ]
+      },
+      { z:4, tag:"QUERY — O(α(n)) ≈ O(1) for all practical n",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// α(n) = inverse Ackermann function</span>`},
+          {t:"fixed", code:`<span class="cm">// α(n) ≤ 4 for any n ≤ 2^65536 — effectively constant</span>`},
+          {t:"blank", ph:"// compression + union by rank/size together achieve O(α(n))...", ans:"// path compression alone: O(log n). union by rank alone: O(log n). BOTH: O(α(n))", hint:"Neither optimisation alone achieves O(α(n)). Both together are required."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Weighted DSU ───────────────────────────────────────────────────────
+  {
+    id:10, title:"Weighted DSU", badge:"RATIO TRACKING", badgeColor:"var(--c2)",
+    hint:"Each node stores weight[x] = ratio of x to its parent. On find(): propagate weight up to root. On unite(): set weight so ratios are consistent. Used for equation evaluation.",
+    zones:[
+      { z:1, tag:"parent[] + weight[] tracks ratio to parent",
+        lines:[
+          {t:"blank", ph:"// function signature — evaluate a/b = value queries...", ans:"vector<double> calcEquation(vector<pair<string,string>>& equations, vector<double>& values, vector<pair<string,string>>& queries) {", hint:"Given a/b=2.0, b/c=3.0 — answer queries like a/c, c/a, x/y"},
+          {t:"blank", ph:"// map variable names to ids + weighted DSU...", ans:"unordered_map<string,int> id; int cnt=0; auto getId=[&](string& s)->int{ if(!id.count(s))id[s]=cnt++; return id[s]; };", hint:"Each variable gets an integer id for DSU indexing"},
+          {t:"blank", ph:"// parent + weight arrays (weight[x] = x / parent[x])...", ans:"vector<int> parent(40); vector<double> weight(40,1.0); iota(parent.begin(),parent.end(),0);", hint:"weight[x] = value of x relative to its parent. Roots have weight 1.0."},
+        ]
+      },
+      { z:2, tag:"find() — path compress AND propagate weights",
+        lines:[
+          {t:"blank", ph:"// weighted find: compress path + accumulate weight to root...", ans:"function<pair<int,double>(int)> find=[&](int x)->pair<int,double>{ if(parent[x]==x) return {x,1.0}; auto [root,w]=find(parent[x]); parent[x]=root; weight[x]*=w; return {root,weight[x]}; };", hint:"Returns {root, ratio_to_root}. Multiplies weights up the chain. Flattens path."},
+        ]
+      },
+      { z:3, tag:"unite() — set weights to maintain ratio consistency",
+        lines:[
+          {t:"blank", ph:"// process equations: a/b = val means unite a and b with ratio val...", ans:"for(int i=0;i<(int)equations.size();i++){ int ia=getId(equations[i].first),ib=getId(equations[i].second); auto [ra,wa]=find(ia); auto [rb,wb]=find(ib); if(ra!=rb){ parent[rb]=ra; weight[rb]=wa*values[i]/wb; } }", hint:"weight[rb] set so that: (wb * weight[rb]) / wa = values[i]. Ensures ratio consistent."},
+        ]
+      },
+      { z:4, tag:"QUERY — find both roots, compute ratio if same component",
+        lines:[
+          {t:"blank", ph:"// answer each query...", ans:"vector<double> result; for(auto& [a,b]:queries){ if(!id.count(a)||!id.count(b)){result.push_back(-1);continue;} auto [ra,wa]=find(id[a]); auto [rb,wb]=find(id[b]); result.push_back(ra==rb?wa/wb:-1.0); } return result;", hint:"Same root = ratio = wa/wb. Different roots or unknown variable = -1."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Init','find() — Path Compression','unite() — Union by Rank','Query'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0,answered=new Set(),stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(){
+  const viz=document.getElementById('viz');
+  // Show before/after path compression
+  const before=['0→1→2→3→4','chain: O(n)'];
+  const after=['0←1←2←3←4','flat:  O(α)'];
+  viz.innerHTML=`
+    <div class="dsu-viz">
+      <div class="dsu-row">
+        <div class="dsu-label">before:</div>
+        ${[0,1,2,3,4].map(i=>`<div class="dsu-cell child">${i}→${i+1<5?i+1:'root'}</div>`).join('')}
+      </div>
+      <div class="dsu-row">
+        <div class="dsu-label" style="color:var(--c3)">find(0):</div>
+        ${[0,1,2,3,4].map(i=>`<div class="dsu-cell ${i===4?'root':'child'}">${i===4?'root':i+'→4'}</div>`).join('')}
+      </div>
+      <div class="dsu-row">
+        <div class="dsu-label" style="color:var(--c4)">after:</div>
+        ${[0,1,2,3].map(i=>`<div class="dsu-cell child">${i}→4</div>`).join('')}
+        <div class="dsu-cell root">4=root</div>
+      </div>
+    </div>
+    <div class="viz-legend">
+      <span style="color:var(--c4)">■</span> root (parent[i]==i)<br>
+      <span style="color:var(--c2)">■</span> child after compression<br>
+      <span style="color:var(--c4)">★ parent[x]=find(parent[x]) flattens entire chain</span><br>
+      <span style="color:var(--muted)">★ unite false = already same component</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

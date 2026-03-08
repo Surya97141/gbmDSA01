@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deque — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(167,139,250,0.06) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c1);border:1px solid rgba(167,139,250,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c1) 40%,var(--c2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c1);color:var(--text);}
+.sel-btn.active{background:rgba(167,139,250,0.1);border-color:var(--c1);color:var(--c1);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c1);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(167,139,250,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c1);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:380px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.cm{color:#3d4f5c;font-style:italic;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c1);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(167,139,250,0.06);border-bottom-color:var(--c1);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(167,139,250,0.1);color:var(--c1);border-color:rgba(167,139,250,0.4);}
+.btn-check:hover{background:rgba(167,139,250,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c1);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.viz-end{font-family:'JetBrains Mono',monospace;font-size:10px;padding:6px 10px;border-radius:3px;white-space:nowrap;}
+.viz-front{border:1px solid var(--c3);color:var(--c3);background:rgba(251,146,60,0.08);}
+.viz-back{border:1px solid var(--c4);color:var(--c4);background:rgba(74,222,128,0.08);}
+.viz-cells{display:flex;gap:3px;align-items:center;}
+.viz-cell{font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:3px;color:var(--muted);}
+.viz-cell.active{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.08);}
+.viz-arrow{color:var(--muted);font-size:13px;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.9;margin-left:8px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .fn{color:#7dd3fc}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 11 — Practice Mode</div>
+    <h1>Deque</h1>
+    <p>// expire front · maintain back · front = answer · both ends = two roles</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// DEQUE — 10 Manifestations
+// 4 Blocks:
+//   ① INIT + TYPE        — deque<int> of INDICES + result + edge guards
+//   ② EXPIRE FRONT       — pop_front when front is outside window/range
+//   ③ MAINTAIN BACK      — pop_back while back violates invariant (dominated)
+//   ④ PUSH + QUERY       — push_back(i); answer = arr[dq.front()]
+//
+// TWO CATEGORIES:
+//   Cat A (Monotone): expire front → maintain back → push → query front
+//   Cat B (Two-role): front and back serve different semantic purposes
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Sliding Window Maximum ─────────────────────────────────────────────
+  {
+    id:1, title:"Sliding Window Maximum", badge:"CAT-A MONOTONE ↓", badgeColor:"var(--c3)",
+    hint:"Monotone DECREASING deque. Pop back when back value ≤ current (dominated). Pop front when outside window. Front = window max.",
+    viz:['i-k','...','i-1','→i'],
+    zones:[
+      { z:1, tag:"deque<int> of indices — decreasing value order",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> maxSlidingWindow(vector<int>& nums, int k) {", hint:"Returns max of every contiguous subarray of size k"},
+          {t:"blank", ph:"// edge case...", ans:"if (nums.empty() || k==0) return {};", hint:"Nothing to process"},
+          {t:"blank", ph:"// deque of indices + result...", ans:"deque<int> dq; vector<int> result;", hint:"Store indices so we can compare values AND check expiry"},
+        ]
+      },
+      { z:2, tag:"EXPIRE FRONT — index outside window [i-k+1, i]",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> (<span class="ty">int</span>)nums.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   pop front if it's left of current window...", ans:"if (!dq.empty() && dq.front() < i-k+1) dq.pop_front();", hint:"Front index too old — it's outside window [i-k+1 .. i]"},
+        ]
+      },
+      { z:3, tag:"MAINTAIN BACK — pop dominated (smaller) values",
+        lines:[
+          {t:"blank", ph:"//   pop back while back value <= current (can never be max)...", ans:"while (!dq.empty() && nums[dq.back()] <= nums[i]) dq.pop_back();", hint:"Any value ≤ nums[i] that arrived earlier can never be a window max"},
+          {t:"blank", ph:"//   push current index...", ans:"dq.push_back(i);", hint:"Current index joins deque — it may be the max of a future window"},
+        ]
+      },
+      { z:4, tag:"QUERY FRONT — front = current window maximum",
+        lines:[
+          {t:"blank", ph:"//   record window max once first full window formed...", ans:"if (i >= k-1) result.push_back(nums[dq.front()]);", hint:"Window complete at i=k-1. Front = largest index still in window = max."},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return all window maxima...", ans:"return result;", hint:"result[i] = max of nums[i .. i+k-1] for each valid i"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Sliding Window Minimum ─────────────────────────────────────────────
+  {
+    id:2, title:"Sliding Window Minimum", badge:"CAT-A MONOTONE ↑", badgeColor:"var(--c2)",
+    hint:"Mirror of window max. Monotone INCREASING deque. Pop back when back value ≥ current. Front = window min.",
+    viz:['i-k','...','i-1','→i'],
+    zones:[
+      { z:1, tag:"deque<int> of indices — increasing value order",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> minSlidingWindow(vector<int>& nums, int k) {", hint:"Returns min of every contiguous subarray of size k"},
+          {t:"blank", ph:"// deque of indices + result...", ans:"deque<int> dq; vector<int> result;", hint:"Indices allow both value comparison and expiry check"},
+        ]
+      },
+      { z:2, tag:"EXPIRE FRONT — index outside window",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> (<span class="ty">int</span>)nums.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   expire front if outside current window...", ans:"if (!dq.empty() && dq.front() < i-k+1) dq.pop_front();", hint:"Same window expiry as max — front too old, pop it"},
+        ]
+      },
+      { z:3, tag:"MAINTAIN BACK — pop dominated (larger) values",
+        lines:[
+          {t:"blank", ph:"//   pop back while back value >= current — dominated for min...", ans:"while (!dq.empty() && nums[dq.back()] >= nums[i]) dq.pop_back();", hint:"Key flip vs max: >= instead of <=. Larger values dominated for minimum query."},
+          {t:"blank", ph:"//   push current...", ans:"dq.push_back(i);", hint:"Current joins deque as potential future minimum"},
+        ]
+      },
+      { z:4, tag:"QUERY FRONT — front = current window minimum",
+        lines:[
+          {t:"blank", ph:"//   record window min once first full window formed...", ans:"if (i >= k-1) result.push_back(nums[dq.front()]);", hint:"Front of increasing deque = smallest index still in window = minimum"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return all window minima...", ans:"return result;", hint:"result[i] = min of nums[i .. i+k-1]"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── 0-1 BFS ────────────────────────────────────────────────────────────
+  {
+    id:3, title:"0-1 BFS", badge:"CAT-B TWO-ROLE", badgeColor:"var(--c4)",
+    hint:"0-weight edge → push_front (process sooner, like free). 1-weight edge → push_back (process later). Front always = cheapest unprocessed node.",
+    viz:['cheap←','...','...','→costly'],
+    zones:[
+      { z:1, tag:"deque<int> — front=cheapest, back=costly; dist array",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> zeroOneBFS(int n, int src, vector<vector<pair<int,int>>>& graph) {", hint:"Returns shortest dist[] where edges have weight 0 or 1 only"},
+          {t:"blank", ph:"// dist array — INT_MAX means unvisited...", ans:"vector<int> dist(n, INT_MAX);", hint:"Standard Dijkstra-style dist array"},
+          {t:"blank", ph:"// deque seeded at source with dist 0...", ans:"deque<int> dq; dist[src]=0; dq.push_back(src);", hint:"Source has distance 0 — seed the deque"},
+        ]
+      },
+      { z:2, tag:"EXPIRE FRONT — pop stale entries (dist already improved)",
+        lines:[
+          {t:"fixed", code:`<span class="kw">while</span> (!dq.empty()) {`},
+          {t:"blank", ph:"//   pop front — always the closest node...", ans:"int u = dq.front(); dq.pop_front();", hint:"Front = cheapest unprocessed node (deque maintains this invariant)"},
+        ]
+      },
+      { z:3, tag:"MAINTAIN ORDER — 0-weight → front, 1-weight → back",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="kw">auto</span> [v, w] : graph[u]) {`},
+          {t:"blank", ph:"//     found a shorter path to v...", ans:"if (dist[u] + w < dist[v]) {", hint:"Relaxation: found a cheaper way to reach v"},
+          {t:"blank", ph:"//       update distance...", ans:"dist[v] = dist[u] + w;", hint:"Record the improved distance to v"},
+          {t:"blank", ph:"//       0-weight: push front (same cost level); 1-weight: push back...", ans:"if (w==0) dq.push_front(v); else dq.push_back(v);", hint:"Free edge → process v as soon as current node done. Costly → later."},
+          {t:"fixed", code:`        }`},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — dist array holds all shortest distances",
+        lines:[
+          {t:"blank", ph:"// return shortest distances from src...", ans:"return dist;", hint:"dist[i] = minimum 0-1 weight path from src to i"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Palindrome Check ───────────────────────────────────────────────────
+  {
+    id:4, title:"Palindrome Check", badge:"CAT-B BOTH ENDS", badgeColor:"var(--c1)",
+    hint:"Load string into deque. Pop front and back simultaneously. If they differ at any point — not a palindrome.",
+    viz:['←front','·','·','·','back→'],
+    zones:[
+      { z:1, tag:"deque<char> — front and back meet in middle",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"bool isPalindrome(string s) {", hint:"Returns true if s reads the same forwards and backwards"},
+          {t:"blank", ph:"// load all characters into deque...", ans:"deque<char> dq(s.begin(), s.end());", hint:"Range constructor fills deque with all characters in order"},
+        ]
+      },
+      { z:2, tag:"EXPIRE — drain pairs from both ends",
+        lines:[
+          {t:"blank", ph:"// while at least two characters remain...", ans:"while (dq.size() > 1) {", hint:"Size > 1: still have a pair to compare. Size 0 or 1: palindrome confirmed."},
+        ]
+      },
+      { z:3, tag:"BOTH ENDS — compare front and back simultaneously",
+        lines:[
+          {t:"blank", ph:"//   pop front and back — they must match...", ans:"char f = dq.front(); dq.pop_front(); char b = dq.back(); dq.pop_back();", hint:"Remove outermost characters from both ends"},
+          {t:"blank", ph:"//   mismatch = not a palindrome...", ans:"if (f != b) return false;", hint:"Any mismatch between front and back proves it's not palindrome"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — empty or single char = palindrome confirmed",
+        lines:[
+          {t:"blank", ph:"// all pairs matched — it's a palindrome...", ans:"return true;", hint:"Every front-back pair matched — string reads same in both directions"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Undo-Redo System ───────────────────────────────────────────────────
+  {
+    id:5, title:"Undo-Redo System", badge:"CAT-B TWO-ROLE", badgeColor:"var(--c3)",
+    hint:"New actions push_back. Undo pops from back (most recent), stores undone action at front. Redo pops from front. Any new action clears redo history.",
+    viz:['redo←front','·','·','back→undo'],
+    zones:[
+      { z:1, tag:"deque<string> — back=action history, front=redo stack",
+        lines:[
+          {t:"blank", ph:"// class definition...", ans:"class UndoRedoSystem {", hint:"Deque serves as two logical stacks in one structure"},
+          {t:"blank", ph:"// single deque serves both undo and redo...", ans:"deque<string> dq;", hint:"back = most recent action (undo end). front = most recently undone (redo end)."},
+          {t:"blank", ph:"// perform new action — push to back...", ans:"void doAction(string action) { while(!dq.empty()&&dq.front()!=\"|\") dq.pop_front(); dq.push_back(action); }", hint:"New action clears redo history (front side), then pushed to back"},
+        ]
+      },
+      { z:2, tag:"UNDO — pop from back, store at front for redo",
+        lines:[
+          {t:"blank", ph:"// undo — take most recent action from back...", ans:"string undo() {", hint:"Undo reverses the last performed action"},
+          {t:"blank", ph:"//   nothing to undo...", ans:"if (dq.empty() || dq.back()==\"|\") return \"nothing\";", hint:"Empty or only redo entries — nothing to undo"},
+          {t:"blank", ph:"//   move action from back (history) to front (redo)...", ans:"string action=dq.back(); dq.pop_back(); dq.push_front(action); return action;", hint:"Pops from history end, pushes to redo end — same deque, opposite ends"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"REDO — pop from front back to back",
+        lines:[
+          {t:"blank", ph:"// redo — take most recently undone action from front...", ans:"string redo() {", hint:"Redo re-applies the most recently undone action"},
+          {t:"blank", ph:"//   nothing to redo...", ans:"if (dq.empty() || dq.front()==\"|\") return \"nothing\";", hint:"Empty or only history entries — nothing to redo"},
+          {t:"blank", ph:"//   move action from front (redo) back to back (history)...", ans:"string action=dq.front(); dq.pop_front(); dq.push_back(action); return action;", hint:"Pops from redo end, pushes back to history end"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — peek history without modifying",
+        lines:[
+          {t:"blank", ph:"// peek current state (back of history)...", ans:"string current() { return (!dq.empty() && dq.back()!=\"|\") ? dq.back() : \"empty\"; }", hint:"Most recent action = back of deque (if it's not a separator)"},
+          {t:"fixed", code:`};`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Constrained Subarray (max-min ≤ k) ────────────────────────────────
+  {
+    id:6, title:"Constrained Subarray", badge:"DUAL DEQUE", badgeColor:"var(--c4)",
+    hint:"Maintain TWO deques simultaneously: maxDq (decreasing) and minDq (increasing). Window valid while maxDq.front() - minDq.front() ≤ k. Shrink L when violated.",
+    viz:['L→','maxDq','minDq','←R'],
+    zones:[
+      { z:1, tag:"TWO deques: maxDq (decreasing) + minDq (increasing)",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int longestSubarray(vector<int>& nums, int k) {", hint:"Returns length of longest subarray where max - min ≤ k"},
+          {t:"blank", ph:"// two monotone deques for simultaneous max and min tracking...", ans:"deque<int> maxDq, minDq;", hint:"maxDq[front]=window max, minDq[front]=window min — both store indices"},
+          {t:"blank", ph:"// two pointers + result...", ans:"int L=0, result=0;", hint:"L = left boundary of current valid window. Shrinks when constraint violated."},
+        ]
+      },
+      { z:2, tag:"EXPIRE FRONT — both deques expire at same L boundary",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> R <span class="op">=</span> <span class="nm">0</span>; R <span class="op">&lt;</span> (<span class="ty">int</span>)nums.size(); R<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   maintain decreasing maxDq...", ans:"while (!maxDq.empty() && nums[maxDq.back()] <= nums[R]) maxDq.pop_back();", hint:"Dominated for max — smaller values at back can never be window max"},
+          {t:"blank", ph:"//   maintain increasing minDq...", ans:"while (!minDq.empty() && nums[minDq.back()] >= nums[R]) minDq.pop_back();", hint:"Dominated for min — larger values at back can never be window min"},
+          {t:"blank", ph:"//   push R to both deques...", ans:"maxDq.push_back(R); minDq.push_back(R);", hint:"Current index enters both deques as candidate max and candidate min"},
+        ]
+      },
+      { z:3, tag:"MAINTAIN — shrink L while max-min > k",
+        lines:[
+          {t:"blank", ph:"//   shrink window from left while constraint violated...", ans:"while (nums[maxDq.front()] - nums[minDq.front()] > k) {", hint:"Window invalid: max - min exceeds k. Must shrink from left."},
+          {t:"blank", ph:"//     advance L, expire fronts if they equal L...", ans:"if (maxDq.front()==L) maxDq.pop_front(); if (minDq.front()==L) minDq.pop_front(); L++;", hint:"Only expire front if it IS the element being removed (L's index)"},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"QUERY — window size R-L+1 is current valid length",
+        lines:[
+          {t:"blank", ph:"//   update result with current valid window size...", ans:"result = max(result, R-L+1);", hint:"Every window ending at R from L to R is valid — R-L+1 is its length"},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return longest valid subarray length...", ans:"return result;", hint:"Maximum length subarray where max element - min element ≤ k"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Jump Game with Deque ───────────────────────────────────────────────
+  {
+    id:7, title:"Jump Game with Deque", badge:"CAT-A REACHABILITY", badgeColor:"var(--c2)",
+    hint:"From each position i, can jump to [i+1 .. i+nums[i]]. Use deque to track best (farthest-reaching) positions. Pop front when out of jump range.",
+    viz:['i','i+1','...','i+k'],
+    zones:[
+      { z:1, tag:"deque<int> of reachable positions in decreasing reach order",
+        lines:[
+          {t:"blank", ph:"// function signature — return farthest reachable position...", ans:"int jumpGameDeque(vector<int>& nums) {", hint:"Returns maximum index reachable using deque-optimized jump tracking"},
+          {t:"blank", ph:"// deque holds indices with decreasing max-reach...", ans:"deque<int> dq; dq.push_back(0);", hint:"Start at index 0 — it's the only position reachable initially"},
+          {t:"blank", ph:"// farthest reachable index...", ans:"int maxReach = nums[0];", hint:"From index 0, can reach up to nums[0]"},
+        ]
+      },
+      { z:2, tag:"EXPIRE FRONT — position outside reachable range",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">1</span>; i <span class="op">&lt;=</span> maxReach <span class="op">&amp;&amp;</span> i <span class="op">&lt;</span> (<span class="ty">int</span>)nums.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   expire front positions we can no longer jump from...", ans:"while (!dq.empty() && dq.front() < i - nums[dq.front()]) dq.pop_front();", hint:"Front can't reach i — too far back. Its jump range ends before i."},
+        ]
+      },
+      { z:3, tag:"MAINTAIN BACK — pop dominated positions",
+        lines:[
+          {t:"blank", ph:"//   pop back while current reaches at least as far...", ans:"while (!dq.empty() && i+nums[i] >= dq.back()+nums[dq.back()]) dq.pop_back();", hint:"Current position i reaches farther — back position is dominated"},
+          {t:"blank", ph:"//   push current position...", ans:"dq.push_back(i);", hint:"i is a new potential launch point for future jumps"},
+          {t:"blank", ph:"//   update global max reach...", ans:"maxReach = max(maxReach, i+nums[i]);", hint:"Extend the boundary of what's reachable overall"},
+        ]
+      },
+      { z:4, tag:"QUERY — maxReach is the farthest reachable index",
+        lines:[
+          {t:"blank", ph:"// return farthest reachable index...", ans:"return min(maxReach, (int)nums.size()-1);", hint:"Cap at last valid index — can't go past the array"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Stock Buy-Sell with Cooldown ───────────────────────────────────────
+  {
+    id:8, title:"Stock Buy-Sell with Cooldown", badge:"DP + DEQUE", badgeColor:"var(--c3)",
+    hint:"dp[i] = max profit using prices[0..i]. Transition: buy on day j, sell on day i → dp[j-2] + prices[i] - prices[j]. Deque tracks best (dp[j-2] - prices[j]) window.",
+    viz:['buy-j','cool','sell-i','profit'],
+    zones:[
+      { z:1, tag:"DP array + deque optimizes best buy-day selection",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int maxProfitCooldown(vector<int>& prices) {", hint:"Max profit with unlimited transactions but mandatory 1-day cooldown after sell"},
+          {t:"blank", ph:"// n prices + dp array...", ans:"int n=prices.size(); vector<int> dp(n+1,0);", hint:"dp[i] = max profit considering prices[0..i-1]. dp[0]=dp[1]=0."},
+          {t:"blank", ph:"// deque tracks index j maximising dp[j-2] - prices[j]...", ans:"deque<int> dq;", hint:"For each sell day i, best buy day j maximises (dp[j-2] - prices[j])"},
+        ]
+      },
+      { z:2, tag:"EXPIRE FRONT — maintain valid buy candidates",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">2</span>; i <span class="op">&lt;=</span> n; i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   add buy candidate i-1 to deque...", ans:"int j=i-1; int val=(j>=2?dp[j-2]:0)-prices[j-1];", hint:"Candidate buy day j=i-1: value = dp[j-2] - prices[j-1] (profit potential)"},
+          {t:"blank", ph:"//   maintain decreasing deque of buy-value...", ans:"while(!dq.empty()&&((dq.back()>=2?dp[dq.back()-2]:0)-prices[dq.back()-1]<=val)) dq.pop_back();", hint:"Pop dominated buy candidates — current j gives at least as much profit"},
+          {t:"blank", ph:"//   push new candidate...", ans:"dq.push_back(j);", hint:"j enters as potential best buy day"},
+        ]
+      },
+      { z:3, tag:"MAINTAIN — dp[i] = best sell today or skip today",
+        lines:[
+          {t:"blank", ph:"//   dp[i] = max(skip today, best buy+sell ending today)...", ans:"dp[i] = dp[i-1];", hint:"Option 1: don't sell on day i — carry forward previous best"},
+          {t:"blank", ph:"//   best buy day for selling on day i is at front of deque...", ans:"if (!dq.empty()) { int bj=dq.front(); int buyVal=(bj>=2?dp[bj-2]:0)-prices[bj-1]; dp[i]=max(dp[i], buyVal+prices[i-1]); }", hint:"Front = best buy day. Profit = buyVal + prices[i-1] (sell price today)."},
+        ]
+      },
+      { z:4, tag:"QUERY — dp[n] is maximum achievable profit",
+        lines:[
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return maximum profit...", ans:"return dp[n];", hint:"dp[n] = best profit considering all n days with cooldown constraint"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Maximum of All Subarrays ───────────────────────────────────────────
+  {
+    id:9, title:"Maximum of All Subarrays", badge:"CAT-A ALL WINDOWS", badgeColor:"var(--c1)",
+    hint:"Generalisation of sliding window max. For EVERY subarray of EVERY size, report the maximum. Sum all window maxima using the monotone deque contribution approach.",
+    viz:['all','sub','arr','maxes'],
+    zones:[
+      { z:1, tag:"deque tracks max contributions across all window sizes",
+        lines:[
+          {t:"blank", ph:"// function signature — sum of max of every subarray...", ans:"long long sumOfSubarrayMaximums(vector<int>& arr) {", hint:"Returns sum of maximum element over all subarrays — classic deque contribution problem"},
+          {t:"blank", ph:"// monotone stack/deque approach: find contribution of each element...", ans:"int n=arr.size(); long long result=0;", hint:"Each element contributes to windows where it is the maximum"},
+          {t:"blank", ph:"// use stack to find left and right boundaries for each element...", ans:"vector<int> left(n), right(n); stack<int> stk;", hint:"left[i] = distance to nearest greater element on left; right[i] = on right"},
+        ]
+      },
+      { z:2, tag:"EXPIRE — find left boundary (previous greater element)",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> n; i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   pop while top <= current (current dominates for max)...", ans:"while (!stk.empty() && arr[stk.top()] <= arr[i]) stk.pop();", hint:"Elements ≤ arr[i] can't be left boundary — arr[i] is larger"},
+          {t:"blank", ph:"//   left[i] = distance to nearest greater element on left...", ans:"left[i] = stk.empty() ? i+1 : i-stk.top(); stk.push(i);", hint:"If stack empty: arr[i] is max from 0..i, so distance = i+1"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"MAINTAIN — find right boundary (next greater or equal)",
+        lines:[
+          {t:"blank", ph:"//   clear stack for right boundary pass...", ans:"while (!stk.empty()) stk.pop();", hint:"Reuse stack for second pass"},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> n<span class="op">-</span><span class="nm">1</span>; i <span class="op">&gt;=</span> <span class="nm">0</span>; i<span class="op">--</span>) {`},
+          {t:"blank", ph:"//   pop while top < current (strictly less for right boundary)...", ans:"while (!stk.empty() && arr[stk.top()] < arr[i]) stk.pop();", hint:"Strictly less (not ≤) to avoid double counting equal elements"},
+          {t:"blank", ph:"//   right[i] = distance to next greater-or-equal on right...", ans:"right[i] = stk.empty() ? n-i : stk.top()-i; stk.push(i);", hint:"If stack empty: arr[i] is max till end, distance = n-i"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — each element contributes left[i]*right[i] windows",
+        lines:[
+          {t:"blank", ph:"//   sum contributions: arr[i] is max in left[i]*right[i] subarrays...", ans:"for (int i=0;i<n;i++) result += (long long)arr[i]*left[i]*right[i];", hint:"arr[i] is maximum in exactly left[i]*right[i] subarrays — its contribution"},
+          {t:"blank", ph:"// return total sum...", ans:"return result;", hint:"Sum of maximums of all O(n²) subarrays computed in O(n)"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Minimum Cost to Reach End ──────────────────────────────────────────
+  {
+    id:10, title:"Minimum Cost to Reach End", badge:"DP DEQUE OPT", badgeColor:"var(--c4)",
+    hint:"dp[i] = min cost to reach index i. From i can jump to [i+1..i+k]. dp[i] = min(dp[j]) + cost[i] for j in [i-k..i-1]. Deque maintains min of dp window.",
+    viz:['j-k','...','j','→i'],
+    zones:[
+      { z:1, tag:"deque optimises DP window minimum lookup to O(1)",
+        lines:[
+          {t:"blank", ph:"// function signature — jump up to k steps, minimise cost...", ans:"int minCostToReachEnd(vector<int>& cost, int k) {", hint:"Returns minimum cost to reach last index, jumping 1..k steps at a time"},
+          {t:"blank", ph:"// dp[i] = min cost to reach index i...", ans:"int n=cost.size(); vector<int> dp(n, INT_MAX); dp[0]=cost[0];", hint:"Base: cost to reach index 0 = cost[0]. Others start as unreachable."},
+          {t:"blank", ph:"// deque of indices maintaining increasing dp values (min at front)...", ans:"deque<int> dq; dq.push_back(0);", hint:"Monotone increasing deque: front = index with minimum dp value in window"},
+        ]
+      },
+      { z:2, tag:"EXPIRE FRONT — dp[j] outside jump range [i-k..i-1]",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">1</span>; i <span class="op">&lt;</span> n; i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   expire front if it's more than k steps behind...", ans:"if (!dq.empty() && dq.front() < i-k) dq.pop_front();", hint:"Can't jump from more than k steps back — front too far behind"},
+        ]
+      },
+      { z:3, tag:"MAINTAIN BACK — pop larger dp values (dominated)",
+        lines:[
+          {t:"blank", ph:"//   compute dp[i] from best (minimum) in window...", ans:"if (!dq.empty() && dp[dq.front()]!=INT_MAX) dp[i]=dp[dq.front()]+cost[i];", hint:"Best jump-from index is at front — add current cost to reach i"},
+          {t:"blank", ph:"//   maintain increasing deque — pop back if dp[back] >= dp[i]...", ans:"while (!dq.empty() && dp[dq.back()] >= dp[i]) dq.pop_back();", hint:"Indices with higher dp cost dominated — current i is a better launch point"},
+          {t:"blank", ph:"//   push current index...", ans:"dq.push_back(i);", hint:"i enters deque as potential minimum for future dp computations"},
+        ]
+      },
+      { z:4, tag:"QUERY — dp[n-1] is minimum cost to reach end",
+        lines:[
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// return minimum cost to reach last index...", ans:"return dp[n-1];", hint:"dp[n-1] = minimum total cost path from index 0 to n-1"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames = ['Init + Type','Expire Front','Maintain Back','Push + Query'];
+const zoneCls   = ['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums  = ['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector');
+  sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i);
+    sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones');
+  zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div');
+    div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p);
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const cells=p.viz.map((v,i)=>{
+    const cls=i===0?'active':i===p.viz.length-1?'active':'';
+    return `<div class="viz-cell ${cls}">${v}</div>`;
+  }).join('<span class="viz-arrow">·</span>');
+  viz.innerHTML=`
+    <div class="viz-end viz-front">pop_front ←</div>
+    <div class="viz-cells">${cells}</div>
+    <div class="viz-end viz-back">→ pop_back</div>
+    <div class="viz-legend">
+      <span style="color:var(--c3)">■</span> expire front (out of window)<br>
+      <span style="color:var(--c4)">■</span> maintain back (invariant)<br>
+      <span style="color:var(--c1)">★ Cat-A: front=answer &nbsp;|&nbsp; Cat-B: both ends = roles</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key;
+  if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

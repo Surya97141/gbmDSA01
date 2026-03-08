@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hashing — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(56,189,248,0.06) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c2);border:1px solid rgba(56,189,248,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c2) 40%,var(--c4) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c2);color:var(--text);}
+.sel-btn.active{background:rgba(56,189,248,0.1);border-color:var(--c2);color:var(--c2);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c2);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(56,189,248,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c2);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:380px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.cm{color:#3d4f5c;font-style:italic;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c2);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(56,189,248,0.06);border-bottom-color:var(--c2);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(167,139,250,0.07);border-bottom-color:var(--c1)!important;color:var(--c1);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(56,189,248,0.1);color:var(--c2);border-color:rgba(56,189,248,0.4);}
+.btn-check:hover{background:rgba(56,189,248,0.2);}
+.btn-reveal{background:rgba(167,139,250,0.08);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-reveal:hover{background:rgba(167,139,250,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c2);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{display:flex;align-items:center;gap:16px;padding:12px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;flex-wrap:wrap;}
+.hash-viz{display:flex;align-items:center;gap:3px;}
+.hash-kv{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.hash-k{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;border:1px solid var(--c2);border-radius:2px 2px 0 0;color:var(--c2);background:rgba(56,189,248,0.07);white-space:nowrap;}
+.hash-v{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;border:1px solid var(--c4);border-top:none;border-radius:0 0 2px 2px;color:var(--c4);background:rgba(74,222,128,0.07);white-space:nowrap;}
+.hash-arrow{color:var(--muted);font-size:13px;margin-bottom:12px;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.9;margin-left:12px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .fn{color:#7dd3fc}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:var(--c1);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 13 — Practice Mode</div>
+    <h1>Hashing</h1>
+    <p>// key transform → check before insert → O(1) lookup replaces O(n) search</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// HASHING — 10 Manifestations
+// 4 Blocks:
+//   ① DECLARE + INIT    — unordered_map<K,V> or unordered_set<K>
+//                         K type tells you the transform; V type tells you the answer
+//   ② KEY TRANSFORM     — the clever part: what to use as the key
+//                         sort(), prefixSum, target-x, 0→-1, substr
+//   ③ CHECK + INSERT    — check THEN insert (single-pass) OR build THEN query (two-pass)
+//                         ORDER MATTERS: check first avoids self-matching
+//   ④ RETURN ANSWER     — O(1) lookup — never iterate over the map to find the answer
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Two Sum ────────────────────────────────────────────────────────────
+  {
+    id:1, title:"Two Sum", badge:"CHECK COMPLEMENT", badgeColor:"var(--c4)",
+    hint:"Key transform: complement = target - x. Check if complement already seen BEFORE inserting current. Order prevents self-matching.",
+    viz:[{k:"target-x",v:"index"},{k:"seen[i]",v:"i"},{k:"...",v:"..."}],
+    zones:[
+      { z:1, tag:"map<val → index> — stores elements seen so far",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<int> twoSum(vector<int>& nums, int target) {", hint:"Returns indices of two numbers that add up to target"},
+          {t:"blank", ph:"// map: value → index of where we saw it...", ans:"unordered_map<int,int> seen;", hint:"seen[x] = index where x was encountered. Enables O(1) complement lookup."},
+        ]
+      },
+      { z:2, tag:"KEY TRANSFORM — complement = target - current",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> (<span class="ty">int</span>)nums.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   key: the complement we need to complete the pair...", ans:"int complement = target - nums[i];", hint:"If complement is already in the map, we found our pair"},
+        ]
+      },
+      { z:3, tag:"CHECK FIRST then insert — prevents self-matching",
+        lines:[
+          {t:"blank", ph:"//   check for complement BEFORE inserting current...", ans:"if (seen.count(complement)) return {seen[complement], i};", hint:"Check first: if we inserted before checking, nums[i] might match itself"},
+          {t:"blank", ph:"//   insert current value → index for future lookups...", ans:"seen[nums[i]] = i;", hint:"Record this element so future elements can find it as their complement"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RETURN — pair found in O(n) single pass",
+        lines:[
+          {t:"blank", ph:"// no pair found (guaranteed to exist by problem)...", ans:"return {};", hint:"Problem guarantees exactly one solution exists — this line rarely reached"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Frequency Counting ─────────────────────────────────────────────────
+  {
+    id:2, title:"Frequency Counting", badge:"COUNT OCCURRENCES", badgeColor:"var(--c2)",
+    hint:"map[x]++ is the universal frequency primitive. Build complete frequency map in one pass, then query in a second pass. Foundation of dozens of hash problems.",
+    viz:[{k:"element",v:"count"},{k:"a",v:"3"},{k:"b",v:"1"}],
+    zones:[
+      { z:1, tag:"map<val → count> — universal frequency primitive",
+        lines:[
+          {t:"blank", ph:"// function signature — return elements with frequency > k...", ans:"vector<int> frequentElements(vector<int>& nums, int k) {", hint:"Returns all elements appearing more than k times"},
+          {t:"blank", ph:"// frequency map: value → count...", ans:"unordered_map<int,int> freq;", hint:"freq[x] = how many times x appears in nums"},
+        ]
+      },
+      { z:2, tag:"KEY TRANSFORM — element itself is the key",
+        lines:[
+          {t:"blank", ph:"// PASS 1 — build complete frequency map...", ans:"for (int x : nums) freq[x]++;", hint:"Single line builds the entire frequency map. map[x]++ initialises to 0 if absent."},
+        ]
+      },
+      { z:3, tag:"BUILD THEN QUERY — two-pass pattern",
+        lines:[
+          {t:"blank", ph:"// PASS 2 — query the map for elements meeting threshold...", ans:"vector<int> result;", hint:"Second pass queries the pre-built map — never search, just lookup"},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="kw">auto</span><span class="op">&</span> [val, cnt] : freq) {`},
+          {t:"blank", ph:"//   include elements above frequency threshold...", ans:"if (cnt > k) result.push_back(val);", hint:"O(1) lookup: freq[val] already computed in pass 1"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RETURN — result built in two O(n) passes",
+        lines:[
+          {t:"blank", ph:"// return qualifying elements...", ans:"return result;", hint:"All elements with frequency > k, found in O(n) total"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Subarray Sum Equals K ──────────────────────────────────────────────
+  {
+    id:3, title:"Subarray Sum Equals K", badge:"PREFIX SUM HASH", badgeColor:"var(--c3)",
+    hint:"Key insight: subarray[j+1..i] sum = k ↔ prefixSum[i] - prefixSum[j] = k ↔ prefixSum[j] = prefixSum[i] - k. Store prefix sums in map, check complement.",
+    viz:[{k:"prefixSum",v:"count"},{k:"0",v:"1"},{k:"ps[i]-k",v:"?"}],
+    zones:[
+      { z:1, tag:"map<prefixSum → count> seeded with {0:1}",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int subarraySum(vector<int>& nums, int k) {", hint:"Returns count of subarrays whose elements sum to exactly k"},
+          {t:"blank", ph:"// map: prefixSum → how many times this sum has appeared...", ans:"unordered_map<int,int> psCount;", hint:"psCount[s] = number of indices where prefix sum equals s"},
+          {t:"blank", ph:"// seed: empty prefix has sum 0, seen once...", ans:"psCount[0] = 1;", hint:"Crucial seed: handles subarrays starting at index 0. Without it, we miss them."},
+        ]
+      },
+      { z:2, tag:"KEY TRANSFORM — prefixSum[i] - k = needed complement",
+        lines:[
+          {t:"blank", ph:"// running prefix sum + answer count...", ans:"int ps = 0, count = 0;", hint:"ps accumulates sum from index 0. count accumulates valid subarray count."},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> x : nums) {`},
+          {t:"blank", ph:"//   extend prefix sum...", ans:"ps += x;", hint:"ps = sum of nums[0..i]"},
+        ]
+      },
+      { z:3, tag:"CHECK — how many past prefixes equal ps-k?",
+        lines:[
+          {t:"blank", ph:"//   count subarrays ending here with sum = k...", ans:"count += psCount[ps - k];", hint:"psCount[ps-k] = number of j where prefixSum[j]=ps-k, so subarray[j+1..i]=k"},
+          {t:"blank", ph:"//   record current prefix sum...", ans:"psCount[ps]++;", hint:"Insert AFTER checking — current ps doesn't form a subarray with itself"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RETURN — count of valid subarrays",
+        lines:[
+          {t:"blank", ph:"// return total count of subarrays summing to k...", ans:"return count;", hint:"Every valid (j,i) pair where subarray sum = k was counted"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Longest Consecutive Sequence ──────────────────────────────────────
+  {
+    id:4, title:"Longest Consecutive Sequence", badge:"SET + CHAIN START", badgeColor:"var(--c4)",
+    hint:"Load all values into a set. For each x, only start counting if x-1 is ABSENT (x is a chain start). Count x, x+1, x+2... while they exist in set.",
+    viz:[{k:"x-1 absent?",v:"start chain"},{k:"x+1∈set?",v:"extend"},{k:"max",v:"length"}],
+    zones:[
+      { z:1, tag:"unordered_set — O(1) existence check",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int longestConsecutive(vector<int>& nums) {", hint:"Returns length of longest sequence of consecutive integers"},
+          {t:"blank", ph:"// load all values into set for O(1) lookup...", ans:"unordered_set<int> numSet(nums.begin(), nums.end());", hint:"Set deduplicates and enables O(1) membership test"},
+        ]
+      },
+      { z:2, tag:"KEY TRANSFORM — only start chains where x-1 absent",
+        lines:[
+          {t:"blank", ph:"// max length tracker...", ans:"int maxLen = 0;", hint:"Track longest chain found so far"},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> x : numSet) {`},
+          {t:"blank", ph:"//   only start counting from chain beginnings...", ans:"if (!numSet.count(x-1)) {", hint:"x-1 absent means x is the smallest in its chain — start here only. Avoids O(n²)."},
+        ]
+      },
+      { z:3, tag:"CHECK — extend chain while next exists in set",
+        lines:[
+          {t:"blank", ph:"//     extend chain: count consecutive elements...", ans:"int cur = x, len = 1;", hint:"Start from x, chain length starts at 1"},
+          {t:"blank", ph:"//     keep extending while next element exists...", ans:"while (numSet.count(cur+1)) { cur++; len++; }", hint:"O(1) set lookup at each step. Each element visited at most once overall."},
+          {t:"blank", ph:"//     update max...", ans:"maxLen = max(maxLen, len);", hint:"Longest chain ending at cur, starting at x"},
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RETURN — O(n) total despite nested loop",
+        lines:[
+          {t:"blank", ph:"// return longest consecutive sequence length...", ans:"return maxLen;", hint:"O(n) amortized: each element starts at most one chain and is visited once"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Group Anagrams ─────────────────────────────────────────────────────
+  {
+    id:5, title:"Group Anagrams", badge:"SORTED KEY", badgeColor:"var(--c1)",
+    hint:"Key transform: sort each word. All anagrams share the same sorted form. Map sorted form → group of original words.",
+    viz:[{k:"sort(word)",v:"[anagrams]"},{k:"eat→aet",v:"[eat,tea,ate]"},{k:"tan→ant",v:"[tan,nat]"}],
+    zones:[
+      { z:1, tag:"map<sorted_string → group> — canonical key",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<vector<string>> groupAnagrams(vector<string>& strs) {", hint:"Groups strings that are anagrams of each other"},
+          {t:"blank", ph:"// map: sorted word → list of anagrams sharing that sorted form...", ans:"unordered_map<string,vector<string>> groups;", hint:"Sorted form is canonical key — all anagrams map to same key"},
+        ]
+      },
+      { z:2, tag:"KEY TRANSFORM — sort each word to get canonical form",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="kw">auto</span><span class="op">&</span> s : strs) {`},
+          {t:"blank", ph:"//   sort word to get canonical anagram key...", ans:"string key = s; sort(key.begin(), key.end());", hint:"'eat', 'tea', 'ate' all sort to 'aet' — same key, same group"},
+        ]
+      },
+      { z:3, tag:"INSERT — append to group under canonical key",
+        lines:[
+          {t:"blank", ph:"//   add word to its anagram group...", ans:"groups[key].push_back(s);", hint:"All words with same sorted form accumulate in the same vector"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RETURN — collect all groups",
+        lines:[
+          {t:"blank", ph:"// collect all groups into result...", ans:"vector<vector<string>> result; for(auto& [k,v]:groups) result.push_back(v); return result;", hint:"Each map value is a complete anagram group — extract all values"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── First Unique Character ─────────────────────────────────────────────
+  {
+    id:6, title:"First Unique Character", badge:"TWO-PASS", badgeColor:"var(--c3)",
+    hint:"Pass 1: count all character frequencies. Pass 2: scan original string left-to-right, return first index where freq == 1.",
+    viz:[{k:"char",v:"count"},{k:"'l'",v:"2"},{k:"'e'",v:"1"}],
+    zones:[
+      { z:1, tag:"map<char → count> — two-pass pattern",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int firstUniqChar(string s) {", hint:"Returns index of first non-repeating character, or -1"},
+          {t:"blank", ph:"// frequency map for characters...", ans:"unordered_map<char,int> freq;", hint:"freq[c] = total occurrences of c in the entire string"},
+        ]
+      },
+      { z:2, tag:"KEY TRANSFORM — character itself is the key",
+        lines:[
+          {t:"blank", ph:"// PASS 1 — build complete frequency map...", ans:"for (char c : s) freq[c]++;", hint:"Count every character in one pass — O(n)"},
+        ]
+      },
+      { z:3, tag:"SCAN — pass 2 finds first with frequency 1",
+        lines:[
+          {t:"blank", ph:"// PASS 2 — scan original order for first unique...", ans:"for (int i = 0; i < (int)s.size(); i++) {", hint:"Must scan original string (not map) to preserve left-to-right order"},
+          {t:"blank", ph:"//   first character with frequency 1 is the answer...", ans:"if (freq[s[i]] == 1) return i;", hint:"freq already computed — O(1) lookup at each position"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RETURN — -1 if all characters repeat",
+        lines:[
+          {t:"blank", ph:"// no unique character found...", ans:"return -1;", hint:"Every character appeared more than once — no first unique exists"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Isomorphic Strings ─────────────────────────────────────────────────
+  {
+    id:7, title:"Isomorphic Strings", badge:"BIDIRECTIONAL MAP", badgeColor:"var(--c2)",
+    hint:"Map s[i]→t[i] AND t[i]→s[i]. Both directions needed: 'ab'→'aa' fails s→t check, 'aa'→'ab' fails t→s check. Consistent mapping in both directions = isomorphic.",
+    viz:[{k:"s[i]→t[i]",v:"forward"},{k:"t[i]→s[i]",v:"backward"},{k:"conflict?",v:"false"}],
+    zones:[
+      { z:1, tag:"TWO maps — bidirectional character mapping",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"bool isIsomorphic(string s, string t) {", hint:"Returns true if s and t have the same structure — consistent char mapping"},
+          {t:"blank", ph:"// two maps for bidirectional consistency check...", ans:"unordered_map<char,char> sToT, tToS;", hint:"sToT: s-char maps to which t-char. tToS: t-char maps to which s-char."},
+        ]
+      },
+      { z:2, tag:"KEY TRANSFORM — character pair (s[i], t[i])",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> (<span class="ty">int</span>)s.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   current character pair...", ans:"char sc = s[i], tc = t[i];", hint:"At each position, s[i] and t[i] must consistently map to each other"},
+        ]
+      },
+      { z:3, tag:"CHECK — mapping must be consistent in both directions",
+        lines:[
+          {t:"blank", ph:"//   s→t conflict: sc already mapped to a DIFFERENT t-char...", ans:"if (sToT.count(sc) && sToT[sc] != tc) return false;", hint:"sc was mapped before but to a different character — not isomorphic"},
+          {t:"blank", ph:"//   t→s conflict: tc already mapped to a DIFFERENT s-char...", ans:"if (tToS.count(tc) && tToS[tc] != sc) return false;", hint:"tc was mapped before but to a different character — not isomorphic"},
+          {t:"blank", ph:"//   record bidirectional mapping...", ans:"sToT[sc] = tc; tToS[tc] = sc;", hint:"Both directions recorded — future checks use these mappings"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RETURN — all positions consistent = isomorphic",
+        lines:[
+          {t:"blank", ph:"// all mappings consistent — strings are isomorphic...", ans:"return true;", hint:"No conflict found at any position in either direction"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Repeated DNA Sequences ─────────────────────────────────────────────
+  {
+    id:8, title:"Repeated DNA Sequences", badge:"SUBSTRING KEY", badgeColor:"var(--c4)",
+    hint:"Sliding window of size 10. Use map to count each 10-char substring. Add to result when count reaches exactly 2 (avoids duplicates in result).",
+    viz:[{k:"substr(i,10)",v:"count"},{k:"AAAAACCCCC",v:"2"},{k:"AAAAAAAAAA",v:"3"}],
+    zones:[
+      { z:1, tag:"map<substring → count> — substring is the key",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<string> findRepeatedDnaSequences(string s) {", hint:"Returns all 10-letter substrings appearing more than once"},
+          {t:"blank", ph:"// map: 10-char substring → count of occurrences...", ans:"unordered_map<string,int> seen;", hint:"Key IS the substring itself — no transformation needed"},
+          {t:"blank", ph:"// result container...", ans:"vector<string> result;", hint:"Collect repeated sequences without duplicates"},
+        ]
+      },
+      { z:2, tag:"KEY TRANSFORM — sliding window substr of length 10",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">+</span> <span class="nm">10</span> <span class="op">&lt;=</span> (<span class="ty">int</span>)s.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   extract 10-character window...", ans:"string sub = s.substr(i, 10);", hint:"Each window of 10 consecutive characters is one candidate"},
+        ]
+      },
+      { z:3, tag:"CHECK — add to result when count hits exactly 2",
+        lines:[
+          {t:"blank", ph:"//   increment count for this substring...", ans:"seen[sub]++;", hint:"Track how many times this exact 10-mer has appeared"},
+          {t:"blank", ph:"//   add to result when seen exactly twice (avoids result duplicates)...", ans:"if (seen[sub] == 2) result.push_back(sub);", hint:"Exactly 2: first time we know it repeats. >2 would add duplicates to result."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RETURN — all repeated 10-letter sequences",
+        lines:[
+          {t:"blank", ph:"// return all repeated DNA sequences...", ans:"return result;", hint:"Each repeated 10-mer appears exactly once in result"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── LRU Cache ──────────────────────────────────────────────────────────
+  {
+    id:9, title:"LRU Cache", badge:"MAP + DLL", badgeColor:"var(--c1)",
+    hint:"HashMap for O(1) access by key. Doubly linked list maintains LRU order. Move-to-front on every get/put. Evict from tail (least recently used) when full.",
+    viz:[{k:"key",v:"list iter"},{k:"head←MRU",v:"LRU→tail"},{k:"evict",v:"tail"}],
+    zones:[
+      { z:1, tag:"map<key → list iterator> + doubly linked list",
+        lines:[
+          {t:"blank", ph:"// class definition...", ans:"class LRUCache {", hint:"O(1) get and put. Evicts least recently used when capacity exceeded."},
+          {t:"blank", ph:"// doubly linked list of {key,val} pairs + map to iterators...", ans:"list<pair<int,int>> dll; unordered_map<int,list<pair<int,int>>::iterator> mp; int cap;", hint:"dll maintains LRU order (front=MRU, back=LRU). mp gives O(1) access to any node."},
+          {t:"blank", ph:"// constructor...", ans:"public: LRUCache(int capacity) : cap(capacity) {}",hint:"Store capacity for eviction check"},
+        ]
+      },
+      { z:2, tag:"GET — lookup + move to front (mark as recently used)",
+        lines:[
+          {t:"blank", ph:"// get — return -1 if not found, else move to front...", ans:"int get(int key) {", hint:"Any accessed key becomes most recently used — move to front of dll"},
+          {t:"blank", ph:"//   not in cache...", ans:"if (!mp.count(key)) return -1;", hint:"Key absent — cache miss"},
+          {t:"blank", ph:"//   move to front (most recently used) + return value...", ans:"dll.splice(dll.begin(), dll, mp[key]); return mp[key]->second;", hint:"splice moves node to front in O(1) without reallocation — key of DLL+hashmap"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"PUT — insert/update + evict LRU if over capacity",
+        lines:[
+          {t:"blank", ph:"// put — update if exists, else insert and evict if full...", ans:"void put(int key, int value) {", hint:"Update moves to front; new insert may trigger eviction"},
+          {t:"blank", ph:"//   if key exists — update value and move to front...", ans:"if (mp.count(key)) { mp[key]->second=value; dll.splice(dll.begin(),dll,mp[key]); return; }", hint:"Update in-place: change value, move to front, done"},
+          {t:"blank", ph:"//   insert new node at front...", ans:"dll.push_front({key,value}); mp[key]=dll.begin();", hint:"New element is most recently used — front of dll"},
+          {t:"blank", ph:"//   evict LRU (tail) if over capacity...", ans:"if ((int)dll.size()>cap){mp.erase(dll.back().first);dll.pop_back();}", hint:"Remove from both map and dll. dll.back() = least recently used."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — O(1) get and put guaranteed by design",
+        lines:[
+          {t:"fixed", code:`};`},
+          {t:"fixed", code:`<span class="cm">// map: O(1) find by key</span>`},
+          {t:"fixed", code:`<span class="cm">// dll: O(1) move-to-front via splice</span>`},
+          {t:"fixed", code:`<span class="cm">// dll: O(1) evict from tail</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Subarrays with Equal 0s and 1s ────────────────────────────────────
+  {
+    id:10, title:"Subarrays with Equal 0s and 1s", badge:"0→-1 PREFIX SUM", badgeColor:"var(--c2)",
+    hint:"Replace 0 with -1. Equal 0s and 1s ↔ subarray sum = 0 ↔ two indices with same prefix sum. Count pairs with equal prefix sum using hash map.",
+    viz:[{k:"prefixSum",v:"firstIdx"},{k:"0",v:"-1(seed)"},{k:"ps[i]=ps[j]",v:"count++"}],
+    zones:[
+      { z:1, tag:"map<prefixSum → firstIndex> — 0→-1 transform",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"int findMaxLength(vector<int>& nums) {", hint:"Returns length of longest subarray with equal number of 0s and 1s"},
+          {t:"blank", ph:"// KEY TRANSFORM: replace 0 with -1 so equal 0s/1s means sum=0...", ans:"for (int& x : nums) if (x==0) x=-1;", hint:"After transform: subarray with equal 0s and 1s has sum exactly 0"},
+          {t:"blank", ph:"// map: prefixSum → earliest index where this sum appeared...", ans:"unordered_map<int,int> firstSeen; firstSeen[0] = -1;", hint:"Seed with {0:-1}: handles subarrays starting at index 0"},
+        ]
+      },
+      { z:2, tag:"KEY TRANSFORM — running prefix sum with 0→-1",
+        lines:[
+          {t:"blank", ph:"// running prefix sum + max length...", ans:"int ps = 0, maxLen = 0;", hint:"ps accumulates sum of transformed array. maxLen tracks best answer."},
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> (<span class="ty">int</span>)nums.size(); i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   extend prefix sum with transformed value...", ans:"ps += nums[i];", hint:"nums[i] is already +1 or -1 after transform"},
+        ]
+      },
+      { z:3, tag:"CHECK — same prefix sum seen before = valid subarray",
+        lines:[
+          {t:"blank", ph:"//   same prefix sum seen before — subarray between has sum 0...", ans:"if (firstSeen.count(ps)) maxLen = max(maxLen, i - firstSeen[ps]);", hint:"ps[i] = ps[j] means subarray[j+1..i] sums to 0 = equal 0s and 1s"},
+          {t:"blank", ph:"//   record FIRST occurrence only — maximises subarray length...", ans:"else firstSeen[ps] = i;", hint:"Store earliest index: longer subarray = earlier j. Don't overwrite with later."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RETURN — longest subarray with equal 0s and 1s",
+        lines:[
+          {t:"blank", ph:"// return maximum length...", ans:"return maxLen;", hint:"Longest subarray where 0→-1 transform gives sum = 0"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Declare + Init','Key Transform','Check + Insert','Return Answer'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0,answered=new Set(),stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const kvs=p.viz.map(({k,v})=>`
+    <div class="hash-kv">
+      <div class="hash-k">${k}</div>
+      <div class="hash-v">${v}</div>
+    </div>`).join('<span class="hash-arrow">·</span>');
+  viz.innerHTML=`
+    <div class="hash-viz">${kvs}</div>
+    <div class="viz-legend">
+      <span style="color:var(--c2)">■</span> key (the transform)<br>
+      <span style="color:var(--c4)">■</span> value (the answer)<br>
+      <span style="color:var(--c2)">★ check BEFORE insert · O(1) replaces O(n) search</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>
