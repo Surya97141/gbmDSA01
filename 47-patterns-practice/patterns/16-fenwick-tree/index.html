@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fenwick Tree (BIT) — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(56,189,248,0.06) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c2);border:1px solid rgba(56,189,248,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c2) 40%,var(--c1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c2);color:var(--text);}
+.sel-btn.active{background:rgba(56,189,248,0.1);border-color:var(--c2);color:var(--c2);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c2);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(56,189,248,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c2);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:380px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c2);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(56,189,248,0.06);border-bottom-color:var(--c2);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(167,139,250,0.07);border-bottom-color:var(--c1)!important;color:var(--c1);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(56,189,248,0.1);color:var(--c2);border-color:rgba(56,189,248,0.4);}
+.btn-check:hover{background:rgba(56,189,248,0.2);}
+.btn-reveal{background:rgba(167,139,250,0.08);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-reveal:hover{background:rgba(167,139,250,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c2);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.bit-viz{display:flex;flex-direction:column;gap:8px;}
+.bit-row{display:flex;gap:3px;align-items:center;}
+.bit-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);width:64px;text-align:right;padding-right:8px;flex-shrink:0;}
+.bit-cell{font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 0;border:1px solid var(--border);border-radius:2px;color:var(--muted);min-width:36px;text-align:center;position:relative;}
+.bit-cell.active{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.08);}
+.bit-cell.updated{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.08);}
+.bit-cell.queried{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.08);}
+.bit-resp{font-family:'JetBrains Mono',monospace;font-size:8px;position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);color:var(--muted);white-space:nowrap;}
+.bit-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:14px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:var(--c1);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 16 — Practice Mode</div>
+    <h1>Fenwick Tree (BIT)</h1>
+    <p>// 1-indexed · update: i+=i&(-i) · query: i-=i&(-i) · range=query(r)-query(l-1)</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// FENWICK TREE (BIT) — 10 Manifestations
+//
+// 4 Blocks:
+//   ① INIT         — vector<int> bit(n+1, 0)  ALWAYS 1-indexed
+//   ② update()     — for(;i<=n;i+=i&(-i)) bit[i]+=delta  IDENTICAL always
+//   ③ query()      — for(;i>0;i-=i&(-i)) sum+=bit[i]  IDENTICAL always
+//   ④ APPLICATION  — query(r)-query(l-1) for range; coordinate compress; two BITs
+//
+// THE TWO MAGIC LINES (memorise these cold):
+//   update:  i += i & (-i)   →  move to next responsible ancestor
+//   query:   i -= i & (-i)   →  strip lowest bit, move to previous range
+//
+// BIT cell i is responsible for  i&(-i)  elements ending at i
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Prefix Sum with Updates ────────────────────────────────────────────
+  {
+    id:1, title:"Prefix Sum with Updates", badge:"CORE BIT", badgeColor:"var(--c4)",
+    hint:"The fundamental BIT. update(i,delta) adds delta to position i. query(i) returns sum[1..i]. Both O(log n). 1-indexed — never use index 0.",
+    zones:[
+      { z:1, tag:"bit[n+1] — 1-indexed, all zeros",
+        lines:[
+          {t:"blank", ph:"// BIT struct wrapping array and size...", ans:"struct BIT { vector<int> bit; int n;", hint:"Encapsulate bit array, size n, and both operations"},
+          {t:"blank", ph:"// init: 1-indexed array of size n+1, all zeros...", ans:"BIT(int n) : n(n), bit(n+1, 0) {}", hint:"Size n+1 so we can use indices 1..n. Index 0 is never used."},
+        ]
+      },
+      { z:2, tag:"update() — i += i&(-i) — IDENTICAL in every BIT",
+        lines:[
+          {t:"blank", ph:"// update: add delta to position i...", ans:"void update(int i, int delta) {", hint:"Propagates delta to all BIT cells responsible for position i"},
+          {t:"blank", ph:"//   walk up: i += i&(-i) moves to next ancestor...", ans:"for (; i <= n; i += i & (-i)) bit[i] += delta;", hint:"i&(-i) = lowest set bit of i = how many elements this cell covers. Adding it jumps to parent."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"query() — i -= i&(-i) — IDENTICAL in every BIT",
+        lines:[
+          {t:"blank", ph:"// query: prefix sum [1..i]...", ans:"int query(int i) {", hint:"Returns sum of elements at positions 1 through i"},
+          {t:"blank", ph:"//   walk down: i -= i&(-i) strips lowest bit...", ans:"int sum = 0; for (; i > 0; i -= i & (-i)) sum += bit[i]; return sum;", hint:"Each step strips lowest set bit, collecting responsible ranges until i=0"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"APPLICATION — range sum = query(r) - query(l-1)",
+        lines:[
+          {t:"blank", ph:"// range sum [l,r] = prefix(r) - prefix(l-1)...", ans:"int rangeQuery(int l, int r) { return query(r) - query(l-1); }", hint:"BIT only gives prefix sums. Range = difference of two prefix sums."},
+          {t:"fixed", code:`};`},
+          {t:"blank", ph:"// usage: build from array...", ans:"BIT bt(n); for(int i=0;i<n;i++) bt.update(i+1, arr[i]);", hint:"Insert each element with update(1-indexed position, value)"},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Count Inversions ───────────────────────────────────────────────────
+  {
+    id:2, title:"Count Inversions", badge:"LARGER BEFORE i", badgeColor:"var(--c3)",
+    hint:"Process left to right. For each element x: inversions += query(n) - query(x) = count of elements already inserted that are > x. Then update(x, 1).",
+    zones:[
+      { z:1, tag:"BIT on value domain — coordinate compress first",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"long long countInversions(vector<int>& arr) {", hint:"Returns number of pairs (i,j) where i<j but arr[i]>arr[j]"},
+          {t:"blank", ph:"// coordinate compress to [1..n]...", ans:"int n=arr.size(); vector<int> sorted=arr; sort(sorted.begin(),sorted.end()); sorted.erase(unique(sorted.begin(),sorted.end()),sorted.end()); auto compress=[&](int x){ return lower_bound(sorted.begin(),sorted.end(),x)-sorted.begin()+1; };", hint:"Map values to [1..n] so BIT indices are valid and contiguous"},
+          {t:"blank", ph:"// BIT over value domain...", ans:"vector<int> bit(n+1,0); long long inv=0;", hint:"bit[v] = how many times value v has been inserted so far"},
+        ]
+      },
+      { z:2, tag:"update() — standard i+=i&(-i)",
+        lines:[
+          {t:"blank", ph:"// BIT update...", ans:"auto update=[&](int i,int d){ for(;i<=n;i+=i&(-i)) bit[i]+=d; };", hint:"Add delta d at position i — standard BIT update, never changes"},
+        ]
+      },
+      { z:3, tag:"query() — standard i-=i&(-i)",
+        lines:[
+          {t:"blank", ph:"// BIT query...", ans:"auto query=[&](int i){ int s=0; for(;i>0;i-=i&(-i)) s+=bit[i]; return s; };", hint:"Prefix count of values ≤ i that have been inserted so far"},
+        ]
+      },
+      { z:4, tag:"APPLICATION — for each x: count already-inserted > x",
+        lines:[
+          {t:"blank", ph:"// process left to right — count elements already seen that are larger...", ans:"for(int x:arr){ int cx=compress(x); inv+=query(n)-query(cx); update(cx,1); }", hint:"query(n)-query(cx) = count of inserted values > cx. Insert cx after querying."},
+          {t:"blank", ph:"// return inversion count...", ans:"return inv;", hint:"Total inversions = sum of 'how many prior elements are larger' for each position"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Order Statistics ───────────────────────────────────────────────────
+  {
+    id:3, title:"Order Statistics", badge:"KTH SMALLEST", badgeColor:"var(--c2)",
+    hint:"BIT as frequency table. To find kth smallest: binary lift on BIT — start from highest bit, greedily descend left if left subtree count ≥ k, else subtract and go right.",
+    zones:[
+      { z:1, tag:"frequency BIT — find kth element in O(log n)",
+        lines:[
+          {t:"blank", ph:"// order statistics on dynamic multiset using BIT...", ans:"struct OrderStatBIT { vector<int> bit; int n;", hint:"Supports insert(x), delete(x), and kthSmallest(k) all in O(log n)"},
+          {t:"blank", ph:"// init...", ans:"OrderStatBIT(int n):n(n),bit(n+1,0){}", hint:"n = value range (after coordinate compression to [1..n])"},
+          {t:"blank", ph:"// update and query — standard BIT...", ans:"void update(int i,int d){for(;i<=n;i+=i&(-i))bit[i]+=d;} int query(int i){int s=0;for(;i>0;i-=i&(-i))s+=bit[i];return s;}", hint:"Identical update/query — insert: update(x,+1), delete: update(x,-1)"},
+        ]
+      },
+      { z:2, tag:"kthSmallest() — binary lifting on BIT structure",
+        lines:[
+          {t:"blank", ph:"// find kth smallest — O(log n) binary lift...", ans:"int kthSmallest(int k) {", hint:"Walks down the implicit BIT tree in O(log n) without O(n log n) binary search"},
+          {t:"blank", ph:"//   start from highest power of 2...", ans:"int pos=0, logN=__lg(n);", hint:"__lg(n) = floor(log2(n)). We test bits from high to low."},
+        ]
+      },
+      { z:3, tag:"binary lift — go right only when left count < k",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> pw <span class="op">=</span> logN; pw <span class="op">&gt;=</span> <span class="nm">0</span>; pw<span class="op">--</span>) {`},
+          {t:"blank", ph:"//     try going right by 2^pw...", ans:"int nxt = pos + (1 << pw);", hint:"Candidate: move right by this power of 2"},
+          {t:"blank", ph:"//     if left subtree has fewer than k elements, go right...", ans:"if (nxt <= n && bit[nxt] < k) { pos = nxt; k -= bit[nxt]; }", hint:"bit[nxt] = count in left subtree (BIT partial sum). If < k, skip left, subtract count."},
+          {t:"fixed", code:`    }`},
+          {t:"blank", ph:"//   pos+1 is the kth smallest...", ans:"return pos+1;", hint:"After all bits processed, pos = largest position with prefix count < k. pos+1 is kth."},
+          {t:"fixed", code:`} };`},
+        ]
+      },
+      { z:4, tag:"APPLICATION — dynamic multiset with rank queries",
+        lines:[
+          {t:"blank", ph:"// insert element x (coordinate compressed)...", ans:"OrderStatBIT os(maxVal); os.update(x, 1);", hint:"Add x to the multiset — update frequency at position x"},
+          {t:"blank", ph:"// find kth smallest element...", ans:"int kth = os.kthSmallest(k);", hint:"O(log n) binary lift — no need to binary search over query()"},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Range Sum with Point Update ───────────────────────────────────────
+  {
+    id:4, title:"Range Sum + Point Update", badge:"query(r)-query(l-1)", badgeColor:"var(--c4)",
+    hint:"Build BIT from initial array using n update calls. Point update: update(pos, newVal-oldVal). Range query: query(r)-query(l-1). Lighter than segment tree for this use case.",
+    zones:[
+      { z:1, tag:"BIT built from array — O(n log n) construction",
+        lines:[
+          {t:"blank", ph:"// range sum segment tree alternative — BIT is 3x lighter...", ans:"int n; vector<long long> bit;", hint:"BIT: ~10 lines of code. Segment tree: ~40 lines. Same O(log n) per operation."},
+          {t:"blank", ph:"// init and build from array...", ans:"void build(vector<int>& arr){ n=arr.size(); bit.assign(n+1,0); for(int i=0;i<n;i++) update(i+1,arr[i]); }", hint:"O(n log n) build — call update for each element. O(n) build also possible."},
+        ]
+      },
+      { z:2, tag:"update() — add DIFFERENCE not new value",
+        lines:[
+          {t:"blank", ph:"// update: add delta at position i (1-indexed)...", ans:"void update(int i, long long delta){ for(;i<=n;i+=i&(-i)) bit[i]+=delta; }", hint:"To set arr[i]=newVal: compute delta=newVal-oldVal, then update(i, delta)"},
+        ]
+      },
+      { z:3, tag:"query() — prefix sum then subtract for range",
+        lines:[
+          {t:"blank", ph:"// prefix sum query [1..i]...", ans:"long long query(int i){ long long s=0; for(;i>0;i-=i&(-i)) s+=bit[i]; return s; }", hint:"Standard prefix sum — range [l,r] uses two calls"},
+          {t:"blank", ph:"// range sum [l,r]...", ans:"long long rangeSum(int l, int r){ return query(r)-query(l-1); }", hint:"This is the key formula. BIT query is always prefix, range = subtraction."},
+        ]
+      },
+      { z:4, tag:"APPLICATION — point updates and range queries interleaved",
+        lines:[
+          {t:"blank", ph:"// point update: change arr[pos] to newVal...", ans:"void pointUpdate(int pos, long long newVal, long long oldVal){ update(pos, newVal-oldVal); }", hint:"Must know oldVal to compute delta. Or maintain separate arr[] to track current values."},
+          {t:"blank", ph:"// example queries...", ans:"build(arr); long long s=rangeSum(l,r); pointUpdate(pos,newVal,arr[pos]); arr[pos]=newVal;", hint:"Keep arr[] in sync with BIT for future delta computations"},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── 2D Fenwick Tree ────────────────────────────────────────────────────
+  {
+    id:5, title:"2D Fenwick Tree", badge:"NESTED i&(-i)", badgeColor:"var(--c1)",
+    hint:"Two nested BIT loops. update(x,y,delta): outer loop i+=i&(-i), inner loop j+=j&(-j). query(x,y): outer i-=i&(-i), inner j-=j&(-j). Rectangle sum = inclusion-exclusion of 4 prefix queries.",
+    zones:[
+      { z:1, tag:"2D BIT — outer rows, inner columns",
+        lines:[
+          {t:"blank", ph:"// 2D BIT for prefix sums on matrix...", ans:"struct BIT2D { vector<vector<int>> bit; int n, m;", hint:"bit[i][j] covers a rectangle of cells — nested BIT structure"},
+          {t:"blank", ph:"// init n×m matrix...", ans:"BIT2D(int n,int m):n(n),m(m),bit(n+1,vector<int>(m+1,0)){}", hint:"1-indexed in BOTH dimensions. bit[0][*] and bit[*][0] never used."},
+        ]
+      },
+      { z:2, tag:"update() — TWO nested i+=i&(-i) loops",
+        lines:[
+          {t:"blank", ph:"// 2D update at (x,y) with delta...", ans:"void update(int x, int y, int delta){", hint:"Updates all BIT cells covering position (x,y)"},
+          {t:"blank", ph:"//   outer loop on rows, inner loop on columns...", ans:"for(int i=x;i<=n;i+=i&(-i)) for(int j=y;j<=m;j+=j&(-j)) bit[i][j]+=delta;", hint:"Each loop is identical to 1D update. Nested = 2D. O(log n × log m) per update."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"query() — TWO nested i-=i&(-i) loops",
+        lines:[
+          {t:"blank", ph:"// 2D prefix sum query [1..x][1..y]...", ans:"int query(int x, int y){", hint:"Returns sum of all elements in rectangle (1,1) to (x,y)"},
+          {t:"blank", ph:"//   outer loop on rows, inner loop on columns...", ans:"int s=0; for(int i=x;i>0;i-=i&(-i)) for(int j=y;j>0;j-=j&(-j)) s+=bit[i][j]; return s;", hint:"Mirror of update: both loops run in opposite direction. O(log n × log m)."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"APPLICATION — rectangle sum via inclusion-exclusion",
+        lines:[
+          {t:"blank", ph:"// rectangle sum [x1,x2] × [y1,y2]...", ans:"int rectSum(int x1,int y1,int x2,int y2){ return query(x2,y2)-query(x1-1,y2)-query(x2,y1-1)+query(x1-1,y1-1); }", hint:"4-query inclusion-exclusion: same as 2D prefix sum formula"},
+          {t:"fixed", code:`};`},
+          {t:"blank", ph:"// point update at (r,c)...", ans:"BIT2D bt(n,m); bt.update(r,c,val);", hint:"Both dimensions 1-indexed. update sets a single cell's contribution."},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Frequency Table ────────────────────────────────────────────────────
+  {
+    id:6, title:"Frequency Table", badge:"COUNT ≤ X DYNAMIC", badgeColor:"var(--c3)",
+    hint:"BIT as dynamic frequency table. Insert x: update(x,+1). Delete x: update(x,-1). Count elements ≤ x: query(x). Count elements in [a,b]: query(b)-query(a-1).",
+    zones:[
+      { z:1, tag:"BIT indexed by value — frequency at each value",
+        lines:[
+          {t:"blank", ph:"// dynamic frequency table — supports insert/delete/count...", ans:"struct FreqBIT { vector<int> bit; int maxVal;", hint:"Index = value (after coordinate compression). bit[v] = freq contribution at v."},
+          {t:"blank", ph:"// init with value range...", ans:"FreqBIT(int maxVal):maxVal(maxVal),bit(maxVal+1,0){}", hint:"maxVal = largest possible value after coordinate compression"},
+          {t:"blank", ph:"// update and query — identical BIT operations...", ans:"void update(int i,int d){for(;i<=maxVal;i+=i&(-i))bit[i]+=d;} int query(int i){int s=0;for(;i>0;i-=i&(-i))s+=bit[i];return s;}", hint:"Standard BIT — update with +1 to insert, -1 to delete"},
+        ]
+      },
+      { z:2, tag:"insert and delete in O(log n)",
+        lines:[
+          {t:"blank", ph:"// insert value x...", ans:"void insert(int x){ update(x, +1); }", hint:"Add 1 at position x — increments frequency of value x"},
+          {t:"blank", ph:"// delete value x...", ans:"void remove(int x){ update(x, -1); }", hint:"Subtract 1 at position x — decrements frequency of value x"},
+        ]
+      },
+      { z:3, tag:"count queries in O(log n)",
+        lines:[
+          {t:"blank", ph:"// count elements with value ≤ x...", ans:"int countLeq(int x){ return query(x); }", hint:"Prefix sum of frequencies = count of elements with value ≤ x"},
+          {t:"blank", ph:"// count elements with value in [a,b]...", ans:"int countRange(int a, int b){ return query(b)-query(a-1); }", hint:"Frequency count in value range [a,b] = difference of two prefix queries"},
+          {t:"fixed", code:`};`},
+        ]
+      },
+      { z:4, tag:"APPLICATION — dynamic rank queries on multiset",
+        lines:[
+          {t:"blank", ph:"// coordinate compress values to [1..n] first...", ans:"vector<int> vals=arr; sort(vals.begin(),vals.end()); vals.erase(unique(vals.begin(),vals.end()),vals.end());", hint:"Compress so values fit in [1..n] — required if values are large or negative"},
+          {t:"blank", ph:"// rank of x = count of elements ≤ x...", ans:"FreqBIT fb(vals.size()); for(int x:arr){ int cx=lower_bound(vals.begin(),vals.end(),x)-vals.begin()+1; fb.insert(cx); }", hint:"After compression, rank(x) = fb.countLeq(compressed_x)"},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Rank Queries ───────────────────────────────────────────────────────
+  {
+    id:7, title:"Rank Queries", badge:"HOW MANY ≤ X", badgeColor:"var(--c2)",
+    hint:"Rank of x = number of elements in current set that are ≤ x = query(compress(x)). Same frequency BIT as before, different framing. Supports online updates.",
+    zones:[
+      { z:1, tag:"rank = prefix count in frequency BIT",
+        lines:[
+          {t:"blank", ph:"// online rank queries with dynamic insertions...", ans:"vector<int> rankQueries(vector<int>& stream, vector<int>& queries) {", hint:"For each query x: how many elements inserted so far are ≤ x?"},
+          {t:"blank", ph:"// coordinate compress all values (stream + queries combined)...", ans:"vector<int> allVals=stream; allVals.insert(allVals.end(),queries.begin(),queries.end()); sort(allVals.begin(),allVals.end()); allVals.erase(unique(allVals.begin(),allVals.end()),allVals.end()); int m=allVals.size();", hint:"Compress all values together so queries reference valid BIT positions"},
+          {t:"blank", ph:"// BIT over compressed value domain...", ans:"vector<int> bit(m+1,0);", hint:"1-indexed, size = number of unique values"},
+        ]
+      },
+      { z:2, tag:"update() — standard, insert each stream element",
+        lines:[
+          {t:"blank", ph:"// standard BIT update...", ans:"auto update=[&](int i,int d){for(;i<=m;i+=i&(-i))bit[i]+=d;};", hint:"Insert: update(compress(x), +1)"},
+          {t:"blank", ph:"// insert all stream elements...", ans:"for(int x:stream){ int cx=lower_bound(allVals.begin(),allVals.end(),x)-allVals.begin()+1; update(cx,1); }", hint:"Process entire stream first — offline version. Online: interleave with queries."},
+        ]
+      },
+      { z:3, tag:"query() — prefix count = rank",
+        lines:[
+          {t:"blank", ph:"// standard BIT query...", ans:"auto query=[&](int i){int s=0;for(;i>0;i-=i&(-i))s+=bit[i];return s;};", hint:"query(compress(x)) = count of inserted elements with value ≤ x = rank of x"},
+        ]
+      },
+      { z:4, tag:"APPLICATION — answer each rank query in O(log n)",
+        lines:[
+          {t:"blank", ph:"// answer each query — rank = prefix count...", ans:"vector<int> result; for(int q:queries){ int cq=lower_bound(allVals.begin(),allVals.end(),q)-allVals.begin()+1; result.push_back(query(cq)); } return result;", hint:"Each query: compress q, then query BIT for prefix count = rank"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Binary Lifting on BIT ──────────────────────────────────────────────
+  {
+    id:8, title:"Binary Lifting on BIT", badge:"FIRST PREFIX > X", badgeColor:"var(--c1)",
+    hint:"Find smallest index where prefix sum exceeds X. Binary lift: test each power of 2 from high to low. If adding 2^k doesn't exceed X, add it. O(log n) without binary search over query().",
+    zones:[
+      { z:1, tag:"binary lift walks BIT tree structure directly",
+        lines:[
+          {t:"blank", ph:"// find first index where prefix sum exceeds target...", ans:"int firstPrefixExceeding(vector<int>& bit, int n, int target) {", hint:"Returns smallest i such that prefix_sum[1..i] > target. O(log n)."},
+          {t:"blank", ph:"// start at pos=0, test bits from high to low...", ans:"int pos=0, sum=0;", hint:"pos builds up the answer bit by bit. sum tracks prefix sum at pos."},
+        ]
+      },
+      { z:2, tag:"try each power of 2 from highest to lowest",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> pw <span class="op">=</span> __lg(n); pw <span class="op">&gt;=</span> <span class="nm">0</span>; pw<span class="op">--</span>) {`},
+          {t:"blank", ph:"//     candidate: move right by 2^pw...", ans:"int nxt = pos + (1 << pw);", hint:"Test if we can extend our position by this power of 2"},
+        ]
+      },
+      { z:3, tag:"extend right only if prefix sum stays ≤ target",
+        lines:[
+          {t:"blank", ph:"//     if within bounds and prefix still ≤ target, go right...", ans:"if (nxt <= n && sum + bit[nxt] <= target) { pos = nxt; sum += bit[nxt]; }", hint:"bit[nxt] = sum of range covered by this BIT cell. If adding it keeps ≤ target, accept."},
+          {t:"fixed", code:`    }`},
+          {t:"blank", ph:"//   pos+1 is the first index with prefix sum > target...", ans:"return pos + 1;", hint:"pos = largest index with prefix ≤ target. pos+1 = first with prefix > target."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"APPLICATION — kth non-zero, lower bound on BIT",
+        lines:[
+          {t:"blank", ph:"// kth smallest = first index where cumulative freq >= k...", ans:"int kthSmallest(vector<int>& bit, int n, int k){ return firstPrefixExceeding(bit,n,k-1); }", hint:"kth element = first position where prefix count ≥ k = first where prefix > k-1"},
+          {t:"blank", ph:"// same technique works for any monotone prefix function...", ans:"// lower_bound on BIT: O(log n) vs O(log²n) for binary_search over query()", hint:"Binary lift is strictly faster than binary searching over prefix queries"},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Offline Inversion Counting ─────────────────────────────────────────
+  {
+    id:9, title:"Offline Inversion Counting", badge:"SORT + BIT", badgeColor:"var(--c3)",
+    hint:"Sort elements with original indices. Process in sorted order: for each element, count elements with SMALLER original index already inserted = elements that appear before it but are larger.",
+    zones:[
+      { z:1, tag:"sort by value — process in value order, query position order",
+        lines:[
+          {t:"blank", ph:"// offline inversion counting — sort then BIT...", ans:"long long countInversionsOffline(vector<int>& arr) {", hint:"Alternative to online approach — sort first, then BIT on positions"},
+          {t:"blank", ph:"// pair {value, original_index}, sort by value ascending...", ans:"int n=arr.size(); vector<pair<int,int>> sorted(n); for(int i=0;i<n;i++) sorted[i]={arr[i],i}; sort(sorted.begin(),sorted.end());", hint:"Sorted by value. When we process element at original index i, all smaller elements processed before."},
+          {t:"blank", ph:"// BIT over positions (1-indexed)...", ans:"vector<int> bit(n+1,0); long long inv=0;", hint:"BIT tracks which original positions have been 'inserted' (processed)"},
+        ]
+      },
+      { z:2, tag:"update() — mark position as inserted",
+        lines:[
+          {t:"blank", ph:"// BIT update on position domain...", ans:"auto update=[&](int i,int d){for(;i<=n;i+=i&(-i))bit[i]+=d;};", hint:"update(originalIndex+1, 1) marks this position as inserted"},
+        ]
+      },
+      { z:3, tag:"query() — count inserted positions before current",
+        lines:[
+          {t:"blank", ph:"// BIT prefix query on position domain...", ans:"auto query=[&](int i){int s=0;for(;i>0;i-=i&(-i))s+=bit[i];return s;};", hint:"query(i) = count of positions ≤ i already inserted = smaller values at earlier positions"},
+        ]
+      },
+      { z:4, tag:"APPLICATION — process in value order, count prior positions",
+        lines:[
+          {t:"blank", ph:"// process elements in sorted order — tie-break by position descending...", ans:"for(auto& [val,idx]:sorted){ inv+=query(idx); update(idx+1,1); }", hint:"query(idx) = count of positions < idx already inserted = elements before idx with smaller value = NON-inversions from this element's perspective. Wait — inversions: process same-value ties carefully."},
+          {t:"blank", ph:"// return total inversions...", ans:"return inv;", hint:"Each element contributes count of already-inserted elements at earlier positions"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Range Update + Range Query ────────────────────────────────────────
+  {
+    id:10, title:"Range Update + Range Query", badge:"TWO BITs", badgeColor:"var(--c4)",
+    hint:"Use TWO BITs (B1, B2). Range add [l,r,v]: update both BITs at l and r+1. Prefix query: B1.query(i)*(i+1) - B2.query(i). Range sum = prefixSum(r) - prefixSum(l-1).",
+    zones:[
+      { z:1, tag:"two BITs B1 and B2 replace one segment tree with lazy",
+        lines:[
+          {t:"blank", ph:"// range update + range query with two BITs...", ans:"struct RangeUpdateRangeQuery {", hint:"Achieves O(log n) range update AND range query using two BITs — elegant math trick"},
+          {t:"blank", ph:"// two BITs — B1 and B2...", ans:"int n; vector<long long> B1, B2;", hint:"B1 stores coefficients, B2 stores correction terms. Together they give prefix sums after range updates."},
+          {t:"blank", ph:"// init both BITs...", ans:"RangeUpdateRangeQuery(int n):n(n),B1(n+1,0),B2(n+1,0){}", hint:"Both start at zero — no updates yet"},
+        ]
+      },
+      { z:2, tag:"addToRange() — update BOTH BITs at l and r+1",
+        lines:[
+          {t:"blank", ph:"// helper: add delta to single BIT position...", ans:"void bitAdd(vector<long long>& b,int i,long long d){for(;i<=n;i+=i&(-i))b[i]+=d;}", hint:"Standard BIT update — used for both B1 and B2"},
+          {t:"blank", ph:"// range add v to arr[l..r]...", ans:"void addRange(int l, int r, long long v){", hint:"O(log n) range update — no lazy propagation needed"},
+          {t:"blank", ph:"//   update B1 and B2 at both boundaries...", ans:"bitAdd(B1,l,v); bitAdd(B1,r+1,-v); bitAdd(B2,l,v*(l-1)); bitAdd(B2,r+1,-v*r);", hint:"Math: prefix_sum(i) = B1.query(i)*(i) - B2.query(i). Boundary updates encode this."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"prefixSum() — formula: B1.query(i)*i - B2.query(i)",
+        lines:[
+          {t:"blank", ph:"// helper: prefix sum of single BIT...", ans:"long long bitQuery(vector<long long>& b,int i){long long s=0;for(;i>0;i-=i&(-i))s+=b[i];return s;}", hint:"Standard BIT query — used for both B1 and B2"},
+          {t:"blank", ph:"// prefix sum after all range updates...", ans:"long long prefixSum(int i){ return bitQuery(B1,i)*i - bitQuery(B2,i); }", hint:"The key formula. Derived from expanding sum of arithmetic progressions of range updates."},
+        ]
+      },
+      { z:4, tag:"APPLICATION — range sum after range updates",
+        lines:[
+          {t:"blank", ph:"// range sum [l,r] after all updates...", ans:"long long rangeSum(int l, int r){ return prefixSum(r)-prefixSum(l-1); }", hint:"Range = difference of prefix sums. Same formula as always."},
+          {t:"fixed", code:`};`},
+          {t:"blank", ph:"// usage: range add then range query...", ans:"RangeUpdateRangeQuery rurq(n); rurq.addRange(l,r,v); long long ans=rurq.rangeSum(ql,qr);", hint:"Both O(log n). Replaces segment tree with lazy for sum queries."},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Init','update() — i+=i&(-i)','query() — i-=i&(-i)','Application'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(){
+  // Show BIT array with responsibility spans for indices 1..8
+  const resp = [1,2,1,4,1,2,1,8];
+  const updatePath = [3,4,8]; // updating index 3: 3→4→8
+  const queryPath  = [6,4];   // querying index 6: 6→4
+  const viz = document.getElementById('viz');
+  const idxRow  = [1,2,3,4,5,6,7,8].map(i=>`<div class="bit-cell idx">${i}</div>`).join('');
+  const respRow = resp.map((r,i)=>{
+    const isU=updatePath.includes(i+1), isQ=queryPath.includes(i+1);
+    const cls=isU?'updated':isQ?'queried':'';
+    return `<div class="bit-cell ${cls}" title="covers ${r} element(s)">${r}<div class="bit-resp">↕${r}</div></div>`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="bit-viz">
+      <div class="bit-row"><div class="bit-label">index i:</div>${idxRow}</div>
+      <div class="bit-row"><div class="bit-label">i&(-i):</div>${respRow}</div>
+    </div>
+    <div class="bit-legend">
+      <span style="color:var(--c3)">■</span> update(3,+δ) path: 3→4→8 &nbsp;[i+=i&(-i)]&nbsp;&nbsp;
+      <span style="color:var(--c4)">■</span> query(6) path: 6→4 &nbsp;[i-=i&(-i)]&nbsp;&nbsp;
+      <span style="color:var(--c2)">★</span> i&(-i) = lowest set bit = responsibility span
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

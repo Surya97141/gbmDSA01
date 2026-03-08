@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topological Sort — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(56,189,248,0.05) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c2);border:1px solid rgba(56,189,248,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c2) 40%,var(--c4) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c2);color:var(--text);}
+.sel-btn.active{background:rgba(56,189,248,0.1);border-color:var(--c2);color:var(--c2);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c2);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(56,189,248,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c2);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:400px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c2);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(56,189,248,0.06);border-bottom-color:var(--c2);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(167,139,250,0.07);border-bottom-color:var(--c1)!important;color:var(--c1);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(56,189,248,0.1);color:var(--c2);border-color:rgba(56,189,248,0.4);}
+.btn-check:hover{background:rgba(56,189,248,0.2);}
+.btn-reveal{background:rgba(167,139,250,0.08);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-reveal:hover{background:rgba(167,139,250,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c2);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.dag-viz{display:flex;flex-direction:column;gap:10px;}
+.dag-level{display:flex;gap:8px;align-items:center;}
+.dag-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);min-width:80px;text-align:right;padding-right:8px;flex-shrink:0;}
+.dag-node{font-family:'JetBrains Mono',monospace;font-size:11px;padding:5px 12px;border:1px solid;border-radius:3px;white-space:nowrap;}
+.dn-zero{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.08);}
+.dn-mid{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.07);}
+.dn-done{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.07);}
+.dn-arrow{color:var(--muted);font-size:13px;margin:0 2px;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c}
+.op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:var(--c1);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 20 — Practice Mode</div>
+    <h1>Topological Sort</h1>
+    <p>// adj[n] + indegree[n] · seed indegree-0 · --indegree[v]==0 → enqueue · order.size()==n → no cycle</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// TOPOLOGICAL SORT — 10 Manifestations
+//
+// KAHN'S ALGORITHM (BFS-based) — universal structure:
+//   ① Build: adj[u].push_back(v)  +  indegree[v]++
+//   ② Seed:  for i: if indegree[i]==0 → q.push(i)
+//   ③ BFS:   u=q.front(); order.push_back(u);
+//             for v in adj[u]: if --indegree[v]==0 → q.push(v)
+//   ④ Check: order.size()==n → DAG; else cycle
+//
+// WHAT VARIES (only inside the BFS loop):
+//   plain topo:     nothing extra
+//   longest path:   dist[v] = max(dist[v], dist[u]+w)
+//   parallel sched: level[v] = max(level[v], level[u]+1)
+//   cycle detect:   check order.size() < n after loop
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Course Scheduling ──────────────────────────────────────────────────
+  {
+    id:1, title:"Course Scheduling", badge:"order.size()==n → no cycle", badgeColor:"var(--c4)",
+    hint:"Build graph from prerequisites. Kahn's BFS. If we can process all n courses (order.size()==n), no cycle exists and all courses can be completed.",
+    vizLevels:[
+      {label:"indegree=0", nodes:["Math","Eng"], cls:"dn-zero"},
+      {label:"unlocked", nodes:["CS101","Physics"], cls:"dn-mid"},
+      {label:"all done", nodes:["CS201"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"adj[n] + indegree[n] — built from prerequisite pairs",
+        lines:[
+          {t:"blank", ph:"// can all n courses be completed given prerequisites?...", ans:"bool canFinish(int n, vector<vector<int>>& prereqs) {", hint:"prereqs[i]=[a,b] means b must be taken before a. Build graph then topo sort."},
+          {t:"blank", ph:"// adjacency list + indegree array...", ans:"vector<vector<int>> adj(n); vector<int> indegree(n,0);", hint:"adj[u] = courses unlocked after completing u. indegree[v] = number of prereqs for v."},
+          {t:"blank", ph:"// build graph from prerequisites...", ans:"for(auto& p:prereqs){ adj[p[1]].push_back(p[0]); indegree[p[0]]++; }", hint:"p=[a,b]: edge b→a (b unlocks a). indegree[a]++ for each prereq a has."},
+        ]
+      },
+      { z:2, tag:"seed queue — all courses with no prerequisites",
+        lines:[
+          {t:"blank", ph:"// seed: enqueue all courses with no prerequisites...", ans:"queue<int> q; for(int i=0;i<n;i++) if(indegree[i]==0) q.push(i);", hint:"Courses with indegree 0 have no prerequisites — can take immediately."},
+        ]
+      },
+      { z:3, tag:"BFS — process course, unlock dependents",
+        lines:[
+          {t:"blank", ph:"// BFS — process each course, unlock its dependents...", ans:"int processed=0; while(!q.empty()){ int u=q.front(); q.pop(); processed++;", hint:"Count processed courses. Each pop = one course completed."},
+          {t:"blank", ph:"//   decrement indegree of dependents, enqueue if ready...", ans:"for(int v:adj[u]) if(--indegree[v]==0) q.push(v);", hint:"--indegree[v]==0 means all prereqs for v are done — v is now available."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — processed==n means no cycle",
+        lines:[
+          {t:"blank", ph:"// all courses processed = no cycle = can finish...", ans:"return processed==n;", hint:"If cycle exists, nodes in cycle never reach indegree 0. processed < n."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Build System Ordering ──────────────────────────────────────────────
+  {
+    id:2, title:"Build System Ordering", badge:"RETURN TOPO ORDER", badgeColor:"var(--c2)",
+    hint:"Same as course scheduling but return the actual order, not just true/false. If cycle detected (order.size()<n), return empty — build is impossible.",
+    vizLevels:[
+      {label:"no deps", nodes:["libc","libm"], cls:"dn-zero"},
+      {label:"deps met", nodes:["libssl","libz"], cls:"dn-mid"},
+      {label:"all built", nodes:["myapp"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"identical graph build — return order not bool",
+        lines:[
+          {t:"blank", ph:"// return compilation order respecting dependencies...", ans:"vector<int> buildOrder(int n, vector<pair<int,int>>& deps) {", hint:"deps[i]={a,b}: a depends on b (b must build first). Return valid build order."},
+          {t:"blank", ph:"// adj + indegree...", ans:"vector<vector<int>> adj(n); vector<int> indegree(n,0); for(auto& [a,b]:deps){ adj[b].push_back(a); indegree[a]++; }", hint:"Edge b→a: b must build before a. Same graph construction as course scheduling."},
+        ]
+      },
+      { z:2, tag:"seed queue — files with no dependencies",
+        lines:[
+          {t:"blank", ph:"// seed all independent files (indegree 0)...", ans:"queue<int> q; for(int i=0;i<n;i++) if(indegree[i]==0) q.push(i);", hint:"Files with no dependencies can be built immediately — indegree 0."},
+        ]
+      },
+      { z:3, tag:"BFS — collect order while processing",
+        lines:[
+          {t:"blank", ph:"// standard Kahn's BFS, collect order...", ans:"vector<int> order; while(!q.empty()){ int u=q.front(); q.pop(); order.push_back(u); for(int v:adj[u]) if(--indegree[v]==0) q.push(v); }", hint:"Identical BFS loop. order.push_back(u) records the sequence."},
+        ]
+      },
+      { z:4, tag:"RESULT — empty if cycle (impossible build)",
+        lines:[
+          {t:"blank", ph:"// return order, or empty if cycle detected...", ans:"return order.size()==n ? order : vector<int>{};", hint:"Cycle = circular dependency = build impossible. Return empty to signal failure."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Kahn's Algorithm ───────────────────────────────────────────────────
+  {
+    id:3, title:"Kahn's Algorithm (BFS)", badge:"CANONICAL KAHN'S", badgeColor:"var(--c1)",
+    hint:"The canonical BFS topological sort. Seed all indegree-0 nodes. Process: pop, add to order, decrement neighbors' indegrees, enqueue any that reach 0.",
+    vizLevels:[
+      {label:"seed (ind=0)", nodes:["A","B"], cls:"dn-zero"},
+      {label:"enqueued", nodes:["C","D"], cls:"dn-mid"},
+      {label:"order done", nodes:["E"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"generic Kahn's — works on any DAG",
+        lines:[
+          {t:"blank", ph:"// generic topological sort using Kahn's algorithm...", ans:"vector<int> kahnTopoSort(int n, vector<vector<int>>& adj) {", hint:"Takes adjacency list, returns topological order. Empty = cycle detected."},
+          {t:"blank", ph:"// compute indegrees from adjacency list...", ans:"vector<int> indegree(n,0); for(int u=0;u<n;u++) for(int v:adj[u]) indegree[v]++;", hint:"Scan all edges to compute indegrees. Alternative: maintain indegree during graph construction."},
+        ]
+      },
+      { z:2, tag:"seed — ALL indegree-0 nodes into queue",
+        lines:[
+          {t:"blank", ph:"// enqueue all nodes with no incoming edges...", ans:"queue<int> q; for(int i=0;i<n;i++) if(indegree[i]==0) q.push(i);", hint:"ALL indegree-0 nodes seed the queue — not just one. Multiple sources are valid."},
+        ]
+      },
+      { z:3, tag:"BFS — THE canonical Kahn's loop",
+        lines:[
+          {t:"blank", ph:"// process queue — the core Kahn's loop...", ans:"vector<int> order; while(!q.empty()){", hint:"Loop until queue empty — if all n nodes processed, no cycle"},
+          {t:"blank", ph:"//   pop, record, decrement neighbors...", ans:"int u=q.front(); q.pop(); order.push_back(u); for(int v:adj[u]) if(--indegree[v]==0) q.push(v);", hint:"THE Kahn's heartbeat: pop → record → for each neighbor: decrement → if 0, enqueue"},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — order or empty on cycle",
+        lines:[
+          {t:"blank", ph:"// return topo order (empty if cycle exists)...", ans:"return order.size()==n ? order : vector<int>{};", hint:"order.size()==n = all nodes processed = valid DAG. Less = cycle."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── DFS-Based Topological Sort ─────────────────────────────────────────
+  {
+    id:4, title:"DFS-Based Topological Sort", badge:"POST-ORDER + REVERSE", badgeColor:"var(--c3)",
+    hint:"DFS: push node to stack AFTER all descendants are processed (post-order). Reverse stack = topological order. Three-color marking (0/1/2) detects back edges = cycles.",
+    vizLevels:[
+      {label:"DFS enter", nodes:["A→B→C"], cls:"dn-zero"},
+      {label:"post-order", nodes:["C","B","A"], cls:"dn-mid"},
+      {label:"reversed", nodes:["A","B","C"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"three-color visited: 0=unvisited 1=in-stack 2=done",
+        lines:[
+          {t:"blank", ph:"// DFS topological sort with cycle detection...", ans:"vector<int> dfsTopoSort(int n, vector<vector<int>>& adj) {", hint:"Post-order DFS: push after all descendants. Reverse gives topo order."},
+          {t:"blank", ph:"// 0=unvisited, 1=in current DFS stack, 2=fully processed...", ans:"vector<int> color(n,0); vector<int> order; bool hasCycle=false;", hint:"Three colors detect back edges (1→1 = cycle). Two colors only detect visited, not in-stack."},
+        ]
+      },
+      { z:2, tag:"DFS function — post-order push",
+        lines:[
+          {t:"blank", ph:"// recursive DFS — push AFTER visiting all descendants...", ans:"function<void(int)> dfs=[&](int u){ color[u]=1;", hint:"Mark in-stack (gray) when entering. Check for back edges."},
+          {t:"blank", ph:"//   visit all unvisited neighbors; detect back edge...", ans:"for(int v:adj[u]){ if(color[v]==1){hasCycle=true;return;} if(color[v]==0) dfs(v); }", hint:"color[v]==1: back edge to ancestor in current path = cycle! color[v]==2: already done, skip."},
+          {t:"blank", ph:"//   mark done and push to order AFTER all descendants...", ans:"color[u]=2; order.push_back(u); };", hint:"POST-ORDER: color done (black) and push AFTER recursing into all neighbors."},
+        ]
+      },
+      { z:3, tag:"run DFS from all unvisited nodes",
+        lines:[
+          {t:"blank", ph:"// start DFS from every unvisited node (handle disconnected graphs)...", ans:"for(int i=0;i<n;i++) if(color[i]==0) dfs(i);", hint:"Must start from ALL unvisited nodes — graph may be disconnected."},
+        ]
+      },
+      { z:4, tag:"RESULT — reverse post-order = topological order",
+        lines:[
+          {t:"blank", ph:"// reverse post-order gives topological order...", ans:"if(hasCycle) return {}; reverse(order.begin(),order.end()); return order;", hint:"Post-order gives reverse topo. Reversing gives correct order. Empty if cycle found."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Cycle Detection in Directed Graph ──────────────────────────────────
+  {
+    id:5, title:"Cycle Detection Directed Graph", badge:"order.size() < n", badgeColor:"var(--c3)",
+    hint:"Kahn's: if order.size() < n after BFS, nodes in cycles never reached indegree 0. DFS: if we revisit a gray (in-stack) node, we found a back edge = cycle.",
+    vizLevels:[
+      {label:"cycle nodes", nodes:["A→B","B→C","C→A"], cls:"dn-zero"},
+      {label:"never dequeued", nodes:["A","B","C"], cls:"dn-mid"},
+      {label:"order.size<n", nodes:["CYCLE!"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"Kahn's cycle detection — simplest approach",
+        lines:[
+          {t:"blank", ph:"// detect cycle in directed graph using Kahn's...", ans:"bool hasCycleKahns(int n, vector<vector<int>>& adj) {", hint:"Cycle = some nodes never reach indegree 0 = never processed. order.size() < n."},
+          {t:"blank", ph:"// compute indegrees...", ans:"vector<int> indegree(n,0); for(int u=0;u<n;u++) for(int v:adj[u]) indegree[v]++;", hint:"Standard indegree computation from adjacency list"},
+        ]
+      },
+      { z:2, tag:"seed + BFS — identical to standard Kahn's",
+        lines:[
+          {t:"blank", ph:"// seed queue and run Kahn's...", ans:"queue<int> q; for(int i=0;i<n;i++) if(indegree[i]==0) q.push(i); int processed=0; while(!q.empty()){ int u=q.front();q.pop();processed++; for(int v:adj[u]) if(--indegree[v]==0) q.push(v); }", hint:"Identical Kahn's loop. Just count processed instead of storing order."},
+        ]
+      },
+      { z:3, tag:"DFS cycle detection — three-color back edge check",
+        lines:[
+          {t:"blank", ph:"// DFS cycle detection using three colors (0/1/2)...", ans:"bool hasCycleDFS(int n, vector<vector<int>>& adj){ vector<int> color(n,0); function<bool(int)> dfs=[&](int u)->bool{ color[u]=1; for(int v:adj[u]){ if(color[v]==1) return true; if(color[v]==0&&dfs(v)) return true; } color[u]=2; return false; }; for(int i=0;i<n;i++) if(color[i]==0&&dfs(i)) return true; return false; }", hint:"color[v]==1 during DFS = back edge to ancestor in current stack = cycle. color[v]==2 = safely done."},
+        ]
+      },
+      { z:4, tag:"RESULT — Kahn's: processed<n · DFS: back edge found",
+        lines:[
+          {t:"blank", ph:"// Kahn's result: cycle if not all processed...", ans:"return processed < n;", hint:"processed==n: all nodes processed = DAG. processed<n: cycle trapped some nodes."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Longest Path in DAG ────────────────────────────────────────────────
+  {
+    id:6, title:"Longest Path in DAG", badge:"dist[v]=max(dist[u]+w)", badgeColor:"var(--c4)",
+    hint:"Process nodes in topological order. For each edge u→v with weight w: dist[v] = max(dist[v], dist[u]+w). Topo order guarantees dist[u] is finalized before processing u's edges.",
+    vizLevels:[
+      {label:"dist=0", nodes:["A(0)"], cls:"dn-zero"},
+      {label:"relaxed", nodes:["B(3)","C(5)"], cls:"dn-mid"},
+      {label:"longest", nodes:["D(8)"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"Kahn's BFS + dist[] array updated during processing",
+        lines:[
+          {t:"blank", ph:"// longest path in DAG (not possible in general graphs)...", ans:"int longestPathDAG(int n, vector<vector<pair<int,int>>>& adj) {", hint:"adj[u] = {v, weight}. Longest path = critical path. Only works in DAGs (no cycles)."},
+          {t:"blank", ph:"// dist[i] = longest path ending at i, init to 0...", ans:"vector<int> indegree(n,0),dist(n,0); for(int u=0;u<n;u++) for(auto&[v,w]:adj[u]) indegree[v]++;", hint:"dist starts at 0. Unlike shortest path, no negative infinity needed — paths grow."},
+        ]
+      },
+      { z:2, tag:"seed — standard Kahn's indegree-0 seed",
+        lines:[
+          {t:"blank", ph:"// seed all source nodes...", ans:"queue<int> q; for(int i=0;i<n;i++) if(indegree[i]==0) q.push(i);", hint:"Sources (indegree 0) have dist=0 — no incoming edges to extend from"},
+        ]
+      },
+      { z:3, tag:"BFS + dist relaxation inside neighbor loop",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">while</span>(!q.empty()) {`},
+          {t:"blank", ph:"//   pop u, relax all edges u→v...", ans:"int u=q.front(); q.pop();", hint:"Process in topological order — all predecessors of u already processed"},
+          {t:"blank", ph:"//   for each neighbor v: dist[v] = max(dist[v], dist[u]+w)...", ans:"for(auto&[v,w]:adj[u]){ dist[v]=max(dist[v],dist[u]+w); if(--indegree[v]==0) q.push(v); }", hint:"THE extra line vs plain Kahn's. Relax distance BEFORE decrementing/enqueuing."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — max dist[] = longest path length",
+        lines:[
+          {t:"blank", ph:"// longest path = max dist across all nodes...", ans:"return *max_element(dist.begin(),dist.end());", hint:"The node with maximum dist is the end of the longest path."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Alien Dictionary ───────────────────────────────────────────────────
+  {
+    id:7, title:"Alien Dictionary", badge:"BUILD GRAPH FROM WORDS", badgeColor:"var(--c2)",
+    hint:"Compare adjacent words: find first differing char → edge chars[i]→chars[j]. Then standard Kahn's topo sort. Edge case: if word[i] is prefix of word[j] but comes after it → invalid.",
+    vizLevels:[
+      {label:"word order", nodes:["wrt","wrf","er"], cls:"dn-zero"},
+      {label:"edges", nodes:["t→f","w→e","r→t"], cls:"dn-mid"},
+      {label:"topo order", nodes:["wertf"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"collect all unique chars, build char graph from word pairs",
+        lines:[
+          {t:"blank", ph:"// derive character ordering from sorted alien dictionary...", ans:"string alienOrder(vector<string>& words) {", hint:"words are sorted in alien lexicographic order. Derive the character ordering."},
+          {t:"blank", ph:"// collect all unique characters + build adj + indegree...", ans:"map<char,set<char>> adj; map<char,int> indegree; for(auto& w:words) for(char c:w) if(!indegree.count(c)) indegree[c]=0;", hint:"Initialize indegree for ALL chars. Missing chars would be skipped in topo sort."},
+        ]
+      },
+      { z:2, tag:"build graph — compare adjacent word pairs",
+        lines:[
+          {t:"blank", ph:"// compare each adjacent word pair to derive edges...", ans:"for(int i=0;i<(int)words.size()-1;i++){ auto& w1=words[i]; auto& w2=words[i+1]; int len=min(w1.size(),w2.size()); bool found=false;", hint:"Only adjacent pairs give ordering info. Non-adjacent pairs give no direct constraints."},
+          {t:"blank", ph:"//   find first differing character — that gives one edge...", ans:"for(int j=0;j<len;j++){ if(w1[j]!=w2[j]){ if(!adj[w1[j]].count(w2[j])){ adj[w1[j]].insert(w2[j]); indegree[w2[j]]++; } found=true; break; } }", hint:"FIRST differing char only. w1[j]→w2[j]. Break after first difference — subsequent chars give no info."},
+          {t:"blank", ph:"//   invalid: w1 is longer prefix of w2 (e.g. abc before ab)...", ans:"if(!found&&w1.size()>w2.size()) return \"\";", hint:"If w1 is longer than w2 and w2 is a prefix of w1, this ordering is impossible."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:3, tag:"standard Kahn's BFS on character graph",
+        lines:[
+          {t:"blank", ph:"// Kahn's BFS on character nodes...", ans:"queue<char> q; for(auto&[c,ind]:indegree) if(ind==0) q.push(c); string result;", hint:"Seed all chars with indegree 0 — they can appear first in the alien alphabet"},
+          {t:"blank", ph:"//   process chars in topo order...", ans:"while(!q.empty()){ char c=q.front();q.pop();result+=c; for(char nb:adj[c]) if(--indegree[nb]==0) q.push(nb); }", hint:"Standard Kahn's loop on chars instead of ints. Build result string."},
+        ]
+      },
+      { z:4, tag:"RESULT — result string or empty on cycle",
+        lines:[
+          {t:"blank", ph:"// return ordering or empty if cycle...", ans:"return result.size()==indegree.size() ? result : \"\";", hint:"Cycle in char graph = contradictory ordering = invalid dictionary."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Task Dependency Resolution ────────────────────────────────────────
+  {
+    id:8, title:"Task Dependency Resolution", badge:"KAHN'S + ORDER", badgeColor:"var(--c1)",
+    hint:"Tasks have dependencies (must-precede relationships). Build dependency graph, run Kahn's. Order gives valid execution sequence. Missing tasks in order = circular dependency.",
+    vizLevels:[
+      {label:"no deps", nodes:["DB init","Config"], cls:"dn-zero"},
+      {label:"unblocked", nodes:["Auth","Cache"], cls:"dn-mid"},
+      {label:"last tasks", nodes:["API server"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"named tasks — map to indices for BFS",
+        lines:[
+          {t:"blank", ph:"// resolve task execution order with dependencies...", ans:"vector<string> resolveTasks(vector<string>& tasks, vector<pair<string,string>>& deps) {", hint:"deps[i]={a,b}: task a must run before task b. Return valid execution order."},
+          {t:"blank", ph:"// map task names to indices...", ans:"int n=tasks.size(); map<string,int> idx; for(int i=0;i<n;i++) idx[tasks[i]]=i;", hint:"Convert string names to integer indices for standard Kahn's implementation"},
+          {t:"blank", ph:"// build graph...", ans:"vector<vector<int>> adj(n); vector<int> indegree(n,0); for(auto&[a,b]:deps){ adj[idx[a]].push_back(idx[b]); indegree[idx[b]]++; }", hint:"a must run before b: edge a→b. indegree[b]++ for each dependency b has."},
+        ]
+      },
+      { z:2, tag:"seed + Kahn's BFS — standard",
+        lines:[
+          {t:"blank", ph:"// standard Kahn's BFS...", ans:"queue<int> q; for(int i=0;i<n;i++) if(indegree[i]==0) q.push(i); vector<int> order; while(!q.empty()){ int u=q.front();q.pop();order.push_back(u); for(int v:adj[u]) if(--indegree[v]==0) q.push(v); }", hint:"Identical Kahn's loop — nothing extra needed inside the BFS for plain ordering"},
+        ]
+      },
+      { z:3, tag:"map indices back to task names",
+        lines:[
+          {t:"blank", ph:"// convert indices back to task names...", ans:"if(order.size()!=n) return {}; vector<string> result; for(int i:order) result.push_back(tasks[i]); return result;", hint:"Translate integer order back to task names. Empty vector signals circular dependency."},
+        ]
+      },
+      { z:4, tag:"RESULT — ordered task names or empty on cycle",
+        lines:[
+          {t:"fixed", code:`}`},
+          {t:"fixed", code:`<span class="cm">// empty result = circular dependency = impossible to resolve</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Parallel Job Scheduling ────────────────────────────────────────────
+  {
+    id:9, title:"Parallel Job Scheduling", badge:"level[v]=max(level[u]+1)", badgeColor:"var(--c3)",
+    hint:"level[v] = earliest time job v can start = length of longest path to v. Update during Kahn's: level[v] = max(level[v], level[u]+1). Answer = max level = minimum completion time.",
+    vizLevels:[
+      {label:"level 0", nodes:["A(0)","B(0)"], cls:"dn-zero"},
+      {label:"level 1", nodes:["C(1)","D(1)"], cls:"dn-mid"},
+      {label:"level 2", nodes:["E(2)"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"level[] = earliest start time = critical path length",
+        lines:[
+          {t:"blank", ph:"// minimum time to complete all jobs given dependencies...", ans:"int minCompletionTime(int n, vector<vector<int>>& adj) {", hint:"All jobs take 1 unit. Jobs with no dependencies run at time 0. Answer = max level."},
+          {t:"blank", ph:"// indegree + level array (init 0)...", ans:"vector<int> indegree(n,0), level(n,0); for(int u=0;u<n;u++) for(int v:adj[u]) indegree[v]++;", hint:"level[v]=0 initially. Will be updated to max(level[u]+1) for all u→v."},
+        ]
+      },
+      { z:2, tag:"seed — jobs with no dependencies start at level 0",
+        lines:[
+          {t:"blank", ph:"// jobs with no dependencies start immediately...", ans:"queue<int> q; for(int i=0;i<n;i++) if(indegree[i]==0) q.push(i);", hint:"Level 0 jobs can all run in parallel at time 0."},
+        ]
+      },
+      { z:3, tag:"BFS + level update inside neighbor loop",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">while</span>(!q.empty()) {`},
+          {t:"blank", ph:"//   pop job u...", ans:"int u=q.front(); q.pop();", hint:"Process jobs in topological order"},
+          {t:"blank", ph:"//   update level[v] = max(level[v], level[u]+1)...", ans:"for(int v:adj[u]){ level[v]=max(level[v],level[u]+1); if(--indegree[v]==0) q.push(v); }", hint:"THE extra line: level[v] = latest predecessor's level + 1. This is the critical path DP."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — max level + 1 = total time units needed",
+        lines:[
+          {t:"blank", ph:"// total time = max level across all jobs + 1...", ans:"return *max_element(level.begin(),level.end())+1;", hint:"Max level = index of last batch. +1 because levels are 0-indexed (level 0 = time unit 1)."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Recipe Dependency ──────────────────────────────────────────────────
+  {
+    id:10, title:"Recipe Dependency", badge:"DFS TOPO ON RECIPES", badgeColor:"var(--c4)",
+    hint:"Ingredients have preparation order dependencies. DFS topo sort gives valid prep sequence. Three-color DFS detects impossible recipes (circular dependencies like A needs B needs A).",
+    vizLevels:[
+      {label:"raw ingred.", nodes:["flour","water"], cls:"dn-zero"},
+      {label:"intermediate", nodes:["dough","sauce"], cls:"dn-mid"},
+      {label:"final dish", nodes:["pizza"], cls:"dn-done"},
+    ],
+    zones:[
+      { z:1, tag:"build ingredient dependency graph",
+        lines:[
+          {t:"blank", ph:"// find preparation order for recipe ingredients...", ans:"vector<string> recipeOrder(vector<string>& ingredients, vector<pair<string,string>>& needs) {", hint:"needs[i]={a,b}: a needs b to be prepared first. Return valid prep order or empty if impossible."},
+          {t:"blank", ph:"// map ingredient names to indices...", ans:"int n=ingredients.size(); map<string,int> idx; for(int i=0;i<n;i++) idx[ingredients[i]]=i; vector<vector<int>> adj(n); for(auto&[a,b]:needs){ adj[idx[b]].push_back(idx[a]); }", hint:"b must be prepared before a: edge b→a. b is a prerequisite of a."},
+        ]
+      },
+      { z:2, tag:"DFS with three-color cycle detection",
+        lines:[
+          {t:"blank", ph:"// DFS topo sort with cycle detection...", ans:"vector<int> color(n,0); vector<int> order; bool cycle=false;", hint:"0=unvisited, 1=in current path, 2=fully processed"},
+          {t:"blank", ph:"// DFS function: mark gray on enter, push + mark black on exit...", ans:"function<void(int)> dfs=[&](int u){ if(cycle) return; color[u]=1; for(int v:adj[u]){ if(color[v]==1){cycle=true;return;} if(color[v]==0) dfs(v); } color[u]=2; order.push_back(u); };", hint:"color[v]==1 during recursion = circular dependency detected. Push in post-order."},
+        ]
+      },
+      { z:3, tag:"run DFS from all unvisited ingredients",
+        lines:[
+          {t:"blank", ph:"// DFS from all unvisited ingredients...", ans:"for(int i=0;i<n&&!cycle;i++) if(color[i]==0) dfs(i);", hint:"Handle disconnected graph — must start DFS from every unvisited node"},
+        ]
+      },
+      { z:4, tag:"RESULT — reverse post-order = prep sequence",
+        lines:[
+          {t:"blank", ph:"// reverse post-order + map back to names...", ans:"if(cycle) return {}; reverse(order.begin(),order.end()); vector<string> res; for(int i:order) res.push_back(ingredients[i]); return res;", hint:"Post-order reversed = topo order. Convert indices back to ingredient names."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Graph Build','Seed Queue','BFS / DFS Process','Result'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const levels=p.vizLevels;
+  const rows=levels.map(lv=>{
+    const nodes=lv.nodes.map(nd=>`<div class="dag-node ${lv.cls}">${nd}</div>`).join(`<span class="dn-arrow">→</span>`);
+    return `<div class="dag-level"><div class="dag-label">${lv.label}</div>${nodes}</div>`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="dag-viz">${rows}</div>
+    <div class="viz-legend">
+      <span style="color:var(--c2)">■</span> indegree=0 (seed) &nbsp;
+      <span style="color:var(--c1)">■</span> processing &nbsp;
+      <span style="color:var(--c4)">■</span> completed &nbsp;&nbsp;
+      <span style="color:var(--c2)">★ --indegree[v]==0 → enqueue &nbsp;|&nbsp; order.size()==n → no cycle &nbsp;|&nbsp; dist/level updated inside loop</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

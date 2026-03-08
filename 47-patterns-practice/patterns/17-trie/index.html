@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trie — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(167,139,250,0.05) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c1);border:1px solid rgba(167,139,250,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c1) 40%,var(--c4) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c1);color:var(--text);}
+.sel-btn.active{background:rgba(167,139,250,0.1);border-color:var(--c1);color:var(--c1);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c1);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(167,139,250,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c1);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:380px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c1);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(167,139,250,0.06);border-bottom-color:var(--c1);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(167,139,250,0.1);color:var(--c1);border-color:rgba(167,139,250,0.4);}
+.btn-check:hover{background:rgba(167,139,250,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c1);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.trie-viz{display:flex;flex-direction:column;align-items:flex-start;gap:4px;}
+.trie-level{display:flex;gap:6px;align-items:center;padding-left:0;}
+.trie-node{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 9px;border:1px solid;border-radius:3px;white-space:nowrap;}
+.tn-root{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.1);}
+.tn-mid{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.tn-end{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.08);}
+.tn-arrow{color:var(--muted);font-size:12px;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 17 — Practice Mode</div>
+    <h1>Trie</h1>
+    <p>// TrieNode[26] · insert char-by-char · traverse · isEnd = terminal condition</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// TRIE — 10 Manifestations
+//
+// 4 Blocks:
+//   ① TrieNode STRUCT  — children[26] (or [2] for binary), isEnd bool, extra fields
+//   ② insert()         — char-by-char walk, create nodes, mark isEnd — FIXED shape
+//   ③ traverse()       — walk matching chars; varies: null→prune / isEnd→collect / wildcard
+//   ④ QUERY/RESULT     — isEnd check / DFS collect / greedy XOR / DP + trie
+//
+// TRIE IS ITS TRAVERSE FUNCTION:
+//   word search:    walk word, return node->isEnd
+//   autocomplete:   walk prefix, DFS collect all isEnd descendants
+//   XOR max:        walk bits, greedily pick opposite bit
+//   word break:     at each dp[i], check if any word ending at i exists in trie
+//   replace roots:  first isEnd encountered = return that prefix (shortest root)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Word Insertion and Search ─────────────────────────────────────────
+  {
+    id:1, title:"Word Insertion and Search", badge:"STANDARD TRIE", badgeColor:"var(--c4)",
+    hint:"The canonical trie. Node has children[26] and isEnd. insert() creates nodes. search() returns isEnd at end. startsWith() returns node!=nullptr.",
+    vizNodes:["root","a","p","p","l","e★"],
+    zones:[
+      { z:1, tag:"TrieNode: children[26] + isEnd — universal node struct",
+        lines:[
+          {t:"blank", ph:"// trie node struct...", ans:"struct TrieNode { TrieNode* children[26]; bool isEnd; TrieNode():isEnd(false){fill(children,children+26,nullptr);} };", hint:"children[c-'a'] = next node for character c. isEnd marks a complete word."},
+          {t:"blank", ph:"// trie class with root...", ans:"struct Trie { TrieNode* root; Trie(){ root=new TrieNode(); }", hint:"Root node represents the empty string — all words share this starting point"},
+        ]
+      },
+      { z:2, tag:"insert() — char-by-char, create nodes, mark isEnd",
+        lines:[
+          {t:"blank", ph:"// insert word — FIXED shape for all char tries...", ans:"void insert(string& word){ TrieNode* node=root; for(char c:word){ int i=c-'a'; if(!node->children[i]) node->children[i]=new TrieNode(); node=node->children[i]; } node->isEnd=true; }", hint:"Walk each char, allocate node if missing, advance pointer, mark isEnd at last char"},
+        ]
+      },
+      { z:3, tag:"traverse() — walk word; null=missing, isEnd=found",
+        lines:[
+          {t:"blank", ph:"// search: returns true only if complete word exists...", ans:"bool search(string& word){ TrieNode* node=root; for(char c:word){ int i=c-'a'; if(!node->children[i]) return false; node=node->children[i]; } return node->isEnd; }", hint:"Null child = word not in trie. Reaching end but isEnd=false = only a prefix exists."},
+          {t:"blank", ph:"// startsWith: returns true if any word has this prefix...", ans:"bool startsWith(string& prefix){ TrieNode* node=root; for(char c:prefix){ int i=c-'a'; if(!node->children[i]) return false; node=node->children[i]; } return true; }", hint:"Identical to search but returns true regardless of isEnd — just needs path to exist"},
+        ]
+      },
+      { z:4, tag:"QUERY — search vs startsWith: only isEnd differs",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// search:     return node->isEnd  (complete word required)</span>`},
+          {t:"fixed", code:`<span class="cm">// startsWith: return true          (prefix is enough)</span>`},
+          {t:"fixed", code:`<span class="cm">// This single difference IS the semantic distinction</span>`},
+          {t:"fixed", code:`};`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Prefix Search / Autocomplete ──────────────────────────────────────
+  {
+    id:2, title:"Prefix Search / Autocomplete", badge:"DFS COLLECT", badgeColor:"var(--c2)",
+    hint:"Walk prefix to find its trie node. Then DFS from that node collecting all words (paths to isEnd nodes). The trie structure groups all words sharing a prefix under one subtree.",
+    vizNodes:["root→app","→apple★","→apply★","→apt★"],
+    zones:[
+      { z:1, tag:"same TrieNode struct — DFS helper added",
+        lines:[
+          {t:"blank", ph:"// reuse standard TrieNode and insert()...", ans:"struct AutocompleteTrie { TrieNode* root=new TrieNode();", hint:"Standard trie — autocomplete is just a different query pattern"},
+          {t:"blank", ph:"// insert all dictionary words...", ans:"void insert(string w){ TrieNode* n=root; for(char c:w){int i=c-'a';if(!n->children[i])n->children[i]=new TrieNode();n=n->children[i];} n->isEnd=true; }", hint:"Same insert as always — unchanged"},
+        ]
+      },
+      { z:2, tag:"walk prefix — find subtree root for the prefix",
+        lines:[
+          {t:"blank", ph:"// walk prefix to find starting node for DFS...", ans:"TrieNode* walkPrefix(string& prefix){ TrieNode* node=root; for(char c:prefix){ int i=c-'a'; if(!node->children[i]) return nullptr; node=node->children[i]; } return node; }", hint:"Returns the node at end of prefix path. All completions live in this subtree."},
+        ]
+      },
+      { z:3, tag:"traverse() — DFS from prefix node, collect all isEnd paths",
+        lines:[
+          {t:"blank", ph:"// DFS collect all complete words in this subtree...", ans:"void dfs(TrieNode* node, string& cur, vector<string>& res){ if(node->isEnd) res.push_back(cur); for(int i=0;i<26;i++){ if(node->children[i]){ cur+=(char)('a'+i); dfs(node->children[i],cur,res); cur.pop_back(); } } }", hint:"Standard backtracking DFS: add char, recurse, pop char. Collect at isEnd nodes."},
+        ]
+      },
+      { z:4, tag:"QUERY — combine walkPrefix + DFS",
+        lines:[
+          {t:"blank", ph:"// autocomplete: all words starting with prefix...", ans:"vector<string> autocomplete(string prefix){ TrieNode* node=walkPrefix(prefix); if(!node) return {}; vector<string> res; dfs(node,prefix,res); return res; }", hint:"Walk to prefix end, then DFS from there. Pass prefix as initial cur string for DFS."},
+          {t:"fixed", code:`};`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Word Break Problem ─────────────────────────────────────────────────
+  {
+    id:3, title:"Word Break Problem", badge:"TRIE + DP", badgeColor:"var(--c3)",
+    hint:"dp[i] = can s[0..i-1] be segmented into dictionary words. For each i where dp[i]=true, walk trie from s[i] — whenever isEnd hit at j, set dp[j]=true.",
+    vizNodes:["dp[0]=T","→'leet'","→dp[4]=T","→'code'","→dp[8]=T"],
+    zones:[
+      { z:1, tag:"build trie from dictionary, then DP over string",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"bool wordBreak(string s, vector<string>& wordDict) {", hint:"Returns true if s can be fully segmented using words from dictionary"},
+          {t:"blank", ph:"// build trie from dictionary...", ans:"TrieNode* root=new TrieNode(); for(auto& w:wordDict){ TrieNode* n=root; for(char c:w){int i=c-'a';if(!n->children[i])n->children[i]=new TrieNode();n=n->children[i];} n->isEnd=true; }", hint:"Insert all dictionary words into trie — O(total chars in dict)"},
+          {t:"blank", ph:"// dp[i] = can s[0..i-1] be segmented...", ans:"int n=s.size(); vector<bool> dp(n+1,false); dp[0]=true;", hint:"dp[0]=true: empty prefix is always valid. dp[n]=true means entire string segmented."},
+        ]
+      },
+      { z:2, tag:"insert() already done inline above",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// insert done during trie build above</span>`},
+          {t:"fixed", code:`<span class="cm">// now run DP over string positions</span>`},
+        ]
+      },
+      { z:3, tag:"traverse() — from each dp[i]=true, walk trie forward",
+        lines:[
+          {t:"fixed", code:`<span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> n; i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   only start from reachable positions...", ans:"if (!dp[i]) continue;", hint:"If dp[i]=false, no valid segmentation reaches i — skip"},
+          {t:"blank", ph:"//   walk trie from s[i], mark dp[j] when word ends...", ans:"TrieNode* node=root; for(int j=i;j<n;j++){ int k=s[j]-'a'; if(!node->children[k]) break; node=node->children[k]; if(node->isEnd) dp[j+1]=true; }", hint:"From position i, extend one char at a time. isEnd at j means s[i..j] is a dict word."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — dp[n] is the answer",
+        lines:[
+          {t:"blank", ph:"// return whether full string can be segmented...", ans:"return dp[n];", hint:"dp[n]=true means we reached the end via valid word segments"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── XOR Maximization ───────────────────────────────────────────────────
+  {
+    id:4, title:"XOR Maximization", badge:"BINARY TRIE", badgeColor:"var(--c1)",
+    hint:"Binary trie on integer bits (MSB first). For each query x: greedily choose opposite bit at each level. If opposite bit's child exists, go there (XOR bit=1). Else forced to same side.",
+    vizNodes:["root","bit31","→0 or 1","greedy→opp","maxXOR"],
+    zones:[
+      { z:1, tag:"TrieNode children[2] — bit trie not char trie",
+        lines:[
+          {t:"blank", ph:"// binary trie node — children[0] and children[1]...", ans:"struct BitTrieNode { BitTrieNode* children[2]; BitTrieNode():children{nullptr,nullptr}{} };", hint:"Only two children: bit=0 and bit=1. Insert integers MSB first (bit 31 down to 0)."},
+          {t:"blank", ph:"// trie with root...", ans:"struct XORTrie { BitTrieNode* root=new BitTrieNode();", hint:"Root represents empty prefix. All 32-bit integers inserted from MSB."},
+        ]
+      },
+      { z:2, tag:"insert() — same shape but idx = bit not char",
+        lines:[
+          {t:"blank", ph:"// insert integer bit by bit, MSB first...", ans:"void insert(int num){ BitTrieNode* node=root; for(int b=31;b>=0;b--){ int bit=(num>>b)&1; if(!node->children[bit]) node->children[bit]=new BitTrieNode(); node=node->children[bit]; } }", hint:"(num>>b)&1 extracts bit b. Same walk-and-create pattern as char trie, just bit-indexed."},
+        ]
+      },
+      { z:3, tag:"traverse() — greedy: pick OPPOSITE bit for max XOR",
+        lines:[
+          {t:"blank", ph:"// find max XOR of num with any inserted number...", ans:"int maxXOR(int num){ BitTrieNode* node=root; int result=0; for(int b=31;b>=0;b--){", hint:"Greedily maximize XOR bit by bit from MSB"},
+          {t:"blank", ph:"//   want opposite bit to maximize XOR at this position...", ans:"int bit=(num>>b)&1; int want=1-bit;", hint:"XOR bit is 1 when bits differ. We WANT the opposite of our current bit."},
+          {t:"blank", ph:"//   go to opposite if exists, else forced to same side...", ans:"if(node->children[want]){ result|=(1<<b); node=node->children[want]; } else node=node->children[bit];", hint:"Opposite child exists: XOR contributes 1 at this bit. Else: XOR contributes 0, go same side."},
+          {t:"fixed", code:`    }`},
+          {t:"blank", ph:"//   return max XOR...", ans:"return result; }", hint:"After 32 bits, result holds the maximum XOR achievable"},
+        ]
+      },
+      { z:4, tag:"QUERY — insert all numbers, then query each",
+        lines:[
+          {t:"blank", ph:"// find maximum XOR pair in array...", ans:"int findMaximumXOR(vector<int>& nums){ XORTrie trie; for(int x:nums) trie.insert(x); int mx=0; for(int x:nums) mx=max(mx,trie.maxXOR(x)); return mx; }", hint:"Insert all, then for each num find its best XOR partner. O(32n) total."},
+          {t:"fixed", code:`};`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Count Distinct Substrings ─────────────────────────────────────────
+  {
+    id:5, title:"Count Distinct Substrings", badge:"SUFFIX TRIE", badgeColor:"var(--c3)",
+    hint:"Insert every suffix of the string. Each unique node (except root) represents a unique prefix of some suffix = a unique substring. Count all nodes minus root.",
+    vizNodes:["root","s[0..]","s[1..]","s[2..]","→unique nodes"],
+    zones:[
+      { z:1, tag:"insert all suffixes — every node = unique substring",
+        lines:[
+          {t:"blank", ph:"// count distinct substrings via suffix trie...", ans:"int countDistinctSubstrings(string& s) {", hint:"O(n²) time and space — suffix automaton is O(n) but harder"},
+          {t:"blank", ph:"// standard trie node...", ans:"struct TrieNode{ TrieNode* ch[26]; TrieNode():ch{}{} };", hint:"Same node struct — suffix trie is just a regular trie with different input"},
+          {t:"blank", ph:"// root + node counter...", ans:"TrieNode* root=new TrieNode(); int count=0;", hint:"Count each new node created — each new node = one new distinct substring"},
+        ]
+      },
+      { z:2, tag:"insert() — count new nodes as they're created",
+        lines:[
+          {t:"blank", ph:"// insert suffix starting at position i...", ans:"auto insertSuffix=[&](int start){ TrieNode* node=root; for(int i=start;i<(int)s.size();i++){ int c=s[i]-'a'; if(!node->ch[c]){ node->ch[c]=new TrieNode(); count++; } node=node->ch[c]; } };", hint:"Each new node creation = new distinct substring. Existing path = already counted."},
+        ]
+      },
+      { z:3, tag:"traverse() — insert all n suffixes",
+        lines:[
+          {t:"blank", ph:"// insert every suffix of s...", ans:"for(int i=0;i<(int)s.size();i++) insertSuffix(i);", hint:"n suffixes inserted: s[0..n-1], s[1..n-1], ..., s[n-1..n-1]"},
+        ]
+      },
+      { z:4, tag:"QUERY — total nodes created = distinct substrings",
+        lines:[
+          {t:"blank", ph:"// each node = one unique substring — return total count...", ans:"return count;", hint:"Every path root→node spells a unique substring. Node count = distinct substring count."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Wildcard Matching ──────────────────────────────────────────────────
+  {
+    id:6, title:"Wildcard Matching", badge:"DOT = ALL CHILDREN", badgeColor:"var(--c2)",
+    hint:"'.' matches any character. On normal char: follow that child. On '.': recurse into ALL 26 children. Returns true if any branch reaches isEnd.",
+    vizNodes:["root","a→","'.'→ALL","→26 children","→isEnd?"],
+    zones:[
+      { z:1, tag:"same trie — recursive search handles '.' wildcard",
+        lines:[
+          {t:"blank", ph:"// wildcard trie — insert is standard, search handles '.'...", ans:"struct WildcardTrie { TrieNode* root=new TrieNode();", hint:"insert() is identical to standard trie. Only search() changes."},
+          {t:"blank", ph:"// insert — identical to standard trie...", ans:"void insert(string& w){ TrieNode* n=root; for(char c:w){int i=c-'a';if(!n->children[i])n->children[i]=new TrieNode();n=n->children[i];} n->isEnd=true; }", hint:"Words inserted normally — no special handling for wildcards at insert time"},
+        ]
+      },
+      { z:2, tag:"insert() already shown — search is the key",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// key: search uses recursion to handle '.' wildcard</span>`},
+        ]
+      },
+      { z:3, tag:"traverse() — '.' fans out to all children",
+        lines:[
+          {t:"blank", ph:"// recursive search handling '.' wildcard...", ans:"bool searchHelper(TrieNode* node, string& w, int pos){ if(pos==w.size()) return node->isEnd;", hint:"Base case: consumed all chars — check if this is a complete word"},
+          {t:"blank", ph:"//   if '.': try ALL children recursively...", ans:"if(w[pos]=='.'){ for(int i=0;i<26;i++) if(node->children[i]&&searchHelper(node->children[i],w,pos+1)) return true; return false; }", hint:"Wildcard branches into all 26 children. Short-circuit: return true on first match."},
+          {t:"blank", ph:"//   normal char: follow specific child...", ans:"int i=w[pos]-'a'; return node->children[i]&&searchHelper(node->children[i],w,pos+1);", hint:"Normal character: only one possible path. Return false if child missing."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"QUERY — call searchHelper from root",
+        lines:[
+          {t:"blank", ph:"// public search interface...", ans:"bool search(string w){ return searchHelper(root,w,0); }", hint:"Start recursion at root, position 0. Returns true if any branch matches entire word."},
+          {t:"fixed", code:`};`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── IP Routing (Longest Prefix Match) ─────────────────────────────────
+  {
+    id:7, title:"IP Routing", badge:"LONGEST PREFIX MATCH", badgeColor:"var(--c4)",
+    hint:"Insert routing table prefixes as bit strings. For each IP, walk the bit trie and track the last seen isEnd node. That node = longest matching prefix = correct route.",
+    vizNodes:["root","bit0","bit1","isEnd=route","→longest match"],
+    zones:[
+      { z:1, tag:"binary trie on IP prefix bits",
+        lines:[
+          {t:"blank", ph:"// IP routing: longest prefix match using binary trie...", ans:"struct IPRouter { BitTrieNode* root=new BitTrieNode();", hint:"Each routing prefix is a bit string. Walk IP bits, last matching prefix = route."},
+          {t:"blank", ph:"// node needs to store route info at isEnd...", ans:"struct BitTrieNode{ BitTrieNode* ch[2]; int routeId; BitTrieNode():ch{nullptr,nullptr},routeId(-1){} };", hint:"routeId=-1 = not a prefix endpoint. routeId≥0 = this prefix maps to that route."},
+        ]
+      },
+      { z:2, tag:"insert() — bit-by-bit, mark routeId at prefix end",
+        lines:[
+          {t:"blank", ph:"// insert IP prefix with its route id...", ans:"void addRoute(uint32_t prefix, int prefixLen, int routeId){ BitTrieNode* node=root; for(int b=31;b>=32-prefixLen;b--){ int bit=(prefix>>b)&1; if(!node->ch[bit]) node->ch[bit]=new BitTrieNode(); node=node->ch[bit]; } node->routeId=routeId; }", hint:"Insert only prefixLen bits. Mark routeId at terminal node. Shorter prefixes = higher in tree."},
+        ]
+      },
+      { z:3, tag:"traverse() — track LAST seen routeId during walk",
+        lines:[
+          {t:"blank", ph:"// find longest matching prefix for IP address...", ans:"int lookup(uint32_t ip){ BitTrieNode* node=root; int bestRoute=-1;", hint:"Walk all 32 bits of IP, updating bestRoute whenever we pass a routeId node"},
+          {t:"blank", ph:"//   walk all 32 bits, track last seen route...", ans:"for(int b=31;b>=0;b--){ if(node->routeId!=-1) bestRoute=node->routeId; int bit=(ip>>b)&1; if(!node->ch[bit]) break; node=node->ch[bit]; }", hint:"Update bestRoute at EVERY node with a valid routeId — last update = longest match"},
+          {t:"blank", ph:"//   check final node too...", ans:"if(node->routeId!=-1) bestRoute=node->routeId; return bestRoute; }", hint:"Check the last node reached before break or end of walk"},
+        ]
+      },
+      { z:4, tag:"QUERY — longest prefix match = most specific route",
+        lines:[
+          {t:"blank", ph:"// route the packet...", ans:"int route=router.lookup(destIP);", hint:"Most specific (longest) matching prefix wins — core of IP routing table lookup"},
+          {t:"fixed", code:`};`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Boggle / Word Search ───────────────────────────────────────────────
+  {
+    id:8, title:"Boggle / Word Search", badge:"TRIE PRUNE DFS", badgeColor:"var(--c1)",
+    hint:"Insert all words into trie. DFS on grid: at each cell, follow trie node for that letter. If trie node is null — prune entire subtree. If isEnd — found a word. Without trie, no early termination.",
+    vizNodes:["grid DFS","→trieNode","null→prune","isEnd→collect","backtrack"],
+    zones:[
+      { z:1, tag:"insert all target words into trie first",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {", hint:"Find all words from the list that exist in the board via adjacent cells"},
+          {t:"blank", ph:"// build trie from target word list...", ans:"TrieNode* root=new TrieNode(); for(auto& w:words){ TrieNode* n=root; for(char c:w){int i=c-'a';if(!n->children[i])n->children[i]=new TrieNode();n=n->children[i];} n->isEnd=true; }", hint:"All target words in trie — enables O(prefix_length) pruning during grid DFS"},
+          {t:"blank", ph:"// result set + dimensions...", ans:"vector<string> result; int m=board.size(),n=board[0].size();", hint:"Use set to avoid duplicate words (same word found via different paths)"},
+        ]
+      },
+      { z:2, tag:"insert() already done — DFS is the key operation",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// trie built above — grid DFS uses trie for pruning</span>`},
+        ]
+      },
+      { z:3, tag:"traverse() — grid DFS + trie node follow + prune",
+        lines:[
+          {t:"blank", ph:"// DFS from cell (r,c) with current trie node and path...", ans:"function<void(int,int,TrieNode*,string&)> dfs=[&](int r,int c,TrieNode* node,string& path){", hint:"node tracks where we are in trie. null node = current path not in any target word."},
+          {t:"blank", ph:"//   bounds + visited check (mark visited with '#')...", ans:"if(r<0||r>=m||c<0||c>=n||board[r][c]=='#') return;", hint:"'#' marks visited cells in current path — prevents reusing a cell"},
+          {t:"blank", ph:"//   trie prune: if no child for this letter, stop...", ans:"char ch=board[r][c]; int i=ch-'a'; if(!node->children[i]) return;", hint:"KEY PRUNING: trie child null = no target word has this prefix. Entire subtree pruned."},
+          {t:"blank", ph:"//   advance trie node, check if word found...", ans:"node=node->children[i]; path+=ch; if(node->isEnd){ result.push_back(path); node->isEnd=false; }", hint:"isEnd=false after finding prevents duplicate results for the same word"},
+          {t:"blank", ph:"//   explore all 4 directions, then backtrack...", ans:"board[r][c]='#'; for(auto[dr,dc]:vector<pair<int,int>>{{0,1},{0,-1},{1,0},{-1,0}}) dfs(r+dr,c+dc,node,path); board[r][c]=ch; path.pop_back(); };", hint:"Mark visited, recurse 4 directions, unmark (backtrack). path.pop_back() mirrors path+=ch."},
+        ]
+      },
+      { z:4, tag:"QUERY — start DFS from every cell",
+        lines:[
+          {t:"blank", ph:"// start DFS from every board cell...", ans:"for(int r=0;r<m;r++) for(int c=0;c<n;c++){ string path; dfs(r,c,root,path); } return result;", hint:"Every cell can be the start of a word. Trie pruning makes this efficient."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Replace Words with Roots ───────────────────────────────────────────
+  {
+    id:9, title:"Replace Words with Roots", badge:"FIRST isEnd = ROOT", badgeColor:"var(--c3)",
+    hint:"Insert all roots into trie. For each word in sentence: walk trie char by char. First isEnd encountered = shortest root match. Replace the word with that root.",
+    vizNodes:["root","c→a→t★","→atch","→arpet","→first★wins"],
+    zones:[
+      { z:1, tag:"insert all roots — shortest root wins",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"string replaceWords(vector<string>& dictionary, string sentence) {", hint:"Replace each word in sentence with its shortest root from dictionary"},
+          {t:"blank", ph:"// build trie from roots...", ans:"TrieNode* root=new TrieNode(); for(auto& w:dictionary){ TrieNode* n=root; for(char c:w){int i=c-'a';if(!n->children[i])n->children[i]=new TrieNode();n=n->children[i];} n->isEnd=true; }", hint:"All roots inserted. A shorter root will be found before a longer one (trie traversal is depth-first from root)."},
+        ]
+      },
+      { z:2, tag:"insert() done above",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// trie built — now process each word in sentence</span>`},
+        ]
+      },
+      { z:3, tag:"traverse() — return word at FIRST isEnd hit",
+        lines:[
+          {t:"blank", ph:"// find shortest root for a word — stop at first isEnd...", ans:"auto findRoot=[&](string& word)->string{ TrieNode* node=root; for(int i=0;i<(int)word.size();i++){ int c=word[i]-'a'; if(!node->children[c]) break; node=node->children[c]; if(node->isEnd) return word.substr(0,i+1); } return word; };", hint:"Walk word chars; at first isEnd return substr so far = shortest matching root. Fall through = no root found, keep original word."},
+        ]
+      },
+      { z:4, tag:"QUERY — apply findRoot to each word in sentence",
+        lines:[
+          {t:"blank", ph:"// split sentence, replace each word, rejoin...", ans:"string result,word; istringstream ss(sentence); while(ss>>word){ if(!result.empty()) result+=' '; result+=findRoot(word); } return result;", hint:"istringstream splits on spaces. Rejoin with spaces after replacing each word."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Stream of Characters ───────────────────────────────────────────────
+  {
+    id:10, title:"Stream of Characters", badge:"SUFFIX TRIE SEARCH", badgeColor:"var(--c2)",
+    hint:"Insert REVERSED words into trie. Maintain a buffer of last k characters. On each new char: prepend to buffer, walk reversed buffer in trie. If any isEnd hit = a word ends here.",
+    vizNodes:["reverse words","←stream buffer","walk trie←","isEnd=match","slide window"],
+    zones:[
+      { z:1, tag:"insert reversed words — search backwards from stream end",
+        lines:[
+          {t:"blank", ph:"// class definition...", ans:"class StreamChecker {", hint:"query(c) returns true if any word in dictionary ends at this character position"},
+          {t:"blank", ph:"// trie root + buffer of recent characters...", ans:"TrieNode* root; string buf;", hint:"buf = recent characters in reverse (most recent first). Walk buf in trie = match suffix."},
+          {t:"blank", ph:"// constructor: insert REVERSED words...", ans:"StreamChecker(vector<string>& words){ root=new TrieNode(); for(auto& w:words){ TrieNode* n=root; for(int i=w.size()-1;i>=0;i--){int c=w[i]-'a';if(!n->children[c])n->children[c]=new TrieNode();n=n->children[c];} n->isEnd=true; } }", hint:"Reversing words lets us walk the buffer (recent chars) forward = check if recent suffix matches any word"},
+        ]
+      },
+      { z:2, tag:"reverse-insert done in constructor",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// reversed words in trie — now query() maintains sliding buffer</span>`},
+        ]
+      },
+      { z:3, tag:"traverse() — prepend to buffer, walk trie from newest char",
+        lines:[
+          {t:"blank", ph:"// query: add char to front of buffer, walk trie...", ans:"bool query(char letter){ buf=letter+buf;", hint:"Prepend newest char. Buffer = recent chars in reverse = natural trie walk order"},
+          {t:"blank", ph:"//   walk buffer through reversed-word trie...", ans:"TrieNode* node=root; for(char c:buf){ int i=c-'a'; if(!node->children[i]) break; node=node->children[i]; if(node->isEnd) return true; }", hint:"Walk buffer (newest first) through trie of reversed words. isEnd = word ends at current position."},
+          {t:"blank", ph:"//   trim buffer to max word length for efficiency...", ans:"if((int)buf.size()>300) buf=buf.substr(0,300); return false; }", hint:"Bounded buffer: once longer than longest word, trimming is safe. Prevents unbounded growth."},
+        ]
+      },
+      { z:4, tag:"QUERY — O(max_word_len) per character",
+        lines:[
+          {t:"fixed", code:`};`},
+          {t:"fixed", code:`<span class="cm">// key insight: reverse words + prepend buffer</span>`},
+          {t:"fixed", code:`<span class="cm">// = turn suffix matching into prefix matching</span>`},
+          {t:"fixed", code:`<span class="cm">// = exactly what a trie is built for</span>`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['TrieNode Struct','insert()','traverse()','Query / Result'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const nodes=p.vizNodes;
+  const arrows=nodes.map((v,i)=>{
+    const cls=i===0?'tn-root':i===nodes.length-1?'tn-end':'tn-mid';
+    return `<div class="trie-node ${cls}">${v}</div>${i<nodes.length-1?'<span class="tn-arrow">→</span>':''}`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="trie-viz">
+      <div class="trie-level">${arrows}</div>
+    </div>
+    <div class="viz-legend">
+      <span style="color:var(--c1)">■</span> root &nbsp;
+      <span style="color:var(--c2)">■</span> intermediate &nbsp;
+      <span style="color:var(--c4)">■</span> isEnd (complete word) &nbsp;&nbsp;
+      <span style="color:var(--c1)">★ insert: create nodes · traverse: null=prune / isEnd=terminal</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

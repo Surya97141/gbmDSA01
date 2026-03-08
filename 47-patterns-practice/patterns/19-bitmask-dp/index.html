@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitmask DP — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(167,139,250,0.05) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c1);border:1px solid rgba(167,139,250,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c1) 40%,var(--c2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c1);color:var(--text);}
+.sel-btn.active{background:rgba(167,139,250,0.1);border-color:var(--c1);color:var(--c1);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c1);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(167,139,250,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c1);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:400px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c1);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(167,139,250,0.06);border-bottom-color:var(--c1);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(167,139,250,0.1);color:var(--c1);border-color:rgba(167,139,250,0.4);}
+.btn-check:hover{background:rgba(167,139,250,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c1);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.mask-viz{display:flex;flex-direction:column;gap:8px;}
+.mask-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.mask-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);min-width:110px;text-align:right;padding-right:8px;flex-shrink:0;}
+.mask-bit{font-family:'JetBrains Mono',monospace;font-size:11px;width:28px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:3px;flex-shrink:0;}
+.mb-on{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.12);}
+.mb-off{color:var(--muted);}
+.mb-new{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.12);}
+.mb-full{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.1);}
+.mask-arrow{color:var(--muted);font-size:14px;margin:0 4px;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c}
+.op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 19 — Practice Mode</div>
+    <h1>Bitmask DP</h1>
+    <p>// dp[mask][i] · iterate mask 0→2^n-1 · !(mask&(1&lt;&lt;j)) = not visited · FULL=(1&lt;&lt;n)-1</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// BITMASK DP — 10 Manifestations
+//
+// UNIVERSAL STRUCTURE:
+//   State:       dp[mask] or dp[mask][i]
+//   Iterate:     mask from 0 → (1<<n)-1  (increasing = dependencies resolved)
+//   "Not in":    !(mask & (1<<j))
+//   "Add j":     mask | (1<<j)
+//   Full set:    FULL = (1<<n)-1
+//
+// 4 Blocks:
+//   ① STATE DEF  — what dp[mask][i] means; init with INF/0/false
+//   ② BASE CASE  — dp[0]=0 or dp[1<<i][i]=start; empty set is valid
+//   ③ TRANSITION — for each mask, for each j not in mask: update dp[mask|(1<<j)]
+//   ④ ANSWER     — read dp[FULL] or min over i of dp[FULL][i]; reconstruct if needed
+// ─────────────────────────────────────────────────────────────────────────────
+
+const INF = 'INT_MAX/2';
+const P = [
+
+  // 01 ── Travelling Salesman (TSP) ──────────────────────────────────────────
+  {
+    id:1, title:"Travelling Salesman (TSP)", badge:"dp[mask][i] MIN TOUR", badgeColor:"var(--c4)",
+    hint:"dp[mask][i] = min cost to visit exactly the cities in mask, ending at city i. Transition: try going to any unvisited city j. Answer: dp[FULL][i] + cost[i][0] for all i.",
+    maskDemo:{n:4, from:0b0111, to:0b1111, fromLabel:"mask=0111\n(visited 0,1,2)", toLabel:"add city 3\nmask=1111"},
+    zones:[
+      { z:1, tag:"dp[mask][i] = min cost visiting set mask, last at i",
+        lines:[
+          {t:"blank", ph:"// TSP with bitmask DP...", ans:"int tsp(vector<vector<int>>& cost) {", hint:"n cities, find minimum cost Hamiltonian cycle. O(n² · 2^n) time."},
+          {t:"blank", ph:"// n cities, FULL mask, dp init to INF...", ans:"int n=cost.size(), FULL=(1<<n)-1; vector<vector<int>> dp(1<<n, vector<int>(n, INT_MAX/2));", hint:"2^n masks × n ending positions. INT_MAX/2 avoids overflow when adding costs."},
+        ]
+      },
+      { z:2, tag:"base case — start at city 0, only city 0 visited",
+        lines:[
+          {t:"blank", ph:"// start at city 0 — mask has only bit 0 set, cost=0...", ans:"dp[1][0] = 0;", hint:"dp[1<<0][0] = dp[1][0] = 0. Visited = {0}, at city 0, cost = 0."},
+        ]
+      },
+      { z:3, tag:"transition — for each mask/last-city, try all unvisited j",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> mask <span class="op">=</span> <span class="nm">1</span>; mask <span class="op">&lt;=</span> FULL; mask<span class="op">++</span>) {`},
+          {t:"fixed", code:`        <span class="kw">for</span> (<span class="ty">int</span> i <span class="op">=</span> <span class="nm">0</span>; i <span class="op">&lt;</span> n; i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//           skip if i not in mask or dp is INF...", ans:"if (!(mask & (1<<i)) || dp[mask][i]==INT_MAX/2) continue;", hint:"i must be IN mask (we're at i). Also skip unreachable states."},
+          {t:"blank", ph:"//           try extending to each unvisited city j...", ans:"for(int j=0;j<n;j++){ if(mask&(1<<j)) continue; dp[mask|(1<<j)][j]=min(dp[mask|(1<<j)][j], dp[mask][i]+cost[i][j]); }", hint:"j not in mask = unvisited. New state: visited=mask|(1<<j), last=j. Cost += edge i→j."},
+          {t:"fixed", code:`        } }`},
+        ]
+      },
+      { z:4, tag:"answer — min over all ending cities + return to start",
+        lines:[
+          {t:"blank", ph:"// min cost tour: visit all cities and return to 0...", ans:"int ans=INT_MAX/2; for(int i=1;i<n;i++) ans=min(ans,dp[FULL][i]+cost[i][0]); return ans;", hint:"dp[FULL][i] = min cost visiting all cities ending at i. Add cost[i][0] to complete cycle."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Assignment Problem ──────────────────────────────────────────────────
+  {
+    id:2, title:"Assignment Problem", badge:"popcount = person idx", badgeColor:"var(--c2)",
+    hint:"dp[mask] = min cost assigning people 0..popcount(mask)-1 to the tasks in mask. Key insight: popcount(mask) tells you which person is next — no need to track person separately.",
+    maskDemo:{n:4, from:0b0011, to:0b0111, fromLabel:"mask=0011\npersons 0,1 assigned", toLabel:"add task 2\nperson 2 next"},
+    zones:[
+      { z:1, tag:"dp[mask] = min cost — person idx = popcount(mask)",
+        lines:[
+          {t:"blank", ph:"// assignment problem: n people to n tasks minimum cost...", ans:"int assignmentProblem(vector<vector<int>>& cost) {", hint:"Assign each person to exactly one task. Minimize total cost. O(n · 2^n)."},
+          {t:"blank", ph:"// dp over task subsets, init to INF...", ans:"int n=cost.size(); vector<int> dp(1<<n, INT_MAX/2); dp[0]=0;", hint:"dp[mask] = min cost when the tasks in mask have been assigned to people 0..popcount(mask)-1"},
+        ]
+      },
+      { z:2, tag:"base case — empty assignment costs 0",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// dp[0] = 0 already set above</span>`},
+          {t:"fixed", code:`    <span class="cm">// empty mask = no assignments yet</span>`},
+        ]
+      },
+      { z:3, tag:"transition — next person = popcount(mask), try each unassigned task",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> mask <span class="op">=</span> <span class="nm">0</span>; mask <span class="op">&lt;</span> (<span class="nm">1</span><span class="op">&lt;&lt;</span>n); mask<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   person index = number of tasks already assigned...", ans:"int person = __builtin_popcount(mask);", hint:"Brilliant: bits set = tasks assigned = people assigned = index of next person."},
+          {t:"blank", ph:"//   skip if all people assigned...", ans:"if (person == n) continue;", hint:"All n people assigned — this is a terminal state, no transitions needed"},
+          {t:"blank", ph:"//   try assigning this person to each unassigned task...", ans:"for(int task=0;task<n;task++){ if(mask&(1<<task)) continue; dp[mask|(1<<task)]=min(dp[mask|(1<<task)], dp[mask]+cost[person][task]); }", hint:"task not in mask = unassigned. Assign person→task, update dp for new mask."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"answer — dp[FULL] = all tasks assigned optimally",
+        lines:[
+          {t:"blank", ph:"// return min cost of full assignment...", ans:"return dp[(1<<n)-1];", hint:"(1<<n)-1 = all bits set = all tasks assigned. dp[FULL] = min total cost."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Minimum Cost to Visit All Nodes ────────────────────────────────────
+  {
+    id:3, title:"Min Cost to Visit All Nodes", badge:"dp[mask][i] ANY START", badgeColor:"var(--c3)",
+    hint:"Like TSP but no fixed start/return. dp[mask][i] = min cost visiting set mask ending at i. Init: dp[1<<i][i]=0 for all i (can start anywhere). Answer: min dp[FULL][i].",
+    maskDemo:{n:4, from:0b0101, to:0b1101, fromLabel:"mask=0101\nat node 2", toLabel:"visit node 3\nmask=1101"},
+    zones:[
+      { z:1, tag:"dp[mask][i] — no fixed start, no return required",
+        lines:[
+          {t:"blank", ph:"// min cost path visiting all nodes — can start anywhere...", ans:"int minCostVisitAll(vector<vector<int>>& dist) {", hint:"Differs from TSP: no fixed start city, no return to start. Just visit all."},
+          {t:"blank", ph:"// init all states to INF...", ans:"int n=dist.size(), FULL=(1<<n)-1; vector<vector<int>> dp(1<<n,vector<int>(n,INT_MAX/2));", hint:"Same state space as TSP — 2^n × n table"},
+        ]
+      },
+      { z:2, tag:"base case — can start at ANY node",
+        lines:[
+          {t:"blank", ph:"// can start at any node with cost 0...", ans:"for(int i=0;i<n;i++) dp[1<<i][i]=0;", hint:"TSP started at node 0 only. Here all single-node starting states are valid."},
+        ]
+      },
+      { z:3, tag:"transition — identical to TSP",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> mask<span class="op">=</span><span class="nm">1</span>; mask<span class="op">&lt;=</span>FULL; mask<span class="op">++</span>)`},
+          {t:"fixed", code:`        <span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span><span class="nm">0</span>; i<span class="op">&lt;</span>n; i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   same transition as TSP — try all unvisited j...", ans:"if(!(mask&(1<<i))||dp[mask][i]==INT_MAX/2) continue; for(int j=0;j<n;j++){ if(mask&(1<<j)) continue; dp[mask|(1<<j)][j]=min(dp[mask|(1<<j)][j],dp[mask][i]+dist[i][j]); }", hint:"Identical transition to TSP. Only base case and answer extraction differ."},
+          {t:"fixed", code:`        }`},
+        ]
+      },
+      { z:4, tag:"answer — min dp[FULL][i] over all ending nodes",
+        lines:[
+          {t:"blank", ph:"// no return needed — just min over all ending nodes...", ans:"int ans=INT_MAX/2; for(int i=0;i<n;i++) ans=min(ans,dp[FULL][i]); return ans;", hint:"TSP added cost[i][0]. Here we stop wherever is cheapest — just min over dp[FULL][i]."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Set Cover DP ────────────────────────────────────────────────────────
+  {
+    id:4, title:"Set Cover DP", badge:"dp[mask] MIN SETS", badgeColor:"var(--c1)",
+    hint:"dp[mask] = min number of sets to cover all elements in mask. Transition: for each available set s, dp[mask|s] = min(dp[mask|s], dp[mask]+1). Start dp[0]=0.",
+    maskDemo:{n:4, from:0b0011, to:0b1011, fromLabel:"covered={0,1}\ndp=1 set", toLabel:"add set {2,3}\nmask=1011"},
+    zones:[
+      { z:1, tag:"dp[mask] = min sets to cover elements in mask",
+        lines:[
+          {t:"blank", ph:"// set cover: min sets to cover all n elements...", ans:"int setCoverDP(int n, vector<int>& sets) {", hint:"sets[i] is a bitmask of elements covered by set i. Find min sets covering all n elements."},
+          {t:"blank", ph:"// dp init to INF, dp[0]=0...", ans:"int FULL=(1<<n)-1; vector<int> dp(1<<n, INT_MAX/2); dp[0]=0;", hint:"dp[0]=0: empty coverage needs 0 sets. dp[FULL] = answer."},
+        ]
+      },
+      { z:2, tag:"base case — empty coverage costs 0 sets",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// dp[0] = 0 already set — empty set covered by 0 sets</span>`},
+        ]
+      },
+      { z:3, tag:"transition — try adding each available set to current coverage",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> mask <span class="op">=</span> <span class="nm">0</span>; mask <span class="op">&lt;=</span> FULL; mask<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   skip unreachable states...", ans:"if (dp[mask] == INT_MAX/2) continue;", hint:"Only expand from reachable states"},
+          {t:"blank", ph:"//   try adding each available set...", ans:"for(int s:sets){ int newMask=mask|s; dp[newMask]=min(dp[newMask],dp[mask]+1); }", hint:"mask|s = new coverage. Cost increases by 1 (one more set used)."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"answer — dp[FULL] = min sets covering everything",
+        lines:[
+          {t:"blank", ph:"// return min sets to cover all elements...", ans:"return dp[FULL]==INT_MAX/2 ? -1 : dp[FULL];", hint:"FULL = all n elements covered. -1 if impossible (some elements not in any set)."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Hamiltonian Path ────────────────────────────────────────────────────
+  {
+    id:5, title:"Hamiltonian Path", badge:"dp[mask][i] BOOLEAN", badgeColor:"var(--c4)",
+    hint:"dp[mask][i] = true if there's a path visiting all nodes in mask ending at i. Same as TSP but boolean (exists?) not optimization (min cost). Answer: any dp[FULL][i] = true.",
+    maskDemo:{n:4, from:0b0111, to:0b1111, fromLabel:"path exists\nending at node 2", toLabel:"extend to node 3\nmask=1111"},
+    zones:[
+      { z:1, tag:"dp[mask][i] = path exists visiting mask ending at i",
+        lines:[
+          {t:"blank", ph:"// does a Hamiltonian path exist?...", ans:"bool hamiltonianPath(vector<vector<bool>>& adj) {", hint:"Visit every node exactly once. dp is boolean: path exists or not."},
+          {t:"blank", ph:"// dp[mask][i] = can we visit exactly set mask ending at node i...", ans:"int n=adj.size(), FULL=(1<<n)-1; vector<vector<bool>> dp(1<<n,vector<bool>(n,false));", hint:"Same state space as TSP. Just bool instead of int."},
+        ]
+      },
+      { z:2, tag:"base case — single node paths always exist",
+        lines:[
+          {t:"blank", ph:"// each single node is trivially a valid 1-node path...", ans:"for(int i=0;i<n;i++) dp[1<<i][i]=true;", hint:"Any single node by itself is a valid starting point for a Hamiltonian path."},
+        ]
+      },
+      { z:3, tag:"transition — extend path if edge exists",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> mask<span class="op">=</span><span class="nm">1</span>; mask<span class="op">&lt;=</span>FULL; mask<span class="op">++</span>)`},
+          {t:"fixed", code:`        <span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span><span class="nm">0</span>; i<span class="op">&lt;</span>n; i<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   only extend valid paths...", ans:"if(!dp[mask][i]) continue;", hint:"If no path ends here, nothing to extend"},
+          {t:"blank", ph:"//   extend to unvisited j if edge i→j exists...", ans:"for(int j=0;j<n;j++) if(!(mask&(1<<j))&&adj[i][j]) dp[mask|(1<<j)][j]=true;", hint:"j not in mask AND edge exists → path can be extended. Boolean: just set true."},
+          {t:"fixed", code:`        }`},
+        ]
+      },
+      { z:4, tag:"answer — any dp[FULL][i] = true means path exists",
+        lines:[
+          {t:"blank", ph:"// path exists if any ending node gives full coverage...", ans:"for(int i=0;i<n;i++) if(dp[FULL][i]) return true; return false;", hint:"Hamiltonian path ends at any node. Check all n possible endings."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Game with Subset States ─────────────────────────────────────────────
+  {
+    id:6, title:"Game with Subset States", badge:"dp[mask] WIN/LOSE", badgeColor:"var(--c2)",
+    hint:"dp[mask] = can current player WIN from state mask (items taken so far). Transition: if any move leads to a losing state for opponent, current state is winning.",
+    maskDemo:{n:4, from:0b0011, to:0b0111, fromLabel:"items taken={0,1}\ncurrent player", toLabel:"take item 2\nopponent faces 0111"},
+    zones:[
+      { z:1, tag:"dp[mask] = current player wins with taken-set mask",
+        lines:[
+          {t:"blank", ph:"// game DP: can current player win given items-taken mask?...", ans:"vector<bool> gameDP(int n, vector<int>& items) {", hint:"Two players alternate taking items. Current player wins if any move leaves opponent losing."},
+          {t:"blank", ph:"// dp[mask] = true if current player wins from this state...", ans:"int total=1<<n; vector<bool> dp(total,false);", hint:"dp[0]=false if no moves = losing position. dp[FULL]=false trivially (no moves left)."},
+        ]
+      },
+      { z:2, tag:"base case — full mask = no moves = current player loses",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// dp[FULL] = false (no moves available = lose)</span>`},
+          {t:"fixed", code:`    <span class="cm">// all states init to false — fill from FULL downward</span>`},
+        ]
+      },
+      { z:3, tag:"transition — win if ANY move leads to opponent losing",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> mask<span class="op">=</span>total<span class="op">-</span><span class="nm">1</span>; mask<span class="op">&gt;=</span><span class="nm">0</span>; mask<span class="op">--</span>) {`},
+          {t:"blank", ph:"//   try each untaken item...", ans:"for(int i=0;i<n;i++){", hint:"Each untaken item is a possible move"},
+          {t:"blank", ph:"//     if i not taken and that move puts opponent in losing state...", ans:"if(!(mask&(1<<i)) && !dp[mask|(1<<i)]){ dp[mask]=true; break; }", hint:"Take item i → opponent faces mask|(1<<i). If opponent loses there (!dp), we win here."},
+          {t:"fixed", code:`        } }`},
+        ]
+      },
+      { z:4, tag:"answer — dp[0] = first player wins from empty state",
+        lines:[
+          {t:"blank", ph:"// return all states, or just dp[0] for initial game state...", ans:"return dp;", hint:"dp[0] = can first player win from empty start. Return full table for flexibility."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Counting Subsets with Property ─────────────────────────────────────
+  {
+    id:7, title:"Counting Subsets with Property", badge:"COUNT SUBSETS SUM=X", badgeColor:"var(--c3)",
+    hint:"dp[mask] = does subset mask have XOR/sum = target. Count masks with popcount(mask)=k and property holds. Or: count subsets by iterating all (1<<n) masks directly.",
+    maskDemo:{n:4, from:0b0000, to:0b1010, fromLabel:"enumerate\nall 2^n masks", toLabel:"check sum/XOR\nof this subset"},
+    zones:[
+      { z:1, tag:"iterate all masks — check property for each subset",
+        lines:[
+          {t:"blank", ph:"// count subsets with XOR equal to target...", ans:"int countSubsetsXOR(vector<int>& arr, int target) {", hint:"Enumerate all 2^n subsets, compute XOR of each, count those equaling target."},
+          {t:"blank", ph:"// n elements, 2^n subsets to check...", ans:"int n=arr.size(), count=0;", hint:"O(n · 2^n) — for each mask, compute XOR in O(n)"},
+        ]
+      },
+      { z:2, tag:"base case — empty subset has XOR = 0",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// mask=0 = empty subset, XOR=0 — counted if target==0</span>`},
+        ]
+      },
+      { z:3, tag:"enumerate all masks, compute property, check target",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> mask<span class="op">=</span><span class="nm">0</span>; mask<span class="op">&lt;</span>(<span class="nm">1</span><span class="op">&lt;&lt;</span>n); mask<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   compute XOR of elements in this subset...", ans:"int xorVal=0; for(int i=0;i<n;i++) if(mask&(1<<i)) xorVal^=arr[i];", hint:"Check each bit: if set, include arr[i] in XOR. O(n) per mask."},
+          {t:"blank", ph:"//   count if XOR matches target...", ans:"if(xorVal==target) count++;", hint:"Increment counter for each subset with the desired property"},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"answer + DP version for sum counting",
+        lines:[
+          {t:"blank", ph:"// return count of matching subsets...", ans:"return count;", hint:"O(n · 2^n). For subset sum counting use classic DP: dp[i][s] = count of subsets of first i items with sum s."},
+          {t:"fixed", code:`}`},
+          {t:"blank", ph:"// SOS DP: for each bit, propagate subset sums in O(n·2^n)...", ans:"for(int i=0;i<n;i++) for(int mask=0;mask<(1<<n);mask++) if(mask&(1<<i)) dp[mask]+=dp[mask^(1<<i)];", hint:"Sum over Subsets (SOS): dp[mask] accumulates values from all submasks. O(n·2^n) replaces O(3^n)."},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Profile DP on Grid ──────────────────────────────────────────────────
+  {
+    id:8, title:"Profile DP on Grid", badge:"dp[col][mask] TILING", badgeColor:"var(--c1)",
+    hint:"Tile an n×m grid row by row (or col by col). dp[col][mask] = ways to fill up to col where mask encodes which cells in col are already occupied by tiles from previous col.",
+    maskDemo:{n:4, from:0b1010, to:0b0101, fromLabel:"col profile=1010\n(cells 1,3 filled)", toLabel:"new col profile\nafter placing tiles"},
+    zones:[
+      { z:1, tag:"dp[col][mask] — mask encodes column overflow state",
+        lines:[
+          {t:"blank", ph:"// count ways to tile n×m grid with 1×2 dominoes...", ans:"int tileDominoes(int n, int m) {", hint:"Classic profile DP. Process column by column. mask = which cells overflow into next col."},
+          {t:"blank", ph:"// dp[mask] = ways to reach this column profile...", ans:"vector<long long> dp(1<<n, 0); dp[0]=1;", hint:"Start: column 0 with no overflow (mask=0). dp[0]=1 way."},
+        ]
+      },
+      { z:2, tag:"base case — empty profile, one way to start",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// dp[0] = 1: no overflow into first column</span>`},
+        ]
+      },
+      { z:3, tag:"transition — DFS/recursion fills each column profile",
+        lines:[
+          {t:"blank", ph:"// process each column using recursive profile filling...", ans:"for(int col=0;col<m;col++){", hint:"For each column, compute new dp from old dp using valid tile placements"},
+          {t:"blank", ph:"//   new dp starts zeroed for this column...", ans:"vector<long long> ndp(1<<n,0);", hint:"New column profile computed fresh from current column's placements"},
+          {t:"blank", ph:"//   fill column recursively: try placing horizontal and vertical tiles...", ans:"function<void(int,int,int)> fill=[&](int row,int cur,int nxt){ if(row==n){ndp[nxt]+=dp[cur];return;} if(cur&(1<<row)) fill(row+1,cur,nxt); else{ if(row+1<n&&!(cur&(1<<(row+1)))) fill(row+2,cur,nxt|(1<<row)|(1<<(row+1))); fill(row+1,cur,nxt|(1<<row)); } }; fill(0,dp_mask_iter,0);", hint:"cur=incoming mask, nxt=outgoing mask. Vertical tile: set two bits in nxt. Horizontal: consume from cur, set in nxt."},
+          {t:"fixed", code:`    dp=ndp; }`},
+        ]
+      },
+      { z:4, tag:"answer — dp[0] after all columns = no overflow",
+        lines:[
+          {t:"blank", ph:"// answer: no overflow after last column...", ans:"return dp[0];", hint:"dp[0] after processing all m columns = tiling with no cells overflowing = complete valid tiling."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Minimum XOR Subset ──────────────────────────────────────────────────
+  {
+    id:9, title:"Minimum XOR Subset", badge:"dp[mask] MIN XOR", badgeColor:"var(--c3)",
+    hint:"dp[mask] = minimum XOR achievable using some subset of elements indexed in mask. Transition: dp[mask] = min over all i in mask of dp[mask^(1<<i)] XOR arr[i].",
+    maskDemo:{n:4, from:0b0110, to:0b1110, fromLabel:"subset={1,2}\ncurrent min XOR", toLabel:"add element 3\ntry new XOR"},
+    zones:[
+      { z:1, tag:"dp[mask] = min XOR of subset indexed by mask",
+        lines:[
+          {t:"blank", ph:"// minimum XOR using any non-empty subset...", ans:"int minXORSubset(vector<int>& arr) {", hint:"Find subset of arr with minimum XOR value. dp[mask] = min XOR of subset mask."},
+          {t:"blank", ph:"// dp init to INF, single elements as base...", ans:"int n=arr.size(); vector<int> dp(1<<n, INT_MAX); for(int i=0;i<n;i++) dp[1<<i]=arr[i];", hint:"Single element subsets: dp[1<<i] = arr[i]. Their XOR IS themselves."},
+        ]
+      },
+      { z:2, tag:"base case — single elements initialized above",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// single element subsets initialized: dp[1<<i] = arr[i]</span>`},
+        ]
+      },
+      { z:3, tag:"transition — remove each element, XOR with remaining min",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">for</span> (<span class="ty">int</span> mask<span class="op">=</span><span class="nm">1</span>; mask<span class="op">&lt;</span>(<span class="nm">1</span><span class="op">&lt;&lt;</span>n); mask<span class="op">++</span>) {`},
+          {t:"blank", ph:"//   try removing each element i from mask...", ans:"for(int i=0;i<n;i++){ if(!(mask&(1<<i))) continue; int sub=mask^(1<<i); if(sub==0) continue;", hint:"For each element i in mask: try XOR-ing arr[i] with the min XOR of the remaining subset."},
+          {t:"blank", ph:"//     update dp[mask] using XOR of arr[i] with smaller subset...", ans:"dp[mask]=min(dp[mask], dp[sub]^arr[i]); } }", hint:"dp[sub]^arr[i] = adding arr[i] to the best XOR achievable without i"},
+        ]
+      },
+      { z:4, tag:"answer — min dp[mask] over all non-empty subsets",
+        lines:[
+          {t:"blank", ph:"// min XOR over all non-empty subsets...", ans:"int ans=INT_MAX; for(int mask=1;mask<(1<<n);mask++) ans=min(ans,dp[mask]); return ans;", hint:"Check all non-empty subsets (mask > 0). Return minimum."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Broken Profile DP ──────────────────────────────────────────────────
+  {
+    id:10, title:"Broken Profile DP", badge:"CELL-BY-CELL PROFILE", badgeColor:"var(--c4)",
+    hint:"Process grid cell by cell (not column by column). mask encodes the 'broken profile' — cells already filled in current and next row boundary. Enables O(n · m · 2^n) tiling.",
+    maskDemo:{n:3, from:0b101, to:0b010, fromLabel:"broken profile\nbefore cell", toLabel:"after placing\ntile at cell"},
+    zones:[
+      { z:1, tag:"process cell by cell — mask = broken profile boundary",
+        lines:[
+          {t:"blank", ph:"// broken profile DP for grid tiling...", ans:"int brokenProfileDP(int n, int m) {", hint:"n rows, m cols. Process cells left-to-right, top-to-bottom. mask = n-bit profile."},
+          {t:"blank", ph:"// dp[mask] = ways with current broken profile mask...", ans:"vector<long long> dp(1<<n,0); dp[0]=1;", hint:"mask bit i = cell in row i of current profile boundary is already filled"},
+        ]
+      },
+      { z:2, tag:"base case — empty profile, one configuration",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// dp[0]=1: start with empty profile</span>`},
+        ]
+      },
+      { z:3, tag:"transition — process each cell, update profile",
+        lines:[
+          {t:"blank", ph:"// process each cell in row-major order...", ans:"for(int col=0;col<m;col++) for(int row=0;row<n;row++){", hint:"Each cell processed once. Profile shifts as we move through the grid."},
+          {t:"blank", ph:"//   new dp for this cell transition...", ans:"vector<long long> ndp(1<<n,0);", hint:"Fresh transition table for each cell"},
+          {t:"blank", ph:"//   for each profile mask: place vertical or horizontal tile...", ans:"for(int mask=0;mask<(1<<n);mask++){ if(mask&(1<<row)){ ndp[mask^(1<<row)]+=dp[mask]; } else { ndp[mask|(1<<row)]+=dp[mask]; if(row+1<n&&!(mask&(1<<(row+1)))) ndp[mask|(1<<row)|(1<<(row+1))]+=dp[mask]; } } dp=ndp; }", hint:"Bit set=cell filled (skip, clear bit). Bit clear=place horizontal (set bit) or vertical (set two bits)."},
+        ]
+      },
+      { z:4, tag:"answer — dp[0] = completely filled, no overflow",
+        lines:[
+          {t:"blank", ph:"// no remaining profile = fully tiled...", ans:"return dp[0];", hint:"After all n×m cells processed, dp[0] = configurations with clean profile = valid tilings."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['State Definition','Base Case','Transition','Answer Extraction'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const d=p.maskDemo; const n=d.n;
+  // render from-mask
+  const fromBits=Array.from({length:n},(_,i)=>((d.from>>i)&1));
+  const toBits=Array.from({length:n},(_,i)=>((d.to>>i)&1));
+  // find newly set bit
+  const newBit=d.to & ~d.from;
+
+  const renderMask=(bits,newMask,cls)=>bits.map((b,i)=>{
+    const isNew=(newMask>>i)&1;
+    const cellCls=isNew?'mb-new':b?'mb-on':'mb-off';
+    return `<div class="mask-bit ${cellCls}">${b}</div>`;
+  }).join('');
+
+  viz.innerHTML=`
+    <div class="mask-viz">
+      <div class="mask-row">
+        <div class="mask-label" style="white-space:pre;line-height:1.4">${d.fromLabel}</div>
+        ${renderMask(fromBits,0,'')}
+        <span class="mask-arrow">→</span>
+        <div class="mask-label" style="white-space:pre;line-height:1.4;text-align:left;min-width:90px">${d.toLabel}</div>
+        ${renderMask(toBits,newBit,'')}
+      </div>
+    </div>
+    <div class="viz-legend">
+      <span style="color:var(--c1)">■</span> bit set (in mask) &nbsp;
+      <span style="color:var(--c3)">■</span> newly added bit &nbsp;
+      <span style="color:var(--muted)">■</span> bit clear &nbsp;&nbsp;
+      <span style="color:var(--c1)">★ !(mask&(1&lt;&lt;j)) = j not visited &nbsp;|&nbsp; mask|(1&lt;&lt;j) = add j &nbsp;|&nbsp; FULL=(1&lt;&lt;n)-1</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

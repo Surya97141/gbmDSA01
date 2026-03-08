@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bit Manipulation — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(251,146,60,0.05) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c3);border:1px solid rgba(251,146,60,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c3) 40%,var(--c1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c3);color:var(--text);}
+.sel-btn.active{background:rgba(251,146,60,0.1);border-color:var(--c3);color:var(--c3);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c3);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(251,146,60,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c3);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:400px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c3);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(251,146,60,0.06);border-bottom-color:var(--c3);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(251,146,60,0.1);color:var(--c3);border-color:rgba(251,146,60,0.4);}
+.btn-check:hover{background:rgba(251,146,60,0.2);}
+.btn-reveal{background:rgba(167,139,250,0.08);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-reveal:hover{background:rgba(167,139,250,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c3);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.bit-table{display:flex;flex-direction:column;gap:6px;}
+.bit-row{display:flex;align-items:center;gap:3px;}
+.bit-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);width:120px;flex-shrink:0;text-align:right;padding-right:10px;}
+.bit-cell{font-family:'JetBrains Mono',monospace;font-size:11px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:2px;}
+.bit-cell.one{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.1);}
+.bit-cell.zero{color:var(--muted);}
+.bit-cell.result{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.07);}
+.bit-sep{width:100%;height:1px;background:var(--border);margin:4px 0;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 18 — Practice Mode</div>
+    <h1>Bit Manipulation</h1>
+    <p>// n&(n-1) strips lowest bit · n&(-n) isolates lowest bit · a^a=0 cancels</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// BIT MANIPULATION — 10 Manifestations
+//
+// TWO MASTER TRICKS (appear in 7/10 manifestations):
+//   n & (n-1)  →  strips the LOWEST set bit of n
+//   n & (-n)   →  ISOLATES the lowest set bit of n  (-n = ~n+1 in two's complement)
+//
+// XOR PROPERTIES (appear in 4/10 manifestations):
+//   a ^ a = 0   (self-cancellation)
+//   a ^ 0 = a   (identity)
+//   commutative + associative
+//
+// 4 Blocks:
+//   ① PRIMITIVE + TRICK  — which bit operation; n&(n-1) vs n&(-n) vs XOR
+//   ② CORE OPERATION     — the actual 1-3 line bit manipulation
+//   ③ LOOP / ITERATION   — while stripping bits; for over mask; prefix XOR build
+//   ④ RESULT / EXTRACT   — what the final bit pattern means
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Check if Power of 2 ────────────────────────────────────────────────
+  {
+    id:1, title:"Check if Power of 2", badge:"n & (n-1) == 0", badgeColor:"var(--c4)",
+    hint:"Power of 2 has exactly ONE set bit. n-1 flips all bits below that bit. n & (n-1) = 0 when there's only one set bit. Must also check n > 0.",
+    vizRows:[
+      {label:"n = 8 (1000)", bits:"00001000", cls:"one"},
+      {label:"n-1 = 7 (0111)", bits:"00000111", cls:"one"},
+      {label:"n & (n-1) = 0", bits:"00000000", cls:"result"},
+    ],
+    zones:[
+      { z:1, tag:"n&(n-1)==0 strips the single bit — result must be 0",
+        lines:[
+          {t:"blank", ph:"// function signature...", ans:"bool isPowerOfTwo(int n) {", hint:"Returns true if n is a positive power of 2"},
+        ]
+      },
+      { z:2, tag:"CORE: n & (n-1) — strips lowest set bit",
+        lines:[
+          {t:"blank", ph:"// power of 2: single set bit — n&(n-1) removes it leaving 0...", ans:"return n > 0 && (n & (n-1)) == 0;", hint:"n>0 guards against n=0 (which would give false positive). n&(n-1)==0 = exactly one bit set."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"related: check if exactly k bits set",
+        lines:[
+          {t:"blank", ph:"// count set bits using repeated n&(n-1)...", ans:"int countBits(int n){ int c=0; while(n){ n&=(n-1); c++; } return c; }", hint:"Each n&=(n-1) strips one set bit. Count iterations = popcount. Kernighan's algorithm."},
+        ]
+      },
+      { z:4, tag:"RESULT — zero means single bit; non-zero means multiple",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// n & (n-1) == 0  →  power of 2  (exactly 1 set bit)</span>`},
+          {t:"fixed", code:`<span class="cm">// n & (n-1) != 0  →  not power of 2  (multiple set bits)</span>`},
+          {t:"fixed", code:`<span class="cm">// equivalent: __builtin_popcount(n) == 1 && n > 0</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Count Set Bits ─────────────────────────────────────────────────────
+  {
+    id:2, title:"Count Set Bits", badge:"KERNIGHAN O(popcount)", badgeColor:"var(--c2)",
+    hint:"n & (n-1) strips the lowest set bit. Loop until n=0, counting iterations. O(popcount(n)) not O(32) — faster when few bits set. Or just use __builtin_popcount(n).",
+    vizRows:[
+      {label:"n=13 (1101)", bits:"00001101", cls:"one"},
+      {label:"n&(n-1)=12", bits:"00001100", cls:"one"},
+      {label:"n&(n-1)=8",  bits:"00001000", cls:"one"},
+      {label:"n&(n-1)=0",  bits:"00000000", cls:"result"},
+    ],
+    zones:[
+      { z:1, tag:"strip lowest set bit until 0 — count iterations",
+        lines:[
+          {t:"blank", ph:"// Kernighan's bit count — O(popcount) not O(32)...", ans:"int countSetBits(int n) {", hint:"Better than checking all 32 bits when n is sparse"},
+        ]
+      },
+      { z:2, tag:"CORE: n &= (n-1) in loop",
+        lines:[
+          {t:"blank", ph:"// strip lowest set bit, count iterations...", ans:"int count = 0; while (n) { n &= (n-1); count++; } return count;", hint:"n &= (n-1) removes exactly one set bit per iteration. Stops when n=0."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"alternatives: builtin and lookup table",
+        lines:[
+          {t:"blank", ph:"// fastest: compiler builtin...", ans:"int popcount = __builtin_popcount(n);", hint:"__builtin_popcount uses hardware POPCNT instruction. O(1) on modern CPUs."},
+          {t:"blank", ph:"// for long long use...", ans:"int popcount64 = __builtin_popcountll(n);", hint:"ll suffix for 64-bit integers. Essential for bitmask DP with n > 30."},
+        ]
+      },
+      { z:4, tag:"RESULT — loop count = number of 1-bits",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// count = number of 1-bits in n</span>`},
+          {t:"fixed", code:`<span class="cm">// also used to count: bits to flip, Hamming distance</span>`},
+          {t:"fixed", code:`<span class="cm">// Hamming(a,b) = __builtin_popcount(a^b)</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Find Single Non-Duplicate ─────────────────────────────────────────
+  {
+    id:3, title:"Find Single Non-Duplicate", badge:"XOR ALL: a^a=0", badgeColor:"var(--c3)",
+    hint:"XOR all elements. Duplicates cancel: a^a=0. The single element is left: x^0=x. Order doesn't matter — XOR is commutative and associative.",
+    vizRows:[
+      {label:"2^2=0", bits:"00000000", cls:"result"},
+      {label:"3^3=0", bits:"00000000", cls:"result"},
+      {label:"XOR all=5", bits:"00000101", cls:"one"},
+    ],
+    zones:[
+      { z:1, tag:"XOR all — duplicates cancel to 0, single survives",
+        lines:[
+          {t:"blank", ph:"// function signature — array has all duplicates except one...", ans:"int singleNumber(vector<int>& nums) {", hint:"Every element appears exactly twice except one. Find the one."},
+        ]
+      },
+      { z:2, tag:"CORE: XOR all elements",
+        lines:[
+          {t:"blank", ph:"// XOR all — pairs cancel, single remains...", ans:"int result = 0; for (int x : nums) result ^= x;", hint:"a^a=0 for any a. XOR accumulates: result = 0^n1^n1^n2^n2^...^single = single"},
+        ]
+      },
+      { z:3, tag:"no loop needed beyond single pass",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// single linear pass — O(n) time, O(1) space</span>`},
+          {t:"fixed", code:`<span class="cm">// no sort, no hash map needed</span>`},
+        ]
+      },
+      { z:4, tag:"RESULT — result holds the unique element",
+        lines:[
+          {t:"blank", ph:"// remaining XOR value is the single non-duplicate...", ans:"return result;", hint:"All pairs cancelled. Only the element appearing once survives."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Swap Without Temp Variable ────────────────────────────────────────
+  {
+    id:4, title:"Swap Without Temp Variable", badge:"XOR SWAP", badgeColor:"var(--c1)",
+    hint:"Three XOR operations swap a and b without temp. a^=b stores a^b in a. b^=a extracts original a into b (since (a^b)^(a^b^b)=b wait — think it through step by step).",
+    vizRows:[
+      {label:"a=5 (0101)", bits:"00000101", cls:"one"},
+      {label:"b=3 (0011)", bits:"00000011", cls:"one"},
+      {label:"after swap a=3", bits:"00000011", cls:"result"},
+      {label:"after swap b=5", bits:"00000101", cls:"result"},
+    ],
+    zones:[
+      { z:1, tag:"XOR is its own inverse — swaps without extra memory",
+        lines:[
+          {t:"blank", ph:"// XOR swap — no temp variable needed...", ans:"void xorSwap(int& a, int& b) {", hint:"Works because XOR is commutative, associative, and self-inverse"},
+        ]
+      },
+      { z:2, tag:"CORE: three XOR assignments",
+        lines:[
+          {t:"blank", ph:"//   step 1: a now holds a^b...", ans:"a ^= b;", hint:"a = a^b. b = b (unchanged)."},
+          {t:"blank", ph:"//   step 2: b now holds original a (b ^= (a^b) = a)...", ans:"b ^= a;", hint:"b = b^(a^b) = a^(b^b) = a^0 = original a"},
+          {t:"blank", ph:"//   step 3: a now holds original b (a ^= new_b = (a^b)^a = b)...", ans:"a ^= b;", hint:"a = (a^b)^a = b^(a^a) = b^0 = original b"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"CAUTION: fails when a and b are the same variable",
+        lines:[
+          {t:"blank", ph:"// safe swap handles same-variable edge case...", ans:"void safeSwap(int& a, int& b){ if(&a!=&b){a^=b;b^=a;a^=b;} }", hint:"If a and b alias the same memory: a^=b sets a=0. Bug! Check address first."},
+        ]
+      },
+      { z:4, tag:"RESULT — a and b values exchanged",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// practical note: std::swap() is usually better</span>`},
+          {t:"fixed", code:`<span class="cm">// compiler often optimises swap to register exchange anyway</span>`},
+          {t:"fixed", code:`<span class="cm">// XOR swap useful in constrained environments (no stdlib)</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Turn Off Rightmost Set Bit ─────────────────────────────────────────
+  {
+    id:5, title:"Turn Off Rightmost Set Bit", badge:"n & (n-1)", badgeColor:"var(--c3)",
+    hint:"n-1 flips all bits from the rightmost 1 downward. AND-ing with n clears exactly those bits. Result: rightmost 1 is gone, everything above unchanged.",
+    vizRows:[
+      {label:"n=12 (1100)", bits:"00001100", cls:"one"},
+      {label:"n-1=11(1011)", bits:"00001011", cls:"one"},
+      {label:"n&(n-1)=8 (1000)", bits:"00001000", cls:"result"},
+    ],
+    zones:[
+      { z:1, tag:"n & (n-1) — universal bit clearing primitive",
+        lines:[
+          {t:"blank", ph:"// turn off rightmost set bit...", ans:"int turnOffRightmost(int n) {", hint:"Clears the least significant 1-bit. Leaves all other bits unchanged."},
+        ]
+      },
+      { z:2, tag:"CORE: single expression n & (n-1)",
+        lines:[
+          {t:"blank", ph:"// single expression turns off rightmost set bit...", ans:"return n & (n-1);", hint:"n-1 carries ripples UP to first 1-bit, flipping it to 0 and all lower bits to 1. AND keeps only bits that survive in both."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"applications of n & (n-1)",
+        lines:[
+          {t:"blank", ph:"// count set bits using repeated application...", ans:"int popcount(int n){ int c=0; while(n){ n&=n-1; c++; } return c; }", hint:"Each application removes one set bit — loop count = popcount"},
+          {t:"blank", ph:"// check if n is a power of 2...", ans:"bool isPow2(int n){ return n>0 && (n&(n-1))==0; }", hint:"Power of 2 has one set bit. After stripping it, result is 0."},
+        ]
+      },
+      { z:4, tag:"RESULT — lowest 1-bit cleared, upper bits preserved",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// n & (n-1): clears rightmost 1-bit</span>`},
+          {t:"fixed", code:`<span class="cm">// n | (n+1): sets rightmost 0-bit</span>`},
+          {t:"fixed", code:`<span class="cm">// n ^ (n-1): creates mask of trailing 1s + rightmost 1</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Isolate Rightmost Set Bit ──────────────────────────────────────────
+  {
+    id:6, title:"Isolate Rightmost Set Bit", badge:"n & (-n)", badgeColor:"var(--c4)",
+    hint:"-n in two's complement = ~n+1. The +1 cascades flips up to the first 0 (which was the first 1 in n). AND with n keeps only that bit. Used in BIT (Fenwick) and DSU.",
+    vizRows:[
+      {label:"n=12 (1100)",  bits:"00001100", cls:"one"},
+      {label:"-n=(-12)(0100)", bits:"11110100", cls:"one"},
+      {label:"n&(-n)=4(0100)", bits:"00000100", cls:"result"},
+    ],
+    zones:[
+      { z:1, tag:"n & (-n) — two's complement trick",
+        lines:[
+          {t:"blank", ph:"// isolate the rightmost set bit...", ans:"int isolateRightmost(int n) {", hint:"Returns a number with only the lowest set bit of n set"},
+        ]
+      },
+      { z:2, tag:"CORE: n & (-n) using two's complement",
+        lines:[
+          {t:"blank", ph:"// -n in two's complement flips bits then adds 1...", ans:"return n & (-n);", hint:"-n = ~n+1. The +1 cascades through trailing zeros, flipping the rightmost 1. AND isolates exactly that bit."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"same trick as BIT Fenwick i += i&(-i)",
+        lines:[
+          {t:"blank", ph:"// get bit position of rightmost set bit...", ans:"int lowestBitPos(int n){ return __builtin_ctz(n); }", hint:"__builtin_ctz = count trailing zeros = position of lowest set bit. __builtin_ctz(12)=2."},
+          {t:"blank", ph:"// iterate over all set bits of n...", ans:"for(int x=n;x;x&=x-1){ int bit=x&(-x); /* process bit */ }", hint:"Combine both: x&(-x) gives current lowest bit; x&=x-1 strips it for next iteration"},
+        ]
+      },
+      { z:4, tag:"RESULT — single bit at position of rightmost 1",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// n & (-n): isolate rightmost 1-bit (used in BIT/Fenwick)</span>`},
+          {t:"fixed", code:`<span class="cm">// n & (n-1): strip rightmost 1-bit (used in popcount)</span>`},
+          {t:"fixed", code:`<span class="cm">// these two are the core BIT manipulation primitives</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Subset Generation ──────────────────────────────────────────────────
+  {
+    id:7, title:"Subset Generation", badge:"BITMASK 0→2^n-1", badgeColor:"var(--c2)",
+    hint:"Each bit in mask represents whether element i is included. Iterate mask from 0 to (1<<n)-1. For each mask, check each bit. 2^n subsets total. Foundation of bitmask DP.",
+    vizRows:[
+      {label:"mask=5 (101)", bits:"00000101", cls:"one"},
+      {label:"bit0=1 →elem0", bits:"00000001", cls:"result"},
+      {label:"bit2=1 →elem2", bits:"00000100", cls:"result"},
+    ],
+    zones:[
+      { z:1, tag:"2^n subsets — each mask = one subset",
+        lines:[
+          {t:"blank", ph:"// generate all subsets of array...", ans:"vector<vector<int>> allSubsets(vector<int>& arr) {", hint:"Returns all 2^n subsets. Bit i of mask = whether arr[i] is in this subset."},
+          {t:"blank", ph:"// n elements, 2^n subsets...", ans:"int n=arr.size(); vector<vector<int>> result;", hint:"Space: O(n·2^n) to store all subsets"},
+        ]
+      },
+      { z:2, tag:"CORE: outer loop over all masks 0 to 2^n-1",
+        lines:[
+          {t:"blank", ph:"// iterate all 2^n bitmasks...", ans:"for(int mask=0; mask<(1<<n); mask++){", hint:"mask=0 = empty subset, mask=(1<<n)-1 = full set. Every value in between = one subset."},
+          {t:"blank", ph:"//   build subset for this mask...", ans:"vector<int> subset;", hint:"Collect elements whose bit is set in mask"},
+        ]
+      },
+      { z:3, tag:"inner loop: extract each element using bit check",
+        lines:[
+          {t:"blank", ph:"//   check each bit position...", ans:"for(int i=0;i<n;i++) if(mask&(1<<i)) subset.push_back(arr[i]);", hint:"mask&(1<<i) is non-zero iff bit i is set — element i is in this subset"},
+          {t:"blank", ph:"//   store subset...", ans:"result.push_back(subset);", hint:"One subset per mask — 2^n subsets total"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RESULT + iterate subsets of a mask",
+        lines:[
+          {t:"blank", ph:"// return all subsets...", ans:"return result; }", hint:"2^n subsets, O(n·2^n) time total"},
+          {t:"blank", ph:"// iterate all subsets of a given mask (SOS DP)...", ans:"for(int sub=mask;sub>0;sub=(sub-1)&mask){ /* process sub */ }", hint:"(sub-1)&mask: enumerate all subsets of mask in decreasing order. O(2^popcount(mask))."},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Two Non-Repeating Elements ────────────────────────────────────────
+  {
+    id:8, title:"Two Non-Repeating Elements", badge:"XOR GROUPING", badgeColor:"var(--c1)",
+    hint:"XOR all → get a^b. Find any set bit (use n&(-n)). Partition array by that bit. Each group XORs to one answer. Duplicates still cancel within each group.",
+    vizRows:[
+      {label:"XOR all = a^b", bits:"00000110", cls:"one"},
+      {label:"diff bit (bit1)", bits:"00000010", cls:"one"},
+      {label:"group→a, group→b", bits:"00000100", cls:"result"},
+    ],
+    zones:[
+      { z:1, tag:"XOR all, find differing bit, split into two groups",
+        lines:[
+          {t:"blank", ph:"// function signature — all elements appear twice except two...", ans:"vector<int> singleNumberIII(vector<int>& nums) {", hint:"Returns the two elements that appear exactly once"},
+          {t:"blank", ph:"// step 1: XOR all to get a^b...", ans:"int xorAll=0; for(int x:nums) xorAll^=x;", hint:"Duplicates cancel. Result = a^b where a,b are the two singles."},
+        ]
+      },
+      { z:2, tag:"CORE: find a differing bit using n&(-n)",
+        lines:[
+          {t:"blank", ph:"// step 2: find any bit where a and b differ — use rightmost set bit of a^b...", ans:"int diffBit = xorAll & (-xorAll);", hint:"a^b has 1-bits where a and b differ. n&(-n) isolates the rightmost such bit."},
+        ]
+      },
+      { z:3, tag:"partition by differing bit — each group XORs to one answer",
+        lines:[
+          {t:"blank", ph:"// step 3: partition into two groups by diffBit, XOR each group...", ans:"int a=0, b=0; for(int x:nums){ if(x&diffBit) a^=x; else b^=x; }", hint:"diffBit is set in a but not b (or vice versa). Duplicates cancel within each group."},
+        ]
+      },
+      { z:4, tag:"RESULT — a and b are the two non-repeating elements",
+        lines:[
+          {t:"blank", ph:"// return both non-repeating elements...", ans:"return {a, b};", hint:"Each group contained duplicates (cancelled) plus exactly one of the two singles"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Reverse Bits ───────────────────────────────────────────────────────
+  {
+    id:9, title:"Reverse Bits", badge:"MIRROR 32 BITS", badgeColor:"var(--c3)",
+    hint:"Build result bit by bit. Shift result left to make room. OR in the current rightmost bit of n. Shift n right to process next bit. Repeat 32 times.",
+    vizRows:[
+      {label:"n (LSB first)", bits:"10110010", cls:"one"},
+      {label:"reversed", bits:"01001101", cls:"result"},
+    ],
+    zones:[
+      { z:1, tag:"extract bits one by one, build result in reverse",
+        lines:[
+          {t:"blank", ph:"// reverse all 32 bits of unsigned int...", ans:"uint32_t reverseBits(uint32_t n) {", hint:"Mirrors bit positions: bit 0 becomes bit 31, bit 1 becomes bit 30, etc."},
+          {t:"blank", ph:"// result accumulator...", ans:"uint32_t result = 0;", hint:"Build result bit by bit from n's bits"},
+        ]
+      },
+      { z:2, tag:"CORE: 32-iteration loop extracting and placing bits",
+        lines:[
+          {t:"blank", ph:"// process all 32 bits...", ans:"for (int i = 0; i < 32; i++) {", hint:"Must process all 32 bits even if leading zeros"},
+          {t:"blank", ph:"//   shift result left to make room for next bit...", ans:"result <<= 1;", hint:"Shift existing bits left — new bit will be placed at bit 0"},
+          {t:"blank", ph:"//   OR in rightmost bit of n...", ans:"result |= (n & 1);", hint:"n&1 extracts LSB of n. OR places it at result's LSB (which is the reversed MSB position)."},
+          {t:"blank", ph:"//   shift n right to process next bit...", ans:"n >>= 1;", hint:"Move next bit of n into position 0 for next iteration"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"alternative: byte-level reversal with lookup table",
+        lines:[
+          {t:"blank", ph:"// alternative with bit tricks — swap adjacent pairs then groups...", ans:"n=(n>>16)|(n<<16); n=((n&0xFF00FF00)>>8)|((n&0x00FF00FF)<<8); n=((n&0xF0F0F0F0)>>4)|((n&0x0F0F0F0F)<<4); n=((n&0xCCCCCCCC)>>2)|((n&0x33333333)<<2); n=((n&0xAAAAAAAA)>>1)|((n&0x55555555)<<1);", hint:"Divide and conquer: swap 16s, then 8s, then 4s, then 2s, then 1s. O(log 32) = O(1)."},
+        ]
+      },
+      { z:4, tag:"RESULT — 32-bit mirror of input",
+        lines:[
+          {t:"blank", ph:"// return reversed bits...", ans:"return result;", hint:"bit i of n is now at bit (31-i) of result"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Range XOR Query ────────────────────────────────────────────────────
+  {
+    id:10, title:"Range XOR Query", badge:"PREFIX XOR ARRAY", badgeColor:"var(--c4)",
+    hint:"Build prefix XOR: px[i] = arr[0]^arr[1]^...^arr[i-1]. Range XOR [l,r] = px[r+1] ^ px[l]. Elements outside [l,r] appear twice in px[r+1]^px[0..l-1] and cancel.",
+    vizRows:[
+      {label:"arr=[2,3,1,4]", bits:"02031004", cls:"one"},
+      {label:"px=[0,2,1,0,4]", bits:"00020100", cls:"one"},
+      {label:"XOR[1,3]=px[4]^px[1]=4^2=6", bits:"00000110", cls:"result"},
+    ],
+    zones:[
+      { z:1, tag:"prefix XOR array — O(n) build, O(1) range query",
+        lines:[
+          {t:"blank", ph:"// build prefix XOR array...", ans:"vector<int> buildPrefixXOR(vector<int>& arr) {", hint:"px[0]=0 (empty prefix). px[i] = XOR of arr[0..i-1]."},
+          {t:"blank", ph:"// prefix XOR: px[0]=0, px[i]=px[i-1]^arr[i-1]...", ans:"int n=arr.size(); vector<int> px(n+1,0); for(int i=0;i<n;i++) px[i+1]=px[i]^arr[i]; return px;", hint:"Each px[i] is XOR of all elements before index i (0-indexed array, 1-indexed px)."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:2, tag:"CORE: range XOR = px[r+1] ^ px[l]",
+        lines:[
+          {t:"blank", ph:"// range XOR query [l,r] using prefix XOR...", ans:"int rangeXOR(vector<int>& px, int l, int r) {", hint:"O(1) query — just two array accesses and one XOR"},
+          {t:"blank", ph:"//   XOR(l,r) = prefix(r+1) ^ prefix(l)...", ans:"return px[r+1] ^ px[l];", hint:"px[r+1]^px[l] = XOR of arr[l..r]. Elements before l appear in both — cancel via a^a=0."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"extend: XOR queries with point updates",
+        lines:[
+          {t:"blank", ph:"// point update — XOR delta into position...", ans:"void pointUpdate(vector<int>& arr, vector<int>& px, int pos, int newVal){ int delta=arr[pos]^newVal; arr[pos]=newVal; for(int i=pos+1;i<(int)px.size();i++) px[i]^=delta; }", hint:"XOR delta propagates to all prefix sums after pos. O(n) update — use BIT/segtree for O(log n)."},
+        ]
+      },
+      { z:4, tag:"RESULT — XOR of any range in O(1)",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// XOR(l,r) = px[r+1] ^ px[l]</span>`},
+          {t:"fixed", code:`<span class="cm">// same idea as prefix sum: range = prefix(r) - prefix(l-1)</span>`},
+          {t:"fixed", code:`<span class="cm">// but XOR is its own inverse: a^a=0, so subtract=XOR again</span>`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Primitive + Trick','Core Operation','Loop / Iteration','Result / Extract'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const rows = p.vizRows.map(row=>{
+    // pad/truncate bits to 8
+    const bits = (row.bits+'00000000').slice(0,8).split('');
+    const cells = bits.map(b=>{
+      const cls = row.cls==='result'?'result': b==='1'?'one':'zero';
+      return `<div class="bit-cell ${cls}">${b}</div>`;
+    }).join('');
+    return `<div class="bit-row"><div class="bit-label">${row.label}</div>${cells}</div>`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="bit-table">${rows}</div>
+    <div class="viz-legend">
+      <span style="color:var(--c3)">■</span> set bit (1) &nbsp;
+      <span style="color:var(--c4)">■</span> result bit &nbsp;
+      <span style="color:var(--muted)">■</span> zero bit &nbsp;&nbsp;
+      <span style="color:var(--c3)">★ n&(n-1): strip lowest 1 &nbsp;|&nbsp; n&(-n): isolate lowest 1 &nbsp;|&nbsp; a^a=0: cancel pairs</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

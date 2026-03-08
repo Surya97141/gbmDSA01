@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Segment Tree — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(167,139,250,0.06) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c1);border:1px solid rgba(167,139,250,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c1) 40%,var(--c3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c1);color:var(--text);}
+.sel-btn.active{background:rgba(167,139,250,0.1);border-color:var(--c1);color:var(--c1);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c1);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(167,139,250,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c1);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:400px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c1);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(167,139,250,0.06);border-bottom-color:var(--c1);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(167,139,250,0.1);color:var(--c1);border-color:rgba(167,139,250,0.4);}
+.btn-check:hover{background:rgba(167,139,250,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c1);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.tree-viz{display:flex;flex-direction:column;gap:6px;align-items:center;}
+.tree-level{display:flex;gap:6px;justify-content:center;align-items:center;}
+.tree-node{font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 8px;border:1px solid;border-radius:3px;text-align:center;white-space:nowrap;}
+.tn-root{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.1);}
+.tn-mid{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.tn-leaf{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.07);}
+.tn-lazy{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.07);}
+.tree-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;text-align:center;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c} .op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 15 — Practice Mode</div>
+    <h1>Segment Tree</h1>
+    <p>// build(merge↑) → update(3-case split) → query(3-case split) → tree IS its merge fn</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// SEGMENT TREE — 10 Manifestations
+//
+// 4 Blocks:
+//   ① INIT + BUILD    — tree[4n], build() with leaf assignment + pull-up merge
+//   ② update()        — 3-case split: outside / inside / partial → recurse + pull-up
+//   ③ query()         — 3-case split: outside / inside / partial → recurse + merge
+//   ④ DRIVER          — call build, process queries, return results
+//
+// THE SEGMENT TREE IS ITS MERGE FUNCTION:
+//   sum:  a+b   (identity=0)
+//   min:  min(a,b)  (identity=INT_MAX)
+//   max:  max(a,b)  (identity=INT_MIN)
+//   gcd:  __gcd(a,b)  (identity=0)
+//
+// 3-CASE SPLIT (universal for both update and query):
+//   Case 1: [l,r] ∩ [ql,qr] = ∅  → return identity / do nothing
+//   Case 2: [ql,qr] ⊇ [l,r]      → return tree[node] / apply update
+//   Case 3: partial overlap        → recurse both children, pull-up
+//
+// LAZY PROPAGATION: push_down() BEFORE recursing in both update and query
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Range Sum Query ────────────────────────────────────────────────────
+  {
+    id:1, title:"Range Sum Query", badge:"MERGE = a+b", badgeColor:"var(--c4)",
+    hint:"merge = a+b, identity = 0. Build sums bottom-up. Query decomposes [l,r] into O(log n) precomputed segments.",
+    vizType:"tree", vizData:{root:"sum[0..7]", mid:["sum[0..3]","sum[4..7]"], leaves:["s[0..1]","s[2..3]","s[4..5]","s[6..7]"], merge:"a+b"},
+    zones:[
+      { z:1, tag:"tree[4n] stores sums — build pulls sum up from children",
+        lines:[
+          {t:"blank", ph:"// class or struct wrapping the segment tree...", ans:"struct SegTree {", hint:"Encapsulate tree array, n, and all operations"},
+          {t:"blank", ph:"// tree array size 4n + array size...", ans:"vector<long long> tree; int n;", hint:"4*n guarantees enough space for any tree shape"},
+          {t:"blank", ph:"// build: leaf = arr[l], internal = left+right...", ans:"void build(vector<int>& arr, int node, int l, int r) { if(l==r){tree[node]=arr[l];return;} int mid=(l+r)/2; build(arr,2*node,l,mid); build(arr,2*node+1,mid+1,r); tree[node]=tree[2*node]+tree[2*node+1]; }", hint:"Pull-up: tree[node] = merge of children. For sum: left + right."},
+        ]
+      },
+      { z:2, tag:"update() — 3-case split, pull-up sum after recursion",
+        lines:[
+          {t:"blank", ph:"// point update: set arr[idx]=val, propagate up...", ans:"void update(int node, int l, int r, int idx, long long val) {", hint:"Updates single position, fixes all ancestor sums"},
+          {t:"blank", ph:"//   leaf: set value directly...", ans:"if(l==r){tree[node]=val;return;}", hint:"Base case: we've reached the target leaf"},
+          {t:"blank", ph:"//   recurse into correct child, then pull-up...", ans:"int mid=(l+r)/2; if(idx<=mid) update(2*node,l,mid,idx,val); else update(2*node+1,mid+1,r,idx,val); tree[node]=tree[2*node]+tree[2*node+1];", hint:"Descend to correct side, then recompute current node's sum from children"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"query() — 3-case split returns sum of [ql,qr]",
+        lines:[
+          {t:"blank", ph:"// range sum query...", ans:"long long query(int node, int l, int r, int ql, int qr) {", hint:"Returns sum of arr[ql..qr]"},
+          {t:"blank", ph:"//   case 1: completely outside — return identity...", ans:"if(qr<l||r<ql) return 0;", hint:"No overlap with query range — contribute nothing (sum identity = 0)"},
+          {t:"blank", ph:"//   case 2: completely inside — return stored value...", ans:"if(ql<=l&&r<=qr) return tree[node];", hint:"This segment fully covered by query — return precomputed answer"},
+          {t:"blank", ph:"//   case 3: partial — recurse both children, combine...", ans:"int mid=(l+r)/2; return query(2*node,l,mid,ql,qr)+query(2*node+1,mid+1,r,ql,qr);", hint:"Partial overlap: split and recurse. Sum = left result + right result."},
+          {t:"fixed", code:`};`},
+        ]
+      },
+      { z:4, tag:"DRIVER — build once, then O(log n) per query/update",
+        lines:[
+          {t:"blank", ph:"// driver: init + build...", ans:"SegTree st; st.n=nums.size(); st.tree.assign(4*st.n,0); st.build(nums,1,0,st.n-1);", hint:"Root at index 1. Range [0, n-1]. Build is O(n)."},
+          {t:"blank", ph:"// example: query sum of [l,r]...", ans:"long long ans = st.query(1,0,st.n-1,l,r);", hint:"Every query/update starts at node=1, full range [0,n-1]"},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Range Min Query ────────────────────────────────────────────────────
+  {
+    id:2, title:"Range Min/Max Query", badge:"MERGE = min(a,b)", badgeColor:"var(--c2)",
+    hint:"Only the merge function and identity change vs sum. Min: merge=min(a,b), identity=INT_MAX. Max: merge=max(a,b), identity=INT_MIN. Everything else identical.",
+    vizType:"tree", vizData:{root:"min[0..7]", mid:["min[0..3]","min[4..7]"], leaves:["m[0..1]","m[2..3]","m[4..5]","m[6..7]"], merge:"min(a,b)"},
+    zones:[
+      { z:1, tag:"tree stores minimums — only merge() differs from sum tree",
+        lines:[
+          {t:"blank", ph:"// segment tree storing range minimums...", ans:"struct MinSegTree { vector<int> tree; int n;", hint:"Identical structure to sum tree — only merge and identity change"},
+          {t:"blank", ph:"// build: leaf=arr[l], internal=min of children...", ans:"void build(vector<int>& arr, int node, int l, int r) { if(l==r){tree[node]=arr[l];return;} int mid=(l+r)/2; build(arr,2*node,l,mid); build(arr,2*node+1,mid+1,r); tree[node]=min(tree[2*node],tree[2*node+1]); }", hint:"Pull-up uses min() instead of +. This single change defines the tree's purpose."},
+        ]
+      },
+      { z:2, tag:"update() — identical structure, pull-up uses min()",
+        lines:[
+          {t:"blank", ph:"// point update — propagate minimum upward...", ans:"void update(int node, int l, int r, int idx, int val) { if(l==r){tree[node]=val;return;} int mid=(l+r)/2; if(idx<=mid) update(2*node,l,mid,idx,val); else update(2*node+1,mid+1,r,idx,val); tree[node]=min(tree[2*node],tree[2*node+1]); }", hint:"Identical to sum update except pull-up uses min() not +"},
+        ]
+      },
+      { z:3, tag:"query() — identity is INT_MAX for min, INT_MIN for max",
+        lines:[
+          {t:"blank", ph:"// range min query...", ans:"int query(int node, int l, int r, int ql, int qr) {", hint:"Returns minimum of arr[ql..qr]"},
+          {t:"blank", ph:"//   outside: return identity for min (INT_MAX won't affect min())...", ans:"if(qr<l||r<ql) return INT_MAX;", hint:"Identity for min: INT_MAX. min(x, INT_MAX) = x — doesn't affect the answer"},
+          {t:"blank", ph:"//   inside: return stored minimum...", ans:"if(ql<=l&&r<=qr) return tree[node];", hint:"Segment fully covered — precomputed minimum is valid"},
+          {t:"blank", ph:"//   partial: recurse and take min of both halves...", ans:"int mid=(l+r)/2; return min(query(2*node,l,mid,ql,qr),query(2*node+1,mid+1,r,ql,qr));", hint:"Combine with min() — same 3-case pattern, different combiner"},
+          {t:"fixed", code:`} };`},
+        ]
+      },
+      { z:4, tag:"DRIVER — swap min↔max to get max segment tree",
+        lines:[
+          {t:"blank", ph:"// for MAX tree: swap INT_MAX→INT_MIN and min()→max() in query...", ans:"// max query outside identity: INT_MIN. pull-up: max(left,right). combine: max(l,r).", hint:"Three substitutions turn a min tree into a max tree — everything else unchanged"},
+          {t:"blank", ph:"// driver same as sum tree...", ans:"MinSegTree st; st.n=nums.size(); st.tree.assign(4*st.n,INT_MAX); st.build(nums,1,0,st.n-1);", hint:"Initialize tree array with identity value (INT_MAX for min tree)"},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Point Update ───────────────────────────────────────────────────────
+  {
+    id:3, title:"Point Update", badge:"UPDATE + QUERY", badgeColor:"var(--c3)",
+    hint:"Point update: walk down to leaf, update, pull-up all ancestors. O(log n). Then range query as usual. The pull-up is what propagates the change upward.",
+    vizType:"tree", vizData:{root:"recomputed", mid:["recomputed","unchanged"], leaves:["updated!","...","...","..."], merge:"pull-up↑"},
+    zones:[
+      { z:1, tag:"combined point update + range query class",
+        lines:[
+          {t:"blank", ph:"// segment tree supporting point updates + range sum queries...", ans:"struct PointUpdateST { vector<long long> tree; int n;", hint:"Most common segment tree variant — update a single cell, query a range"},
+          {t:"blank", ph:"// build from initial array...", ans:"void build(vector<int>& a, int nd, int l, int r){ if(l==r){tree[nd]=a[l];return;} int m=(l+r)/2; build(a,2*nd,l,m); build(a,2*nd+1,m+1,r); tree[nd]=tree[2*nd]+tree[2*nd+1]; }", hint:"Standard build — O(n). All future updates maintain this structure."},
+        ]
+      },
+      { z:2, tag:"update() — O(log n): walk to leaf, pull-up all ancestors",
+        lines:[
+          {t:"blank", ph:"// point update at position pos with new value val...", ans:"void update(int nd, int l, int r, int pos, long long val){", hint:"Modifies single position and restores tree invariant"},
+          {t:"blank", ph:"//   reached the target leaf...", ans:"if(l==r){ tree[nd]=val; return; }", hint:"Set the leaf. All ancestor sums will be fixed on the way back up."},
+          {t:"blank", ph:"//   descend to correct child...", ans:"int m=(l+r)/2; if(pos<=m) update(2*nd,l,m,pos,val); else update(2*nd+1,m+1,r,pos,val);", hint:"Binary search: go left if pos ≤ mid, right otherwise"},
+          {t:"blank", ph:"//   PULL-UP: recompute this node from updated children...", ans:"tree[nd]=tree[2*nd]+tree[2*nd+1];", hint:"Pull-up on the way back up the recursion — restores all ancestor values"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"query() — identical 3-case split",
+        lines:[
+          {t:"blank", ph:"// range sum query — same as before...", ans:"long long query(int nd, int l, int r, int ql, int qr){", hint:"Unchanged from basic range sum — update doesn't affect query logic"},
+          {t:"blank", ph:"//   3-case split...", ans:"if(qr<l||r<ql) return 0; if(ql<=l&&r<=qr) return tree[nd]; int m=(l+r)/2; return query(2*nd,l,m,ql,qr)+query(2*nd+1,m+1,r,ql,qr);", hint:"Outside→0, inside→tree[nd], partial→recurse+combine. Always this structure."},
+          {t:"fixed", code:`} };`},
+        ]
+      },
+      { z:4, tag:"DRIVER — update then query, both O(log n)",
+        lines:[
+          {t:"blank", ph:"// init + build...", ans:"PointUpdateST st; st.n=n; st.tree.assign(4*n,0); st.build(arr,1,0,n-1);", hint:"Build is O(n). All subsequent updates and queries are O(log n)."},
+          {t:"blank", ph:"// point update then range query...", ans:"st.update(1,0,n-1,pos,newVal); long long ans=st.query(1,0,n-1,ql,qr);", hint:"Both calls start at root (node=1) with full range [0,n-1]"},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Range Update + Point Query ────────────────────────────────────────
+  {
+    id:4, title:"Range Update + Point Query", badge:"ADD DELTA TO RANGE", badgeColor:"var(--c1)",
+    hint:"Flip the tree: store deltas (pending additions), not values. Range update adds delta to O(log n) nodes. Point query sums all deltas on root-to-leaf path.",
+    vizType:"lazy", vizData:{root:"Δ=0", mid:["Δ=+3","Δ=0"], leaves:["Δ=+3","Δ=+3","Δ=0","Δ=0"], merge:"sum path Δ"},
+    zones:[
+      { z:1, tag:"tree stores DELTAS not values — inverted design",
+        lines:[
+          {t:"blank", ph:"// tree stores pending additions — flipped vs normal segtree...", ans:"struct RangeUpdatePQ { vector<long long> tree; int n;", hint:"Key insight: store what has been ADDED to ranges. Query sums all deltas on path to leaf."},
+          {t:"blank", ph:"// init with zeros — no updates yet...", ans:"void init(int sz){ n=sz; tree.assign(4*n,0); }", hint:"No build needed — all deltas start at 0"},
+        ]
+      },
+      { z:2, tag:"update() — add val to all nodes covering [ql,qr]",
+        lines:[
+          {t:"blank", ph:"// range update: add val to arr[ql..qr]...", ans:"void update(int nd, int l, int r, int ql, int qr, long long val){", hint:"Adds val to every element in [ql,qr] by marking O(log n) nodes"},
+          {t:"blank", ph:"//   completely outside — do nothing...", ans:"if(qr<l||r<ql) return;", hint:"No overlap — skip entirely"},
+          {t:"blank", ph:"//   completely inside — add delta to this node...", ans:"if(ql<=l&&r<=qr){ tree[nd]+=val; return; }", hint:"This segment fully covered — mark it. Don't go deeper."},
+          {t:"blank", ph:"//   partial — recurse both children (no pull-up needed)...", ans:"int m=(l+r)/2; update(2*nd,l,m,ql,qr,val); update(2*nd+1,m+1,r,ql,qr,val);", hint:"No pull-up here — deltas accumulate independently at each node"},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"query() — sum ALL deltas on root-to-leaf path",
+        lines:[
+          {t:"blank", ph:"// point query at position pos — sum all deltas on path...", ans:"long long query(int nd, int l, int r, int pos){", hint:"Every delta on the path from root to pos contributes to pos's total value"},
+          {t:"blank", ph:"//   reached leaf — return its delta...", ans:"if(l==r) return tree[nd];", hint:"Leaf's own delta, plus all ancestors' deltas accumulated on the way down"},
+          {t:"blank", ph:"//   accumulate this node's delta + recurse correct child...", ans:"int m=(l+r)/2; long long sub=(pos<=m)?query(2*nd,l,m,pos):query(2*nd+1,m+1,r,pos); return tree[nd]+sub;", hint:"tree[nd] is delta covering ALL of [l,r]. Add it to whatever child returns."},
+          {t:"fixed", code:`} };`},
+        ]
+      },
+      { z:4, tag:"DRIVER — O(log n) range updates, O(log n) point queries",
+        lines:[
+          {t:"blank", ph:"// init — all zeros...", ans:"RangeUpdatePQ st; st.init(n);", hint:"No initial array needed — all values start at 0"},
+          {t:"blank", ph:"// range update then point query...", ans:"st.update(1,0,n-1,ql,qr,val); long long ans=st.query(1,0,n-1,pos);", hint:"Both O(log n). Note: query takes single position not range."},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Lazy Propagation ───────────────────────────────────────────────────
+  {
+    id:5, title:"Lazy Propagation", badge:"PUSH DOWN FIRST", badgeColor:"var(--c3)",
+    hint:"Store lazy[node] = pending update not yet pushed to children. Before recursing: push_down() applies lazy to children and clears it. Enables O(log n) range updates + range queries.",
+    vizType:"lazy", vizData:{root:"lazy=+5", mid:["pending↓","pending↓"], leaves:["applied","applied","applied","applied"], merge:"push_down first"},
+    zones:[
+      { z:1, tag:"tree[] stores values + lazy[] stores pending range updates",
+        lines:[
+          {t:"blank", ph:"// segment tree with lazy propagation...", ans:"struct LazySegTree { vector<long long> tree, lazy; int n;", hint:"Two arrays: tree[node]=current value, lazy[node]=pending addition not yet pushed down"},
+          {t:"blank", ph:"// build sums, lazy starts all zero...", ans:"void build(vector<int>& a, int nd, int l, int r){ lazy.assign(4*n,0); if(l==r){tree[nd]=a[l];return;} int m=(l+r)/2; build(a,2*nd,l,m); build(a,2*nd+1,m+1,r); tree[nd]=tree[2*nd]+tree[2*nd+1]; }", hint:"Build fills tree values bottom-up. Lazy array starts at zero — no pending updates."},
+        ]
+      },
+      { z:2, tag:"push_down() — apply lazy to children BEFORE recursing",
+        lines:[
+          {t:"blank", ph:"// push_down: apply parent's lazy to both children...", ans:"void push_down(int nd, int l, int r){ if(!lazy[nd]) return; int m=(l+r)/2;", hint:"Called at top of update() and query() before any recursion"},
+          {t:"blank", ph:"//   apply lazy to left child: update sum + set its lazy...", ans:"tree[2*nd]+=(m-l+1)*lazy[nd]; lazy[2*nd]+=lazy[nd];", hint:"Left child covers (m-l+1) elements — sum increases by that many × lazy value"},
+          {t:"blank", ph:"//   apply lazy to right child...", ans:"tree[2*nd+1]+=(r-m)*lazy[nd]; lazy[2*nd+1]+=lazy[nd];", hint:"Right child covers (r-m) elements"},
+          {t:"blank", ph:"//   clear parent's lazy — it's been pushed...", ans:"lazy[nd]=0; }", hint:"Parent's job done — children now hold the pending update"},
+        ]
+      },
+      { z:3, tag:"update() — push_down FIRST, then 3-case split",
+        lines:[
+          {t:"blank", ph:"// range update with lazy propagation...", ans:"void update(int nd, int l, int r, int ql, int qr, long long val){ if(qr<l||r<ql) return; if(ql<=l&&r<=qr){ tree[nd]+=(r-l+1)*val; lazy[nd]+=val; return; } push_down(nd,l,r); int m=(l+r)/2; update(2*nd,l,m,ql,qr,val); update(2*nd+1,m+1,r,ql,qr,val); tree[nd]=tree[2*nd]+tree[2*nd+1]; }", hint:"push_down before recursing = key step. Then 3-case split. Pull-up at end."},
+        ]
+      },
+      { z:4, tag:"query() — also push_down FIRST before recursing",
+        lines:[
+          {t:"blank", ph:"// range query with lazy propagation...", ans:"long long query(int nd, int l, int r, int ql, int qr){ if(qr<l||r<ql) return 0; if(ql<=l&&r<=qr) return tree[nd]; push_down(nd,l,r); int m=(l+r)/2; return query(2*nd,l,m,ql,qr)+query(2*nd+1,m+1,r,ql,qr); }", hint:"push_down ensures children have correct values before we use them. Same 3-case split."},
+          {t:"fixed", code:`} };`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Range GCD Query ────────────────────────────────────────────────────
+  {
+    id:6, title:"Range GCD/LCM Query", badge:"MERGE = gcd(a,b)", badgeColor:"var(--c4)",
+    hint:"merge = __gcd(a,b), identity = 0 (gcd(x,0)=x for any x). GCD is associative and commutative — perfect for segment tree. Structure identical to sum tree.",
+    vizType:"tree", vizData:{root:"gcd[0..7]", mid:["gcd[0..3]","gcd[4..7]"], leaves:["g[0..1]","g[2..3]","g[4..5]","g[6..7]"], merge:"__gcd(a,b)"},
+    zones:[
+      { z:1, tag:"tree stores GCDs — merge = __gcd, identity = 0",
+        lines:[
+          {t:"blank", ph:"// GCD segment tree — only merge function differs...", ans:"struct GCDSegTree { vector<int> tree; int n;", hint:"Structurally identical to sum/min tree — only the combiner changes"},
+          {t:"blank", ph:"// build: leaf=arr[l], internal=gcd of children...", ans:"void build(vector<int>& a, int nd, int l, int r){ if(l==r){tree[nd]=a[l];return;} int m=(l+r)/2; build(a,2*nd,l,m); build(a,2*nd+1,m+1,r); tree[nd]=__gcd(tree[2*nd],tree[2*nd+1]); }", hint:"Pull-up uses __gcd(). Identity is 0: __gcd(x,0)=x, so outside case returns 0."},
+        ]
+      },
+      { z:2, tag:"update() — identical, pull-up uses __gcd()",
+        lines:[
+          {t:"blank", ph:"// point update — pull-up uses gcd...", ans:"void update(int nd, int l, int r, int pos, int val){ if(l==r){tree[nd]=val;return;} int m=(l+r)/2; if(pos<=m) update(2*nd,l,m,pos,val); else update(2*nd+1,m+1,r,pos,val); tree[nd]=__gcd(tree[2*nd],tree[2*nd+1]); }", hint:"Exact same structure as sum update — only the pull-up combiner differs"},
+        ]
+      },
+      { z:3, tag:"query() — outside returns 0 (GCD identity)",
+        lines:[
+          {t:"blank", ph:"// range GCD query...", ans:"int query(int nd, int l, int r, int ql, int qr){", hint:"Returns GCD of all elements in arr[ql..qr]"},
+          {t:"blank", ph:"//   outside: identity for GCD is 0 — gcd(x,0)=x...", ans:"if(qr<l||r<ql) return 0;", hint:"0 is the GCD identity: gcd(anything, 0) = anything. Safe to return."},
+          {t:"blank", ph:"//   inside: return stored GCD...", ans:"if(ql<=l&&r<=qr) return tree[nd];", hint:"Precomputed GCD for this segment"},
+          {t:"blank", ph:"//   partial: gcd of both halves...", ans:"int m=(l+r)/2; return __gcd(query(2*nd,l,m,ql,qr),query(2*nd+1,m+1,r,ql,qr));", hint:"GCD is associative: gcd(gcd(left), gcd(right)) = gcd(all elements in range)"},
+          {t:"fixed", code:`} };`},
+        ]
+      },
+      { z:4, tag:"DRIVER — swap gcd→lcm for LCM tree (identity=1)",
+        lines:[
+          {t:"blank", ph:"// for LCM tree: identity=1, merge=(a/gcd(a,b))*b...", ans:"// lcm(a,b) = a/__gcd(a,b)*b. Outside identity=1. lcm(x,1)=x.", hint:"LCM is also associative — same tree structure, different merge and identity"},
+          {t:"blank", ph:"// driver...", ans:"GCDSegTree st; st.n=n; st.tree.assign(4*n,0); st.build(arr,1,0,n-1);", hint:"Build O(n), queries O(log n)"},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Count of Elements in Range ─────────────────────────────────────────
+  {
+    id:7, title:"Count Elements in Range", badge:"MERGE = a+b (count)", badgeColor:"var(--c2)",
+    hint:"Store count of elements satisfying a condition. merge = a+b (count is additive). Point update toggles count. Query returns how many qualifying elements exist in [l,r].",
+    vizType:"tree", vizData:{root:"cnt=5", mid:["cnt=3","cnt=2"], leaves:["1","1","0","1","0","1","1","0"], merge:"a+b (count)"},
+    zones:[
+      { z:1, tag:"tree stores counts — merge = addition like sum tree",
+        lines:[
+          {t:"blank", ph:"// count segment tree — how many elements > threshold in range...", ans:"struct CountSegTree { vector<int> tree; int n;", hint:"Counts are additive — structurally identical to sum tree"},
+          {t:"blank", ph:"// build: leaf=1 if condition met, 0 otherwise...", ans:"void build(vector<int>& a, int nd, int l, int r, int threshold){ if(l==r){tree[nd]=(a[l]>threshold)?1:0;return;} int m=(l+r)/2; build(a,2*nd,l,m,threshold); build(a,2*nd+1,m+1,r,threshold); tree[nd]=tree[2*nd]+tree[2*nd+1]; }", hint:"Leaf = 0 or 1 based on condition. Internal = sum of children counts."},
+        ]
+      },
+      { z:2, tag:"update() — toggle element in/out of qualifying set",
+        lines:[
+          {t:"blank", ph:"// point update: element at pos now has new value...", ans:"void update(int nd, int l, int r, int pos, int newVal, int threshold){ if(l==r){tree[nd]=(newVal>threshold)?1:0;return;} int m=(l+r)/2; if(pos<=m) update(2*nd,l,m,pos,newVal,threshold); else update(2*nd+1,m+1,r,pos,newVal,threshold); tree[nd]=tree[2*nd]+tree[2*nd+1]; }", hint:"Recheck condition at leaf with new value. Pull-up restores counts up the tree."},
+        ]
+      },
+      { z:3, tag:"query() — returns count in [ql,qr] satisfying condition",
+        lines:[
+          {t:"blank", ph:"// range count query...", ans:"int query(int nd, int l, int r, int ql, int qr){", hint:"Returns how many elements in arr[ql..qr] satisfy the stored condition"},
+          {t:"blank", ph:"//   3-case split with identity 0 for count...", ans:"if(qr<l||r<ql) return 0; if(ql<=l&&r<=qr) return tree[nd]; int m=(l+r)/2; return query(2*nd,l,m,ql,qr)+query(2*nd+1,m+1,r,ql,qr);", hint:"Identical to sum query — counts add just like sums. Outside identity = 0."},
+          {t:"fixed", code:`} };`},
+        ]
+      },
+      { z:4, tag:"DRIVER — flexible: change condition at build time",
+        lines:[
+          {t:"blank", ph:"// init with threshold condition...", ans:"CountSegTree st; st.n=n; st.tree.assign(4*n,0); st.build(arr,1,0,n-1,threshold);", hint:"Threshold baked in at build time. Change condition = rebuild."},
+          {t:"blank", ph:"// count elements > threshold in range [l,r]...", ans:"int cnt = st.query(1,0,n-1,l,r);", hint:"Returns count of elements satisfying condition in O(log n)"},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Merge Sort Tree ────────────────────────────────────────────────────
+  {
+    id:8, title:"Merge Sort Tree", badge:"NODE = sorted vector", badgeColor:"var(--c1)",
+    hint:"Each node stores a SORTED vector of its elements. Build merges sorted children vectors. Query collects O(log n) vectors, counts elements ≤ k using binary search.",
+    vizType:"tree", vizData:{root:"[1,2,3,4,5,6,7,8]", mid:["[1,2,3,4]","[5,6,7,8]"], leaves:["[1,2]","[3,4]","[5,6]","[7,8]"], merge:"merge sorted"},
+    zones:[
+      { z:1, tag:"each node stores sorted vector of its elements",
+        lines:[
+          {t:"blank", ph:"// merge sort tree — O(n log n) space...", ans:"struct MergeSortTree { vector<vector<int>> tree; int n;", hint:"Space: O(n log n) total — each element appears in O(log n) nodes"},
+          {t:"blank", ph:"// build: leaf=single element, internal=merge sorted children...", ans:"void build(vector<int>& a, int nd, int l, int r){ if(l==r){tree[nd]={a[l]};return;} int m=(l+r)/2; build(a,2*nd,l,m); build(a,2*nd+1,m+1,r); merge(tree[2*nd].begin(),tree[2*nd].end(),tree[2*nd+1].begin(),tree[2*nd+1].end(),back_inserter(tree[nd])); }", hint:"std::merge merges two sorted vectors into sorted result — classic merge sort step"},
+        ]
+      },
+      { z:2, tag:"no update — static structure (updates are O(n log n))",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// merge sort tree is typically static — updates rebuild in O(n log n)</span>`},
+          {t:"fixed", code:`<span class="cm">// for dynamic updates use a different structure (BIT + offline)</span>`},
+        ]
+      },
+      { z:3, tag:"query() — count elements ≤ k using binary search at each node",
+        lines:[
+          {t:"blank", ph:"// count elements ≤ k in range [ql,qr]...", ans:"int query(int nd, int l, int r, int ql, int qr, int k){", hint:"Uses O(log²n) per query: O(log n) nodes × O(log n) binary search per node"},
+          {t:"blank", ph:"//   outside: 0 elements...", ans:"if(qr<l||r<ql) return 0;", hint:"No overlap — no elements to count"},
+          {t:"blank", ph:"//   inside: binary search in this node's sorted array...", ans:"if(ql<=l&&r<=qr) return upper_bound(tree[nd].begin(),tree[nd].end(),k)-tree[nd].begin();", hint:"upper_bound gives count of elements ≤ k in O(log(node size))"},
+          {t:"blank", ph:"//   partial: recurse and sum counts...", ans:"int m=(l+r)/2; return query(2*nd,l,m,ql,qr,k)+query(2*nd+1,m+1,r,ql,qr,k);", hint:"O(log n) nodes visited, binary search at each → O(log²n) total"},
+          {t:"fixed", code:`} };`},
+        ]
+      },
+      { z:4, tag:"DRIVER — O(n log n) build, O(log²n) per query",
+        lines:[
+          {t:"blank", ph:"// init + build...", ans:"MergeSortTree st; st.n=n; st.tree.resize(4*n); st.build(arr,1,0,n-1);", hint:"resize not assign — each node is an empty vector that gets filled during build"},
+          {t:"blank", ph:"// count elements <= k in [l,r]...", ans:"int cnt = st.query(1,0,n-1,l,r,k);", hint:"O(log²n): log n segments × log n binary search per segment"},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Persistent Segment Tree ────────────────────────────────────────────
+  {
+    id:9, title:"Persistent Segment Tree", badge:"VERSION ROOTS", badgeColor:"var(--c3)",
+    hint:"Instead of updating in place, create a NEW root and copy only the O(log n) nodes on the update path. All other nodes are shared. Each version's root is stored.",
+    vizType:"tree", vizData:{root:"v0 v1 v2 v3", mid:["shared","new node"], leaves:["shared","shared","new leaf","shared"], merge:"copy-on-write"},
+    zones:[
+      { z:1, tag:"node structs with left/right pointers — not array-based",
+        lines:[
+          {t:"blank", ph:"// persistent segtree uses nodes with pointers not array indices...", ans:"struct Node { int left, right, val; };", hint:"left/right are node indices in a node pool. val = sum/count at this node."},
+          {t:"blank", ph:"// node pool + version roots array...", ans:"vector<Node> pool; vector<int> roots;", hint:"pool grows as new nodes are created. roots[i] = root index of version i."},
+          {t:"blank", ph:"// build initial version — returns root node index...", ans:"int build(int l, int r, vector<int>& arr){ int nd=pool.size(); pool.push_back({0,0,0}); if(l==r){pool[nd].val=arr[l];return nd;} int m=(l+r)/2; pool[nd].left=build(l,m,arr); pool[nd].right=build(m+1,r,arr); pool[nd].val=pool[pool[nd].left].val+pool[pool[nd].right].val; return nd; }", hint:"Returns node index. Assigns children after recursive calls (pool may reallocate)."},
+        ]
+      },
+      { z:2, tag:"update() — copy-on-write: create new nodes on path only",
+        lines:[
+          {t:"blank", ph:"// update creates new version — returns new root...", ans:"int update(int prev, int l, int r, int pos, int val){", hint:"prev = root of previous version. Returns root of new version."},
+          {t:"blank", ph:"//   allocate new node copying previous...", ans:"int nd=pool.size(); pool.push_back(pool[prev]);", hint:"Start by copying previous node — shared structure by default"},
+          {t:"blank", ph:"//   leaf: update value in new node...", ans:"if(l==r){ pool[nd].val=val; return nd; }", hint:"New leaf node with updated value. Old leaf unchanged — still in old version."},
+          {t:"blank", ph:"//   recurse correct child, update sum, return new root...", ans:"int m=(l+r)/2; if(pos<=m) pool[nd].left=update(pool[prev].left,l,m,pos,val); else pool[nd].right=update(pool[prev].right,m+1,r,pos,val); pool[nd].val=pool[pool[nd].left].val+pool[pool[nd].right].val; return nd;", hint:"Only the path to updated leaf gets new nodes. All others shared with previous version."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"query() — query any version by its root",
+        lines:[
+          {t:"blank", ph:"// query any version using its root index...", ans:"int query(int nd, int l, int r, int ql, int qr){ if(qr<l||r<ql) return 0; if(ql<=l&&r<=qr) return pool[nd].val; int m=(l+r)/2; return query(pool[nd].left,l,m,ql,qr)+query(pool[nd].right,m+1,r,ql,qr); }", hint:"Identical 3-case logic — just uses pool[nd].left/right instead of 2*nd/2*nd+1"},
+        ]
+      },
+      { z:4, tag:"DRIVER — O(log n) per update creates O(log n) new nodes",
+        lines:[
+          {t:"blank", ph:"// build version 0 and store root...", ans:"roots.push_back(build(0,n-1,arr));", hint:"Version 0 = initial array. O(n) build creates n leaf nodes + n-1 internal nodes."},
+          {t:"blank", ph:"// create new version from old — only O(log n) new nodes...", ans:"roots.push_back(update(roots.back(),0,n-1,pos,val));", hint:"Each update adds exactly O(log n) new nodes to pool. Old versions untouched."},
+          {t:"blank", ph:"// query any historical version by its root...", ans:"int ans=query(roots[version],0,n-1,ql,qr);", hint:"roots[v] is the entry point to version v. All versions queryable in O(log n)."},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── 2D Segment Tree ────────────────────────────────────────────────────
+  {
+    id:10, title:"2D Segment Tree", badge:"OUTER × INNER", badgeColor:"var(--c4)",
+    hint:"Outer segment tree on rows. Each outer node contains an inner segment tree on columns. Update: O(log²n). Query: outer 3-case split, inner query at each outer node.",
+    vizType:"tree", vizData:{root:"rows[0..n]", mid:["rows[0..n/2]","rows[n/2..n]"], leaves:["inner ST","inner ST","inner ST","inner ST"], merge:"outer×inner"},
+    zones:[
+      { z:1, tag:"outer tree on rows — each node has its own column tree",
+        lines:[
+          {t:"blank", ph:"// 2D segtree: outer on rows, inner on columns...", ans:"struct SegTree2D { int n, m; vector<vector<long long>> tree;", hint:"tree[outer_node] is a segment tree over columns. Size: O(n·m·log n) naively."},
+          {t:"blank", ph:"// init outer and inner trees...", ans:"void init(int rows, int cols){ n=rows; m=cols; tree.assign(4*n, vector<long long>(4*m,0)); }", hint:"Each of 4n outer nodes has a 4m inner tree. All zeros initially."},
+        ]
+      },
+      { z:2, tag:"inner update — point update within one outer node's column tree",
+        lines:[
+          {t:"blank", ph:"// inner column update at outer node 'on'...", ans:"void innerUpdate(int on, int cl, int cr, int col, long long val){ if(cl==cr){tree[on][cl]+=val;return;} int cm=(cl+cr)/2; if(col<=cm) innerUpdate(on,cl,cm,col,val); else innerUpdate(on,cm+1,cr,col,val); tree[on][cl]=tree[on][2*cl]+tree[on][2*cl+1]; }", hint:"Standard 1D point update — but operating on tree[on] (outer node on's column tree)"},
+          {t:"blank", ph:"// outer update propagates to all ancestor outer nodes...", ans:"void update(int on, int ol, int or_, int row, int col, long long val){ innerUpdate(on,1,m,col,val); if(ol==or_) return; int om=(ol+or_)/2; if(row<=om) update(2*on,ol,om,row,col,val); else update(2*on+1,om+1,or_,row,col,val); }", hint:"Propagate down outer tree — each outer node on the path gets its inner tree updated"},
+        ]
+      },
+      { z:3, tag:"inner query — range query within one outer node's column tree",
+        lines:[
+          {t:"blank", ph:"// inner column range query...", ans:"long long innerQuery(int on, int cl, int cr, int ql, int qr){ if(qr<cl||cr<ql) return 0; if(ql<=cl&&cr<=qr) return tree[on][cl]; int cm=(cl+cr)/2; return innerQuery(on,cl,cm,ql,qr)+innerQuery(on,cm+1,cr,ql,qr); }", hint:"Standard 1D range query — operating on this outer node's column tree"},
+          {t:"blank", ph:"// outer query applies 3-case split on rows, calls innerQuery at each covered node...", ans:"long long query(int on, int ol, int or_, int rl, int rr, int cl, int cr){ if(rr<ol||or_<rl) return 0; if(rl<=ol&&or_<=rr) return innerQuery(on,1,m,cl,cr); int om=(ol+or_)/2; return query(2*on,ol,om,rl,rr,cl,cr)+query(2*on+1,om+1,or_,rl,rr,cl,cr); }", hint:"O(log²n) total: outer 3-case on rows, inner range query at each covered outer node"},
+        ]
+      },
+      { z:4, tag:"DRIVER — O(log²n) update and query",
+        lines:[
+          {t:"blank", ph:"// init 2D segment tree...", ans:"SegTree2D st; st.init(n,m);", hint:"n rows, m columns. Both outer and inner trees initialized to zero."},
+          {t:"blank", ph:"// point update at (row,col)...", ans:"st.update(1,1,n,row,col,val);", hint:"Outer root=1, range [1,n]. Inner uses [1,m] implicitly."},
+          {t:"blank", ph:"// rectangle query [r1,r2] x [c1,c2]...", ans:"long long ans=st.query(1,1,n,r1,r2,c1,c2);", hint:"O(log²n): log n outer nodes matched × log n inner query per node"},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Init + Build','update()','query()','Driver'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0,answered=new Set(),stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p);
+  document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const d=p.vizData;
+  const isLazy=p.vizType==='lazy';
+  const rootCls=isLazy?'tn-lazy':'tn-root';
+  const midCls='tn-mid';
+  const leafCls=isLazy?'tn-lazy':'tn-leaf';
+
+  viz.innerHTML=`
+    <div class="tree-viz">
+      <div class="tree-level">
+        <div class="tree-node ${rootCls}">${d.root}</div>
+      </div>
+      <div class="tree-level">
+        ${d.mid.map(v=>`<div class="tree-node ${midCls}">${v}</div>`).join('')}
+      </div>
+      <div class="tree-level">
+        ${d.leaves.map(v=>`<div class="tree-node ${leafCls}">${v}</div>`).join('')}
+      </div>
+      <div class="tree-legend">
+        <span style="color:var(--c1)">★ merge fn: <strong>${d.merge}</strong></span> &nbsp;|&nbsp;
+        <span style="color:var(--c3)">3-case split: outside→identity · inside→tree[nd] · partial→recurse</span>
+      </div>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>
