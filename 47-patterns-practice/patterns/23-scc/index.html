@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCC — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(167,139,250,0.05) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c1);border:1px solid rgba(167,139,250,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c1) 40%,var(--c3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c1);color:var(--text);}
+.sel-btn.active{background:rgba(167,139,250,0.1);border-color:var(--c1);color:var(--c1);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c1);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(167,139,250,0.04);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c1);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:420px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c1);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(167,139,250,0.06);border-bottom-color:var(--c1);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(167,139,250,0.1);color:var(--c1);border-color:rgba(167,139,250,0.4);}
+.btn-check:hover{background:rgba(167,139,250,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c1);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.scc-viz{display:flex;flex-direction:column;gap:8px;}
+.scc-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.scc-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);min-width:130px;text-align:right;padding-right:8px;flex-shrink:0;}
+.scc-node{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid;border-radius:3px;white-space:nowrap;}
+.sn-disc{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.sn-stack{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.08);}
+.sn-scc{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.08);}
+.sn-root{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.08);}
+.scc-arrow{color:var(--muted);font-size:12px;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c}
+.op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.str{color:#c3e88d}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 23 — Practice Mode</div>
+    <h1>SCC</h1>
+    <p>// disc[u]=low[u]=timer++ · onStack not visited · low[u]==disc[u] → SCC root → pop stack</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// SCC — 10 Manifestations
+//
+// TARJAN'S (single DFS) — universal structure:
+//   disc[u]=low[u]=timer++  on entry
+//   st.push(u); onStack[u]=true
+//   tree edge:  low[u]=min(low[u],low[v])
+//   back edge:  low[u]=min(low[u],disc[v])  ONLY if onStack[v]  ← critical!
+//   cross edge: onStack[v]==false → IGNORE
+//   SCC root:   low[u]==disc[u] → pop stack down to u → one SCC
+//
+// KOSARAJU'S (two DFS):
+//   pass1: DFS on G → post-order finish list
+//   pass2: DFS on G^T in reverse finish order → each tree = one SCC
+//
+// POST-PROCESSING (what changes per manifestation):
+//   condensation:    new graph, nodes=SCCs, edges between distinct SCCs
+//   2-SAT:           implication graph, sccId[x] != sccId[neg_x] → SAT
+//   min nodes:       count SCCs with in-degree 0 in condensation
+//   deadlock:        SCC size > 1 → cycle → deadlock
+//   reachability:    dp on condensation DAG
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Kosaraju's Algorithm ───────────────────────────────────────────────
+  {
+    id:1, title:"Kosaraju's Algorithm", badge:"TWO DFS PASSES", badgeColor:"var(--c2)",
+    hint:"Pass 1: DFS on G, push nodes in post-order (finish order). Pass 2: DFS on G-reversed in reverse finish order — each DFS tree = one SCC.",
+    vizRows:[
+      {label:"pass 1: finish order", nodes:["DFS on G","push post-order"], cls:"sn-disc"},
+      {label:"reverse finish order", nodes:["last finished = source SCC"], cls:"sn-stack"},
+      {label:"pass 2: reversed graph", nodes:["each DFS tree = one SCC"], cls:"sn-scc"},
+    ],
+    zones:[
+      { z:1, tag:"pass 1 — DFS on G recording post-order finish",
+        lines:[
+          {t:"blank", ph:"// Kosaraju's SCC — two DFS passes...", ans:"int kosaraju(int n, vector<vector<int>>& adj, vector<vector<int>>& radj) {", hint:"adj = original graph, radj = reversed graph. Returns number of SCCs."},
+          {t:"blank", ph:"// pass 1: DFS on G, record post-order finish...", ans:"vector<bool> vis(n,false); vector<int> order; function<void(int)> dfs1=[&](int u){ vis[u]=true; for(int v:adj[u]) if(!vis[v]) dfs1(v); order.push_back(u); };", hint:"Push u AFTER all descendants — post-order. Last pushed = highest finish time = source SCC."},
+          {t:"blank", ph:"// run pass 1 from all unvisited nodes...", ans:"for(int i=0;i<n;i++) if(!vis[i]) dfs1(i);", hint:"Handle disconnected graph — start DFS from every unvisited node."},
+        ]
+      },
+      { z:2, tag:"pass 2 — DFS on reversed graph in reverse finish order",
+        lines:[
+          {t:"blank", ph:"// pass 2: DFS on reversed graph in reverse finish order...", ans:"vector<int> sccId(n,-1); int numSCC=0; function<void(int,int)> dfs2=[&](int u,int id){ sccId[u]=id; for(int v:radj[u]) if(sccId[v]==-1) dfs2(v,id); };", hint:"DFS on reversed graph assigns same SCC id to all reachable unvisited nodes."},
+        ]
+      },
+      { z:3, tag:"process nodes in reverse finish order",
+        lines:[
+          {t:"blank", ph:"// process in reverse finish order (last finished first)...", ans:"for(int i=n-1;i>=0;i--) if(sccId[order[i]]==-1){ dfs2(order[i],numSCC); numSCC++; }", hint:"Reverse of post-order = process highest-finish-time nodes first = source SCCs first."},
+        ]
+      },
+      { z:4, tag:"RESULT — numSCC + sccId[] array",
+        lines:[
+          {t:"blank", ph:"// return number of SCCs found...", ans:"return numSCC;", hint:"sccId[v] = which SCC node v belongs to. numSCC = total count."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Tarjan's Algorithm ─────────────────────────────────────────────────
+  {
+    id:2, title:"Tarjan's Algorithm", badge:"DISC/LOW + STACK", badgeColor:"var(--c1)",
+    hint:"Single DFS. disc[u]=low[u]=timer++ on entry. low tracks lowest disc reachable via back edges. SCC root: low[u]==disc[u] — pop stack down to u. onStack not visited for back-edge check.",
+    vizRows:[
+      {label:"entry: disc=low=timer", nodes:["push to stack","onStack=true"], cls:"sn-disc"},
+      {label:"tree edge u→v", nodes:["recurse","low[u]=min(low[u],low[v])"], cls:"sn-stack"},
+      {label:"back edge u→v", nodes:["onStack[v]?","low[u]=min(low[u],disc[v])"], cls:"sn-stack"},
+      {label:"low[u]==disc[u]", nodes:["SCC ROOT","pop until u"], cls:"sn-root"},
+    ],
+    zones:[
+      { z:1, tag:"disc/low/onStack arrays + stack + timer",
+        lines:[
+          {t:"blank", ph:"// Tarjan's SCC — single DFS with low-link values...", ans:"int tarjan(int n, vector<vector<int>>& adj, vector<int>& sccId) {", hint:"Single DFS pass. disc=discovery time, low=lowest disc reachable from subtree via back edges."},
+          {t:"blank", ph:"// init: disc=-1 (unvisited), low, onStack, stack, timer...", ans:"vector<int> disc(n,-1),low(n); vector<bool> onStack(n,false); stack<int> st; int timer=0,numSCC=0; sccId.assign(n,-1);", hint:"disc=-1 means unvisited. low[u] starts equal to disc[u] and can only decrease."},
+        ]
+      },
+      { z:2, tag:"DFS entry — disc=low=timer++, push to stack",
+        lines:[
+          {t:"blank", ph:"// Tarjan's DFS function...", ans:"function<void(int)> dfs=[&](int u){", hint:"Recursive DFS. Lambda captures all state by reference."},
+          {t:"blank", ph:"//   set disc and low to current timer, push to stack...", ans:"disc[u]=low[u]=timer++; st.push(u); onStack[u]=true;", hint:"ENTRY: disc=low=timer++ (both same initially). Push to stack, mark onStack."},
+        ]
+      },
+      { z:3, tag:"low-link update — tree edge vs back edge (onStack only!)",
+        lines:[
+          {t:"fixed", code:`        <span class="kw">for</span> (<span class="ty">int</span> v : adj[u]) {`},
+          {t:"blank", ph:"//   tree edge: recurse then pull up low...", ans:"if(disc[v]==-1){ dfs(v); low[u]=min(low[u],low[v]); }", hint:"Tree edge: recurse into v, then low[u]=min(low[u],low[v]) — v's back-edge reach propagates up."},
+          {t:"blank", ph:"//   back edge: update low ONLY if v is on stack (not cross edge!)...", ans:"else if(onStack[v]) low[u]=min(low[u],disc[v]);", hint:"CRITICAL: onStack[v] not just disc[v]!=-1. Cross edges (onStack=false) are already completed SCCs — IGNORE them."},
+          {t:"fixed", code:`        }`},
+          {t:"blank", ph:"//   SCC root check: low==disc → pop stack to form SCC...", ans:"if(low[u]==disc[u]){ while(true){ int v=st.top();st.pop();onStack[v]=false;sccId[v]=numSCC; if(v==u) break; } numSCC++; }", hint:"low[u]==disc[u]: nothing below u can reach higher — u is SCC root. Pop everything pushed after u."},
+          {t:"fixed", code:`    }; <span class="kw">for</span>(<span class="ty">int</span> i=<span class="nm">0</span>;i&lt;n;i++) <span class="kw">if</span>(disc[i]==<span class="op">-</span><span class="nm">1</span>) dfs(i);`},
+        ]
+      },
+      { z:4, tag:"RESULT — numSCC · sccId[] populated",
+        lines:[
+          {t:"blank", ph:"// return total SCC count...", ans:"return numSCC;", hint:"SCCs numbered 0..numSCC-1. sccId[v] = component of v. IDs assigned in reverse topological order."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Condensation Graph ─────────────────────────────────────────────────
+  {
+    id:3, title:"Condensation Graph", badge:"SCCs → DAG", badgeColor:"var(--c4)",
+    hint:"After finding SCCs, build condensation: each SCC becomes one node. Add edge (sccId[u], sccId[v]) for every original edge u→v where sccId[u]!=sccId[v]. Result is always a DAG.",
+    vizRows:[
+      {label:"original graph", nodes:["cycles inside SCCs"], cls:"sn-disc"},
+      {label:"find SCCs", nodes:["Tarjan's or Kosaraju's"], cls:"sn-stack"},
+      {label:"condensation", nodes:["SCC0→SCC1→SCC2","always a DAG"], cls:"sn-scc"},
+    ],
+    zones:[
+      { z:1, tag:"run Tarjan's to get sccId[]",
+        lines:[
+          {t:"blank", ph:"// build condensation graph from SCCs...", ans:"vector<vector<int>> condensation(int n, vector<vector<int>>& adj) {", hint:"Returns adjacency list of condensation DAG. Each node = one SCC."},
+          {t:"blank", ph:"// first find all SCCs using Tarjan's...", ans:"vector<int> sccId; int numSCC=tarjan(n,adj,sccId);", hint:"Get sccId[v] for every node. numSCC = number of nodes in condensation."},
+        ]
+      },
+      { z:2, tag:"build condensation edges — skip same-SCC edges",
+        lines:[
+          {t:"blank", ph:"// build condensation adjacency (use set to avoid duplicate edges)...", ans:"vector<set<int>> cadj(numSCC);", hint:"Use set not vector to deduplicate — multiple edges between same SCC pair should become one."},
+        ]
+      },
+      { z:3, tag:"scan all original edges — add inter-SCC edges only",
+        lines:[
+          {t:"blank", ph:"// for each original edge, add to condensation if cross-SCC...", ans:"for(int u=0;u<n;u++) for(int v:adj[u]) if(sccId[u]!=sccId[v]) cadj[sccId[u]].insert(sccId[v]);", hint:"Only edges between different SCCs. Same-SCC edges are internal — they disappear in condensation."},
+        ]
+      },
+      { z:4, tag:"RESULT — condensation is always a DAG",
+        lines:[
+          {t:"blank", ph:"// convert set to vector and return...", ans:"vector<vector<int>> res(numSCC); for(int i=0;i<numSCC;i++) res[i]={cadj[i].begin(),cadj[i].end()}; return res;", hint:"Condensation is always a DAG — if two SCCs had edges in both directions they'd be one SCC."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── 2-SAT Problem ──────────────────────────────────────────────────────
+  {
+    id:4, title:"2-SAT Problem", badge:"IMPLICATION GRAPH + SCC", badgeColor:"var(--c3)",
+    hint:"Each clause (x OR y) becomes two implications: (¬x→y) AND (¬y→x). Run SCC. SAT if no variable and its negation share an SCC. Assignment: x=true if sccId[x] > sccId[¬x].",
+    vizRows:[
+      {label:"x OR y → implications", nodes:["¬x→y","¬y→x"], cls:"sn-disc"},
+      {label:"run SCC", nodes:["sccId[x] vs sccId[¬x]"], cls:"sn-stack"},
+      {label:"assign: x=true if", nodes:["sccId[x] > sccId[neg_x]"], cls:"sn-scc"},
+      {label:"UNSAT if", nodes:["sccId[x] == sccId[neg_x]"], cls:"sn-root"},
+    ],
+    zones:[
+      { z:1, tag:"2n nodes: x at node i, ¬x at node i+n",
+        lines:[
+          {t:"blank", ph:"// 2-SAT: n variables, clauses of form (x OR y)...", ans:"bool twoSAT(int n, vector<pair<int,int>>& clauses, vector<bool>& assignment) {", hint:"n vars → 2n nodes. Var x = node x. Negation of x = node x+n (or use 2x/2x+1 encoding)."},
+          {t:"blank", ph:"// implication graph: 2n nodes...", ans:"vector<vector<int>> adj(2*n); auto neg=[&](int x){ return x<n?x+n:x-n; };", hint:"neg(x): if x<n return x+n, else return x-n. Maps variable to its negation node."},
+        ]
+      },
+      { z:2, tag:"build implication graph from clauses",
+        lines:[
+          {t:"blank", ph:"// (x OR y) → (¬x→y) AND (¬y→x)...", ans:"for(auto [x,y]:clauses){ adj[neg(x)].push_back(y); adj[neg(y)].push_back(x); }", hint:"Each OR clause becomes TWO directed implications. This captures all logical constraints."},
+        ]
+      },
+      { z:3, tag:"run SCC — check satisfiability",
+        lines:[
+          {t:"blank", ph:"// run Tarjan's SCC on implication graph...", ans:"vector<int> sccId; tarjan(2*n,adj,sccId);", hint:"SCCs on the 2n-node implication graph."},
+          {t:"blank", ph:"// UNSAT if any variable and its negation share an SCC...", ans:"for(int i=0;i<n;i++) if(sccId[i]==sccId[i+n]) return false;", hint:"x and ¬x in same SCC = both must be true AND false simultaneously = contradiction = UNSAT."},
+        ]
+      },
+      { z:4, tag:"assignment: x=true if sccId[x] > sccId[¬x]",
+        lines:[
+          {t:"blank", ph:"// assign: x=true if x's SCC comes later in topo order...", ans:"assignment.resize(n); for(int i=0;i<n;i++) assignment[i]=(sccId[i]>sccId[i+n]); return true;", hint:"Tarjan assigns IDs in reverse topo order. Higher ID = later in topo order = set to true. Always valid if SAT."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Minimum Nodes to Reach All ─────────────────────────────────────────
+  {
+    id:5, title:"Minimum Nodes to Reach All", badge:"IN-DEGREE 0 SCCs", badgeColor:"var(--c4)",
+    hint:"In condensation DAG, SCCs with in-degree 0 have no predecessors — they must be explicitly included as starting points. Min nodes to reach all = count of source SCCs (in-degree 0).",
+    vizRows:[
+      {label:"condensation DAG", nodes:["SCC0","SCC1→SCC2","SCC3→SCC2"], cls:"sn-disc"},
+      {label:"in-degree 0 SCCs", nodes:["SCC0","SCC1","SCC3"], cls:"sn-root"},
+      {label:"answer = 3", nodes:["must start from each"], cls:"sn-scc"},
+    ],
+    zones:[
+      { z:1, tag:"build condensation, compute in-degrees",
+        lines:[
+          {t:"blank", ph:"// min nodes to reach all nodes in directed graph...", ans:"int minNodesToReachAll(int n, vector<vector<int>>& adj) {", hint:"From minimum set of starting nodes, all other nodes must be reachable. Answer = source SCCs in condensation."},
+          {t:"blank", ph:"// find SCCs and build condensation...", ans:"vector<int> sccId; int numSCC=tarjan(n,adj,sccId); vector<int> indegree(numSCC,0);", hint:"After condensation, count SCCs with no incoming edges — these must all be starting points."},
+        ]
+      },
+      { z:2, tag:"compute in-degrees of condensation nodes",
+        lines:[
+          {t:"blank", ph:"// compute in-degrees in condensation...", ans:"for(int u=0;u<n;u++) for(int v:adj[u]) if(sccId[u]!=sccId[v]) indegree[sccId[v]]++;", hint:"For each cross-SCC edge u→v, increment indegree of sccId[v]."},
+        ]
+      },
+      { z:3, tag:"count SCCs with in-degree 0",
+        lines:[
+          {t:"blank", ph:"// count source SCCs (in-degree 0 in condensation)...", ans:"int sources=0; for(int i=0;i<numSCC;i++) if(indegree[i]==0) sources++;", hint:"In-degree 0 = no SCC points to this one = must be included explicitly as a starting node."},
+        ]
+      },
+      { z:4, tag:"RESULT — count of source SCCs",
+        lines:[
+          {t:"blank", ph:"// answer = number of SCCs with in-degree 0...", ans:"return sources;", hint:"Special case: if graph is already strongly connected (1 SCC), answer is 1."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Feedback Vertex Set ────────────────────────────────────────────────
+  {
+    id:6, title:"Feedback Vertex Set", badge:"NODES THAT BREAK CYCLES", badgeColor:"var(--c2)",
+    hint:"Feedback vertex set = minimum nodes whose removal makes graph acyclic. NP-hard in general. On graphs: every cycle passes through some SCC. Approximate: pick one node per non-trivial SCC.",
+    vizRows:[
+      {label:"find SCCs", nodes:["size>1 SCCs = cycles"], cls:"sn-disc"},
+      {label:"pick one node per SCC", nodes:["breaks that SCC's cycle"], cls:"sn-root"},
+      {label:"approximation", nodes:["exact = NP-hard in general"], cls:"sn-stack"},
+    ],
+    zones:[
+      { z:1, tag:"find SCCs — non-trivial ones contain cycles",
+        lines:[
+          {t:"blank", ph:"// feedback vertex set: nodes to remove to break all cycles...", ans:"vector<int> feedbackVertexSet(int n, vector<vector<int>>& adj) {", hint:"Every cycle is within some SCC. SCC of size > 1 has cycles. Pick representative nodes to break them."},
+          {t:"blank", ph:"// find SCCs using Tarjan's...", ans:"vector<int> sccId; int numSCC=tarjan(n,adj,sccId); vector<int> sccSize(numSCC,0); for(int i=0;i<n;i++) sccSize[sccId[i]]++;", hint:"Count nodes per SCC. SCCs of size > 1 definitely have cycles."},
+        ]
+      },
+      { z:2, tag:"also detect self-loops as trivial cycles",
+        lines:[
+          {t:"blank", ph:"// also check self-loops (SCC of size 1 with self-edge)...", ans:"vector<bool> hasSelfLoop(n,false); for(int u=0;u<n;u++) for(int v:adj[u]) if(v==u) hasSelfLoop[u]=true;", hint:"Node with self-loop forms a cycle even as a size-1 SCC. Must include in FVS."},
+        ]
+      },
+      { z:3, tag:"pick one node per cyclic SCC as representative",
+        lines:[
+          {t:"blank", ph:"// pick representative node from each non-trivial SCC...", ans:"vector<bool> picked(numSCC,false); vector<int> fvs; for(int u=0;u<n;u++){ if(hasSelfLoop[u]){fvs.push_back(u);continue;} if(sccSize[sccId[u]]>1&&!picked[sccId[u]]){picked[sccId[u]]=true;fvs.push_back(u);} }", hint:"Pick first unrepresented node from each cycle-containing SCC. This is a valid FVS (not necessarily minimum)."},
+        ]
+      },
+      { z:4, tag:"RESULT — approximate FVS (exact is NP-hard)",
+        lines:[
+          {t:"blank", ph:"// return feedback vertex set...", ans:"return fvs;", hint:"This gives a valid FVS but not necessarily minimum. Minimum FVS is NP-hard. Good enough for many applications."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Dominance in Tournaments ───────────────────────────────────────────
+  {
+    id:7, title:"Dominance in Tournaments", badge:"SCC + TOPO ORDER", badgeColor:"var(--c3)",
+    hint:"Tournament graph: exactly one directed edge between every pair. SCCs in tournament are strongly connected subtournaments. Condensation gives linear order — source SCC dominates all others transitively.",
+    vizRows:[
+      {label:"tournament graph", nodes:["every pair has one edge"], cls:"sn-disc"},
+      {label:"find SCCs", nodes:["condensation = linear order"], cls:"sn-stack"},
+      {label:"source SCC wins all", nodes:["can beat everyone transitively"], cls:"sn-scc"},
+    ],
+    zones:[
+      { z:1, tag:"find SCCs — condensation of tournament is a path",
+        lines:[
+          {t:"blank", ph:"// find who dominates all others in tournament...", ans:"vector<int> dominanceOrder(int n, vector<vector<int>>& adj) {", hint:"In any tournament, the condensation graph is a Hamiltonian path (linear order of SCCs)."},
+          {t:"blank", ph:"// find SCCs and their sizes...", ans:"vector<int> sccId; int numSCC=tarjan(n,adj,sccId); vector<vector<int>> sccNodes(numSCC);", hint:"Each SCC = a strongly connected subtournament = group where everyone beats everyone else (cyclically)."},
+          {t:"blank", ph:"// group nodes by SCC...", ans:"for(int i=0;i<n;i++) sccNodes[sccId[i]].push_back(i);", hint:"Collect all nodes belonging to each SCC."},
+        ]
+      },
+      { z:2, tag:"compute condensation in-degrees for topo order",
+        lines:[
+          {t:"blank", ph:"// compute condensation in-degrees...", ans:"vector<int> indegree(numSCC,0); for(int u=0;u<n;u++) for(int v:adj[u]) if(sccId[u]!=sccId[v]) indegree[sccId[v]]++;", hint:"Topo order of condensation gives dominance order. Source SCC = dominates all."},
+        ]
+      },
+      { z:3, tag:"topological sort of condensation = dominance order",
+        lines:[
+          {t:"blank", ph:"// topo sort condensation to get dominance order...", ans:"queue<int> q; for(int i=0;i<numSCC;i++) if(indegree[i]==0) q.push(i); vector<int> result; while(!q.empty()){ int s=q.front();q.pop(); for(int node:sccNodes[s]) result.push_back(node); for(int u:sccNodes[s]) for(int v:adj[u]) if(sccId[u]!=sccId[v]&&--indegree[sccId[v]]==0) q.push(sccId[v]); }", hint:"Kahn's topo sort on condensation. Source SCC wins all — process its nodes first."},
+        ]
+      },
+      { z:4, tag:"RESULT — dominance order from strongest to weakest",
+        lines:[
+          {t:"blank", ph:"// return nodes in dominance order...", ans:"return result;", hint:"result[0] = dominant player (SCC source). In tournament, first SCC can beat everyone transitively."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Detect Deadlock in OS ──────────────────────────────────────────────
+  {
+    id:8, title:"Detect Deadlock in OS", badge:"SCC SIZE > 1 = CYCLE", badgeColor:"var(--c1)",
+    hint:"Process wait-for graph: edge u→v means process u is waiting for resource held by v. Deadlock = circular wait = cycle = SCC of size > 1. Also check self-loops.",
+    vizRows:[
+      {label:"wait-for graph", nodes:["P1→P2→P3→P1"], cls:"sn-disc"},
+      {label:"find SCCs", nodes:["SCC {P1,P2,P3} size=3"], cls:"sn-root"},
+      {label:"size>1 → DEADLOCK", nodes:["circular wait detected!"], cls:"sn-scc"},
+    ],
+    zones:[
+      { z:1, tag:"build wait-for graph from process dependencies",
+        lines:[
+          {t:"blank", ph:"// detect deadlock: find cycles in process wait-for graph...", ans:"vector<int> detectDeadlock(int n, vector<vector<int>>& waitFor) {", hint:"waitFor[u] = list of processes u is waiting for. Cycle = deadlock. Returns deadlocked processes."},
+          {t:"blank", ph:"// find SCCs using Tarjan's...", ans:"vector<int> sccId; int numSCC=tarjan(n,waitFor,sccId); vector<int> sccSize(numSCC,0); for(int i=0;i<n;i++) sccSize[sccId[i]]++;", hint:"SCC of size > 1 = cycle = deadlock. Also need to check self-loops (process waiting on itself)."},
+        ]
+      },
+      { z:2, tag:"check for self-loops (single process deadlock)",
+        lines:[
+          {t:"blank", ph:"// check self-loops — process waiting on itself...", ans:"vector<bool> selfLoop(n,false); for(int u=0;u<n;u++) for(int v:waitFor[u]) if(v==u) selfLoop[u]=true;", hint:"Self-loop = process allocated a resource and also waiting for it = immediate deadlock."},
+        ]
+      },
+      { z:3, tag:"collect deadlocked processes — SCC size > 1 or self-loop",
+        lines:[
+          {t:"blank", ph:"// collect all deadlocked processes...", ans:"vector<int> deadlocked; for(int i=0;i<n;i++) if(selfLoop[i]||sccSize[sccId[i]]>1) deadlocked.push_back(i);", hint:"Both cases are deadlocks: self-loop (trivial cycle) or SCC>1 (multi-process circular wait)."},
+        ]
+      },
+      { z:4, tag:"RESULT — list of deadlocked processes",
+        lines:[
+          {t:"blank", ph:"// return deadlocked process list (empty = no deadlock)...", ans:"return deadlocked;", hint:"Empty = no cycles = no deadlock. OS can resolve by killing or preempting listed processes."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Reachability Queries ───────────────────────────────────────────────
+  {
+    id:9, title:"Reachability Queries", badge:"CONDENSATION + TOPO DP", badgeColor:"var(--c4)",
+    hint:"Can node u reach node v? Build condensation DAG. DP on condensation in topo order: reachable[scc] = union of reachable sets of all successor SCCs + itself. Answer: v's SCC in reachable[u's SCC].",
+    vizRows:[
+      {label:"condensation DAG", nodes:["SCC0→SCC1→SCC2"], cls:"sn-disc"},
+      {label:"topo DP: reachable[i]", nodes:["= {i} ∪ reachable[children]"], cls:"sn-stack"},
+      {label:"query(u,v)", nodes:["sccId[v] in reachable[sccId[u]]?"], cls:"sn-scc"},
+    ],
+    zones:[
+      { z:1, tag:"find SCCs + build condensation",
+        lines:[
+          {t:"blank", ph:"// reachability queries on directed graph...", ans:"struct Reachability { vector<int> sccId; vector<bitset<500>> reach; int numSCC;", hint:"Precompute: reach[i] = bitset of all SCCs reachable from SCC i. Query in O(1)."},
+          {t:"blank", ph:"// build condensation and compute reachability DP...", ans:"Reachability(int n, vector<vector<int>>& adj){ numSCC=tarjan(n,adj,sccId); reach.resize(numSCC); vector<vector<int>> cadj(numSCC);", hint:"Bitset per SCC = O(numSCC²/64) space. Query: reach[sccId[u]][sccId[v]]."},
+          {t:"blank", ph:"// build condensation adjacency...", ans:"for(int u=0;u<n;u++) for(int v:adj[u]) if(sccId[u]!=sccId[v]) cadj[sccId[u]].push_back(sccId[v]);", hint:"Add inter-SCC edges to condensation."},
+        ]
+      },
+      { z:2, tag:"topo sort condensation for DP order",
+        lines:[
+          {t:"blank", ph:"// topo sort condensation for correct DP order...", ans:"vector<int> indeg(numSCC,0); for(int i=0;i<numSCC;i++) for(int j:cadj[i]) indeg[j]++; queue<int> q; for(int i=0;i<numSCC;i++) if(indeg[i]==0) q.push(i); vector<int> topoOrder; while(!q.empty()){ int u=q.front();q.pop();topoOrder.push_back(u); for(int v:cadj[u]) if(--indeg[v]==0) q.push(v); }", hint:"Process in reverse topo order (sinks first) so children's reachability is computed before parents."},
+        ]
+      },
+      { z:3, tag:"DP: reachable[i] = self + union of children",
+        lines:[
+          {t:"blank", ph:"// DP in reverse topo order: sinks first...", ans:"for(int i=topoOrder.size()-1;i>=0;i--){ int s=topoOrder[i]; reach[s].set(s); for(int t:cadj[s]) reach[s]|=reach[t]; }", hint:"reach[s] includes itself. Union (|=) with each child's reachability set."},
+        ]
+      },
+      { z:4, tag:"RESULT — O(1) query after O(V²/64) precomputation",
+        lines:[
+          {t:"blank", ph:"// query: can u reach v?...", ans:"bool canReach(int u,int v){ return reach[sccId[u]].test(sccId[v]); } };", hint:"O(1) per query. Trade-off: O(V²/64) space and O(V²/64) precompute time."},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Strongly Connected Subgraph ────────────────────────────────────────
+  {
+    id:10, title:"Strongly Connected Subgraph", badge:"LARGEST SCC BY SIZE", badgeColor:"var(--c2)",
+    hint:"Find the largest SCC — the maximum set of nodes where every node can reach every other. Run Tarjan's, count nodes per SCC, return the largest one.",
+    vizRows:[
+      {label:"find all SCCs", nodes:["Tarjan's / Kosaraju's"], cls:"sn-disc"},
+      {label:"count SCC sizes", nodes:["sccSize[id]++"], cls:"sn-stack"},
+      {label:"largest SCC", nodes:["max by node count"], cls:"sn-scc"},
+    ],
+    zones:[
+      { z:1, tag:"run Tarjan's, count nodes per SCC",
+        lines:[
+          {t:"blank", ph:"// find largest strongly connected subgraph...", ans:"vector<int> largestSCC(int n, vector<vector<int>>& adj) {", hint:"Returns all nodes in the largest SCC. Largest = maximum mutual reachability group."},
+          {t:"blank", ph:"// find SCCs and count sizes...", ans:"vector<int> sccId; int numSCC=tarjan(n,adj,sccId); vector<int> sccSize(numSCC,0); for(int i=0;i<n;i++) sccSize[sccId[i]]++;", hint:"sccSize[id] = number of nodes in that SCC. Max sccSize = largest SCC."},
+        ]
+      },
+      { z:2, tag:"find ID of largest SCC",
+        lines:[
+          {t:"blank", ph:"// find which SCC has most nodes...", ans:"int bestId=max_element(sccSize.begin(),sccSize.end())-sccSize.begin();", hint:"max_element returns iterator. Subtract begin() to get index = SCC id with most nodes."},
+        ]
+      },
+      { z:3, tag:"collect all nodes in largest SCC",
+        lines:[
+          {t:"blank", ph:"// collect nodes belonging to largest SCC...", ans:"vector<int> result; for(int i=0;i<n;i++) if(sccId[i]==bestId) result.push_back(i);", hint:"Filter all nodes by their SCC id. Return those matching the largest SCC."},
+        ]
+      },
+      { z:4, tag:"RESULT — nodes of largest strongly connected subgraph",
+        lines:[
+          {t:"blank", ph:"// return nodes in largest SCC...", ans:"return result;", hint:"These nodes form a maximum subgraph where every node can reach every other node."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['DFS Setup','Entry / Init','Core DFS Loop','Result / Post-process'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const rows=p.vizRows.map(row=>{
+    const nodes=row.nodes.map(nd=>`<div class="scc-node ${row.cls}">${nd}</div>`).join(`<span class="scc-arrow"> → </span>`);
+    return `<div class="scc-row"><div class="scc-label">${row.label}</div>${nodes}</div>`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="scc-viz">${rows}</div>
+    <div class="viz-legend">
+      <span style="color:var(--c2)">■</span> disc/timer &nbsp;
+      <span style="color:var(--c1)">■</span> on stack &nbsp;
+      <span style="color:var(--c4)">■</span> SCC complete &nbsp;
+      <span style="color:var(--c3)">■</span> SCC root &nbsp;&nbsp;
+      <span style="color:var(--c1)">★ low[u]==disc[u] → SCC root &nbsp;|&nbsp; onStack[v] not visited[v] for back-edge &nbsp;|&nbsp; cross edges: IGNORE</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

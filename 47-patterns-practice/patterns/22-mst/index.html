@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MST — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(251,146,60,0.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c3);border:1px solid rgba(251,146,60,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c3) 40%,var(--c4) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c3);color:var(--text);}
+.sel-btn.active{background:rgba(251,146,60,0.1);border-color:var(--c3);color:var(--c3);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c3);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(251,146,60,0.03);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c3);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:400px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c3);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(251,146,60,0.05);border-bottom-color:var(--c3);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(251,146,60,0.1);color:var(--c3);border-color:rgba(251,146,60,0.4);}
+.btn-check:hover{background:rgba(251,146,60,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(251,146,60,0.04);border:1px solid rgba(251,146,60,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c3);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.mst-viz{display:flex;flex-direction:column;gap:8px;}
+.mst-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.mst-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);min-width:130px;text-align:right;padding-right:8px;flex-shrink:0;}
+.mst-node{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid;border-radius:3px;white-space:nowrap;}
+.mn-edge{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.07);}
+.mn-mst{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.08);}
+.mn-skip{border-color:var(--muted);color:var(--muted);background:rgba(82,82,110,0.07);}
+.mn-dsu{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.mst-arrow{color:var(--muted);font-size:12px;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c}
+.op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 22 — Practice Mode</div>
+    <h1>MST</h1>
+    <p>// sort edges · DSU unite() → false = cycle · Prim = Dijkstra with edge weight not path cost</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// MST — 10 Manifestations
+//
+// TWO ALGORITHMS:
+//   Kruskal's:  sort edges · DSU unite() returns false = cycle = skip
+//   Prim's:     min-heap · stale-skip (inMST check) · relax with edge weight only (not path)
+//
+// DSU (Pattern 14) is the backbone of 7/10 manifestations:
+//   find(x) with path compression
+//   unite(x,y) with rank — returns false if already same component
+//
+// WHAT CHANGES:
+//   max ST:            negate weights OR sort descending
+//   bottleneck ST:     MST already minimizes max edge — free!
+//   second MST:        build MST, try replacing each MST edge with cheapest spanning alternative
+//   critical edges:    remove edge → MST weight increases
+//   pseudo-critical:   force edge → MST weight unchanged
+//
+// 4 Blocks:
+//   ① EDGE PREP   — sort ascending (or negate for max-ST)
+//   ② DSU INIT    — parent[i]=i, rank[i]=0, iota fill
+//   ③ KRUSKAL LOOP — for edge: if unite(u,v) → add; stop at n-1 edges
+//   ④ RESULT      — total weight · edge list · max edge (bottleneck) · classification
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DSU_CODE = `<span class="kw">struct</span> <span class="ty">DSU</span> {
+  <span class="ty">vector</span>&lt;<span class="ty">int</span>&gt; p, rnk;
+  <span class="ty">DSU</span>(<span class="ty">int</span> n):p(n),rnk(n,<span class="nm">0</span>){iota(p.begin(),p.end(),<span class="nm">0</span>);}
+  <span class="ty">int</span> <span class="fn">find</span>(<span class="ty">int</span> x){<span class="kw">return</span> p[x]==x?x:p[x]=<span class="fn">find</span>(p[x]);}
+  <span class="ty">bool</span> <span class="fn">unite</span>(<span class="ty">int</span> x,<span class="ty">int</span> y){
+    x=<span class="fn">find</span>(x);y=<span class="fn">find</span>(y);
+    <span class="kw">if</span>(x==y) <span class="kw">return false</span>; <span class="cm">// already connected = cycle</span>
+    <span class="kw">if</span>(rnk[x]&lt;rnk[y]) swap(x,y);
+    p[y]=x; <span class="kw">if</span>(rnk[x]==rnk[y]) rnk[x]++;
+    <span class="kw">return true</span>;
+  }
+};`;
+
+const P = [
+
+  // 01 ── Kruskal's Algorithm ────────────────────────────────────────────────
+  {
+    id:1, title:"Kruskal's Algorithm", badge:"SORT + DSU UNITE", badgeColor:"var(--c4)",
+    hint:"Sort edges by weight. Greedily add cheapest edge that doesn't create a cycle (DSU unite returns false = cycle). Stop after n-1 edges. O(E log E).",
+    vizRows:[
+      {label:"sorted edges", nodes:["(1,A-B)","(2,C-D)","(3,A-C)","(4,B-D)"], cls:"mn-edge"},
+      {label:"unite(A,B)✓", nodes:["add w=1"], cls:"mn-mst"},
+      {label:"unite(C,D)✓", nodes:["add w=2"], cls:"mn-mst"},
+      {label:"unite(A,C)✓", nodes:["add w=3 → MST done!"], cls:"mn-mst"},
+      {label:"unite(B,D)✗", nodes:["same component → skip"], cls:"mn-skip"},
+    ],
+    zones:[
+      { z:1, tag:"sort edges by weight ascending",
+        lines:[
+          {t:"blank", ph:"// Kruskal's MST — sort edges then DSU...", ans:"int kruskal(int n, vector<tuple<int,int,int>>& edges) {", hint:"edges = {weight, u, v}. Returns total MST weight."},
+          {t:"blank", ph:"// sort by weight ascending...", ans:"sort(edges.begin(), edges.end());", hint:"tuple sorts by first element by default. Weight first → sorted by weight."},
+        ]
+      },
+      { z:2, tag:"DSU init — parent[i]=i, rank[i]=0",
+        lines:[
+          {t:"fixed", code:DSU_CODE},
+          {t:"blank", ph:"// init DSU for n nodes...", ans:"DSU dsu(n); int total=0, cnt=0;", hint:"iota fills parent[i]=i. cnt tracks how many MST edges added — stop at n-1."},
+        ]
+      },
+      { z:3, tag:"greedily add cheapest non-cycle edge",
+        lines:[
+          {t:"blank", ph:"// iterate sorted edges — add if no cycle...", ans:"for (auto [w,u,v] : edges) {", hint:"Process cheapest edges first — greedy choice is safe (cut property)."},
+          {t:"blank", ph:"//   unite returns false if already connected (cycle)...", ans:"if (dsu.unite(u,v)) { total+=w; if(++cnt==n-1) break; }", hint:"unite() returns false = same component = adding would create cycle. true = new edge added to MST."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — total MST weight · cnt<n-1 means disconnected",
+        lines:[
+          {t:"blank", ph:"// return MST weight (or -1 if graph disconnected)...", ans:"return cnt==n-1 ? total : -1;", hint:"MST needs exactly n-1 edges. If cnt < n-1, graph is disconnected — no spanning tree exists."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Prim's Algorithm ───────────────────────────────────────────────────
+  {
+    id:2, title:"Prim's Algorithm", badge:"MIN-HEAP EDGE WEIGHT", badgeColor:"var(--c2)",
+    hint:"Grow MST from source. Min-heap stores {edge_weight, node}. Pop cheapest reachable node. Add its edge weight to MST. Relax neighbors with EDGE WEIGHT (not dist[u]+w like Dijkstra).",
+    vizRows:[
+      {label:"start at node 0", nodes:["key[0]=0","key[rest]=INF"], cls:"mn-dsu"},
+      {label:"pop (0,0)", nodes:["inMST[0]=true","push neighbors"], cls:"mn-mst"},
+      {label:"pop cheapest", nodes:["inMST check → skip if done"], cls:"mn-mst"},
+    ],
+    zones:[
+      { z:1, tag:"key[src]=0, rest=INF · min-heap of {weight, node}",
+        lines:[
+          {t:"blank", ph:"// Prim's MST — grow from source node...", ans:"int prim(int n, vector<vector<pair<int,int>>>& adj) {", hint:"adj[u]={{v,w},...}. Grows MST by always adding cheapest reachable edge."},
+          {t:"blank", ph:"// inMST tracks nodes in tree · min-heap of {edge_weight, node}...", ans:"vector<bool> inMST(n,false); int total=0; priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> pq; pq.push({0,0});", hint:"Start at node 0 with edge weight 0. Same heap structure as Dijkstra."},
+        ]
+      },
+      { z:2, tag:"seed — push {0, src} — weight of 'virtual' first edge is 0",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// seeded above: pq.push({0, 0})</span>`},
+        ]
+      },
+      { z:3, tag:"pop · inMST stale-skip · add weight · push neighbors",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">while</span> (!pq.empty()) {`},
+          {t:"blank", ph:"//   pop cheapest reachable node...", ans:"auto [w, u] = pq.top(); pq.pop();", hint:"w = edge weight to reach u (NOT total path distance like Dijkstra)"},
+          {t:"blank", ph:"//   stale-skip: already in MST...", ans:"if (inMST[u]) continue;", hint:"Same as Dijkstra's stale-skip but checks inMST instead of d>dist[u]"},
+          {t:"blank", ph:"//   add to MST, accumulate edge weight...", ans:"inMST[u]=true; total+=w;", hint:"Mark in MST. Add THIS EDGE'S WEIGHT (w), not accumulated distance."},
+          {t:"blank", ph:"//   push unvisited neighbors with EDGE weight (not dist+w)...", ans:"for(auto[v,wt]:adj[u]) if(!inMST[v]) pq.push({wt,v});", hint:"KEY DIFFERENCE from Dijkstra: push {wt, v} not {total+wt, v}. We want cheapest edge, not cheapest path."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — total = MST weight · Prim=O(ElogV) Kruskal=O(ElogE)",
+        lines:[
+          {t:"blank", ph:"// return MST weight...", ans:"return total;", hint:"Prim is better for dense graphs. Kruskal better for sparse. Both give same MST weight."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Minimum Cost to Connect All Nodes ──────────────────────────────────
+  {
+    id:3, title:"Min Cost to Connect All Nodes", badge:"CLASSIC MST", badgeColor:"var(--c4)",
+    hint:"Direct application of Kruskal's or Prim's. Build graph, run MST, return total weight. If graph disconnected, return -1. This is the definition of MST.",
+    vizRows:[
+      {label:"n nodes, m edges", nodes:["sort edges","DSU init"], cls:"mn-edge"},
+      {label:"Kruskal's loop", nodes:["add n-1 edges","skipping cycles"], cls:"mn-mst"},
+      {label:"answer", nodes:["sum of MST edges"], cls:"mn-dsu"},
+    ],
+    zones:[
+      { z:1, tag:"build edge list from input, sort by weight",
+        lines:[
+          {t:"blank", ph:"// minimum cost to connect all n nodes...", ans:"int minCostConnectAll(int n, vector<vector<int>>& connections) {", hint:"connections[i]={u,v,w}. Find MST cost. Return -1 if impossible."},
+          {t:"blank", ph:"// convert to sortable edges + sort...", ans:"vector<tuple<int,int,int>> edges; for(auto& c:connections) edges.push_back({c[2],c[0]-1,c[1]-1}); sort(edges.begin(),edges.end());", hint:"Pack as {weight,u,v} for natural tuple sort. Convert to 0-indexed."},
+        ]
+      },
+      { z:2, tag:"DSU init",
+        lines:[
+          {t:"blank", ph:"// init DSU...", ans:"DSU dsu(n); int total=0, cnt=0;", hint:"n nodes, DSU handles cycle detection throughout Kruskal's loop"},
+        ]
+      },
+      { z:3, tag:"Kruskal's loop — identical to base",
+        lines:[
+          {t:"blank", ph:"// standard Kruskal's loop...", ans:"for(auto [w,u,v]:edges) if(dsu.unite(u,v)){total+=w; if(++cnt==n-1) break;}", hint:"Identical to base Kruskal's. Nothing special — this IS the classic MST problem."},
+        ]
+      },
+      { z:4, tag:"RESULT — total or -1 if disconnected",
+        lines:[
+          {t:"blank", ph:"// need exactly n-1 edges for spanning tree...", ans:"return cnt==n-1 ? total : -1;", hint:"Can't span disconnected graph. Return -1 to signal impossibility."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Maximum Spanning Tree ──────────────────────────────────────────────
+  {
+    id:4, title:"Maximum Spanning Tree", badge:"NEGATE → RUN MST", badgeColor:"var(--c3)",
+    hint:"Negate all edge weights (or sort descending). Run standard Kruskal's. The minimum spanning tree of negated weights = maximum spanning tree of original. DSU unchanged.",
+    vizRows:[
+      {label:"original weights", nodes:["w=1","w=3","w=5","w=2"], cls:"mn-edge"},
+      {label:"negate weights", nodes:["w=-1","w=-3","w=-5","w=-2"], cls:"mn-skip"},
+      {label:"MST of negated", nodes:["picks w=-5,-3,-2"], cls:"mn-mst"},
+      {label:"= max ST", nodes:["picks w=5,3,2"], cls:"mn-dsu"},
+    ],
+    zones:[
+      { z:1, tag:"negate weights — or sort descending",
+        lines:[
+          {t:"blank", ph:"// maximum spanning tree — negate weights then run Kruskal's...", ans:"int maxSpanningTree(int n, vector<tuple<int,int,int>>& edges) {", hint:"Max ST: heaviest edges preferred. Trick: negate weights so heaviest → most negative → sorted first."},
+          {t:"blank", ph:"// negate all weights before sorting...", ans:"for(auto& [w,u,v]:edges) w=-w; sort(edges.begin(),edges.end());", hint:"After negating, sort ascending = original descending. Kruskal's then picks heaviest edges first."},
+        ]
+      },
+      { z:2, tag:"DSU — identical to standard Kruskal's",
+        lines:[
+          {t:"blank", ph:"// DSU unchanged — cycle detection is weight-independent...", ans:"DSU dsu(n); int total=0, cnt=0;", hint:"DSU doesn't care about weights — it only tracks connectivity. Same code always."},
+        ]
+      },
+      { z:3, tag:"Kruskal's loop — identical, but picks heaviest original edges",
+        lines:[
+          {t:"blank", ph:"// same Kruskal's loop — works on negated weights...", ans:"for(auto [w,u,v]:edges) if(dsu.unite(u,v)){total+=w; if(++cnt==n-1) break;}", hint:"Same loop. total accumulates negated weights."},
+        ]
+      },
+      { z:4, tag:"RESULT — negate total back to get max ST weight",
+        lines:[
+          {t:"blank", ph:"// negate result back to get actual max ST weight...", ans:"return cnt==n-1 ? -total : -1;", hint:"We negated weights to trick the algorithm. Negate total back to get original max ST weight."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Minimum Bottleneck Spanning Tree ───────────────────────────────────
+  {
+    id:5, title:"Minimum Bottleneck ST", badge:"MST = BOTTLENECK ST", badgeColor:"var(--c1)",
+    hint:"The MST IS the minimum bottleneck spanning tree — a theorem! MST minimizes the maximum edge weight among all spanning trees. Build MST, bottleneck = max edge in MST.",
+    vizRows:[
+      {label:"MST edges", nodes:["w=1","w=2","w=3"], cls:"mn-mst"},
+      {label:"bottleneck=max MST edge", nodes:["max=3"], cls:"mn-dsu"},
+      {label:"any other ST", nodes:["has max edge ≥ 3"], cls:"mn-skip"},
+    ],
+    zones:[
+      { z:1, tag:"build MST — bottleneck is just max edge in it",
+        lines:[
+          {t:"blank", ph:"// minimum bottleneck ST — MST already minimizes max edge...", ans:"int minBottleneck(int n, vector<tuple<int,int,int>>& edges) {", hint:"Theorem: any MST is a minimum bottleneck spanning tree. No extra work needed!"},
+          {t:"blank", ph:"// standard Kruskal's, track max edge weight added...", ans:"sort(edges.begin(),edges.end()); DSU dsu(n); int maxEdge=0,cnt=0;", hint:"Only change: track maxEdge instead of (or in addition to) total weight."},
+        ]
+      },
+      { z:2, tag:"DSU — identical",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// DSU initialized above, same as always</span>`},
+        ]
+      },
+      { z:3, tag:"Kruskal's loop — track max edge weight added",
+        lines:[
+          {t:"blank", ph:"// Kruskal's loop tracking maximum edge added to MST...", ans:"for(auto [w,u,v]:edges){ if(dsu.unite(u,v)){ maxEdge=max(maxEdge,w); if(++cnt==n-1) break; } }", hint:"maxEdge = last edge added (since sorted ascending, last = heaviest). Bottleneck = this value."},
+        ]
+      },
+      { z:4, tag:"RESULT — max edge in MST = minimum bottleneck",
+        lines:[
+          {t:"blank", ph:"// bottleneck = maximum edge weight in MST...", ans:"return cnt==n-1 ? maxEdge : -1;", hint:"Since we process edges in ascending order, last edge added = max edge = bottleneck value."},
+          {t:"fixed", code:`}`},
+          {t:"fixed", code:`<span class="cm">// proof: if any ST had smaller bottleneck, MST would have chosen smaller edge too</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Second Minimum Spanning Tree ──────────────────────────────────────
+  {
+    id:6, title:"Second Minimum Spanning Tree", badge:"MST + SWAP ONE EDGE", badgeColor:"var(--c3)",
+    hint:"Build MST. For each non-MST edge (u,v,w): adding it creates a cycle. The heaviest edge on path u→v in MST can be swapped out. Min over all such swaps = second MST.",
+    vizRows:[
+      {label:"MST built", nodes:["edges: e1,e2,e3,e4"], cls:"mn-mst"},
+      {label:"try each non-MST edge", nodes:["add edge → cycle"], cls:"mn-edge"},
+      {label:"remove max on path", nodes:["→ different ST"], cls:"mn-skip"},
+      {label:"min swap = 2nd MST", nodes:["min(w_new - w_removed)"], cls:"mn-dsu"},
+    ],
+    zones:[
+      { z:1, tag:"build MST, mark MST edges, get max edge on each path",
+        lines:[
+          {t:"blank", ph:"// second minimum spanning tree...", ans:"int secondMST(int n, vector<tuple<int,int,int>>& edges) {", hint:"Find spanning tree with minimum weight that is NOT the MST."},
+          {t:"blank", ph:"// build MST using Kruskal's, track which edges are in MST...", ans:"sort(edges.begin(),edges.end()); DSU dsu(n); int mstW=0; vector<bool> inMST(edges.size(),false); int cnt=0; for(int i=0;i<(int)edges.size();i++){ auto [w,u,v]=edges[i]; if(dsu.unite(u,v)){mstW+=w;inMST[i]=true;if(++cnt==n-1)break;} }", hint:"Track inMST[i] to know which edges are in MST vs available for swap."},
+        ]
+      },
+      { z:2, tag:"build MST adjacency for path max queries",
+        lines:[
+          {t:"blank", ph:"// build MST adjacency list...", ans:"vector<vector<pair<int,int>>> mstAdj(n); for(int i=0;i<(int)edges.size();i++){ if(inMST[i]){auto[w,u,v]=edges[i];mstAdj[u].push_back({v,w});mstAdj[v].push_back({u,w});} }", hint:"Need to find max-weight edge on path between any two nodes in MST."},
+        ]
+      },
+      { z:3, tag:"for each non-MST edge: find max edge on MST path",
+        lines:[
+          {t:"blank", ph:"// for each non-MST edge, find max edge on path in MST...", ans:"int ans=INT_MAX; for(int i=0;i<(int)edges.size();i++){ if(inMST[i]) continue; auto[w,u,v]=edges[i]; int maxOnPath=0; vector<bool> vis(n,false); function<bool(int,int)> dfs=[&](int cur,int par)->bool{ if(cur==v) return true; vis[cur]=true; for(auto[nb,ew]:mstAdj[cur]){ if(nb==par||vis[nb]) continue; maxOnPath=max(maxOnPath,ew); if(dfs(nb,cur)) return true; maxOnPath=0; } return false; }; dfs(u,-1); ans=min(ans,mstW-maxOnPath+w); }", hint:"DFS on MST to find max-weight edge on path u→v. Replace that edge with current non-MST edge."},
+        ]
+      },
+      { z:4, tag:"RESULT — minimum weight alternative spanning tree",
+        lines:[
+          {t:"blank", ph:"// return weight of second MST...", ans:"return ans;", hint:"Second MST weight = MST weight - max_path_edge + non_MST_edge, minimized over all non-MST edges."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Steiner Tree ───────────────────────────────────────────────────────
+  {
+    id:7, title:"Steiner Tree", badge:"BITMASK DP + MST", badgeColor:"var(--c2)",
+    hint:"Connect a SUBSET of k terminal nodes minimally (not all n nodes). dp[mask][v] = min cost of a tree connecting all terminals in mask, rooted at v. O(3^k · n + 2^k · n²).",
+    vizRows:[
+      {label:"terminals={A,B,C}", nodes:["must connect these k nodes"], cls:"mn-dsu"},
+      {label:"dp[mask][v]", nodes:["min cost tree for mask"], cls:"mn-mst"},
+      {label:"transitions", nodes:["split mask","extend via Dijkstra"], cls:"mn-edge"},
+    ],
+    zones:[
+      { z:1, tag:"dp[mask][v] = min cost connecting terminals in mask through v",
+        lines:[
+          {t:"blank", ph:"// Steiner tree: connect subset of terminal nodes minimally...", ans:"int steinerTree(int n, vector<vector<pair<int,int>>>& adj, vector<int>& terminals) {", hint:"More general than MST: connect only k specified terminals (k ≤ n). Uses all n nodes as Steiner points."},
+          {t:"blank", ph:"// dp[mask][v] = min cost tree spanning terminals in mask, containing node v...", ans:"int k=terminals.size(); vector<vector<int>> dp(1<<k, vector<int>(n, INT_MAX/2)); for(int i=0;i<k;i++) dp[1<<i][terminals[i]]=0;", hint:"Base: dp[1<<i][terminals[i]]=0 — single terminal node, zero cost."},
+        ]
+      },
+      { z:2, tag:"subset merge: dp[mask][v] = min over splits",
+        lines:[
+          {t:"blank", ph:"// for each mask: try all subset splits to combine two subtrees...", ans:"for(int mask=1;mask<(1<<k);mask++){ for(int sub=(mask-1)&mask;sub>0;sub=(sub-1)&mask) for(int v=0;v<n;v++) if(dp[sub][v]!=INT_MAX/2&&dp[mask^sub][v]!=INT_MAX/2) dp[mask][v]=min(dp[mask][v],dp[sub][v]+dp[mask^sub][v]);", hint:"Split mask into two subtrees meeting at node v. Sum their costs."},
+        ]
+      },
+      { z:3, tag:"Dijkstra per mask to propagate through Steiner points",
+        lines:[
+          {t:"blank", ph:"// Dijkstra to extend each partial tree through non-terminal nodes...", ans:"priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> pq; for(int v=0;v<n;v++) if(dp[mask][v]!=INT_MAX/2) pq.push({dp[mask][v],v}); while(!pq.empty()){ auto[d,u]=pq.top();pq.pop(); if(d>dp[mask][u]) continue; for(auto[nb,w]:adj[u]) if(dp[mask][u]+w<dp[mask][nb]){dp[mask][nb]=dp[mask][u]+w;pq.push({dp[mask][nb],nb});} } }", hint:"Run Dijkstra for each mask state to find min-cost path through any intermediate node."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — dp[FULL][v] min over all v",
+        lines:[
+          {t:"blank", ph:"// min over all nodes as final meeting point...", ans:"int ans=INT_MAX/2; for(int v=0;v<n;v++) ans=min(ans,dp[(1<<k)-1][v]); return ans;", hint:"Full mask = all terminals connected. Try all nodes as the 'root' of the Steiner tree."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Online MST Updates ─────────────────────────────────────────────────
+  {
+    id:8, title:"Online MST Updates", badge:"ADD EDGES DYNAMICALLY", badgeColor:"var(--c4)",
+    hint:"Add edges one at a time. DSU handles cycle detection — if unite(u,v) returns true, edge joins two components and must be in current MST. Track current MST edges and total weight.",
+    vizRows:[
+      {label:"add edge (u,v,w)", nodes:["unite(u,v)?"], cls:"mn-edge"},
+      {label:"true → add to MST", nodes:["new connection!"], cls:"mn-mst"},
+      {label:"false → skip", nodes:["would create cycle"], cls:"mn-skip"},
+    ],
+    zones:[
+      { z:1, tag:"DSU initialized once — edges arrive online",
+        lines:[
+          {t:"blank", ph:"// online MST: process edges as they arrive...", ans:"struct OnlineMST { DSU dsu; int n, total, cnt; vector<tuple<int,int,int>> mstEdges;", hint:"Unlike Kruskal's, we can't sort all edges first. Process in arrival order."},
+          {t:"blank", ph:"// initialize DSU for n nodes...", ans:"OnlineMST(int n):dsu(n),n(n),total(0),cnt(0){}", hint:"DSU ready to handle any edges that arrive. MST builds incrementally."},
+        ]
+      },
+      { z:2, tag:"addEdge — try to unite, add if new connection",
+        lines:[
+          {t:"blank", ph:"// add edge — DSU decides if it joins MST...", ans:"bool addEdge(int u, int v, int w) {", hint:"Returns true if edge was added to MST (connected two components)."},
+          {t:"blank", ph:"//   if unite succeeds, this edge is part of MST...", ans:"if(dsu.unite(u,v)){ total+=w; cnt++; mstEdges.push_back({w,u,v}); return true; } return false;", hint:"unite() returns true = new connection = this edge must be in MST. false = cycle = skip."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:3, tag:"query current MST state",
+        lines:[
+          {t:"blank", ph:"// is MST complete (spanning tree formed)?...", ans:"bool isComplete(){ return cnt==n-1; }", hint:"n-1 edges = spanning tree. Before that, still a spanning forest."},
+          {t:"blank", ph:"// current MST weight...", ans:"int getMSTWeight(){ return isComplete() ? total : -1; }", hint:"Return weight only if complete spanning tree formed."},
+        ]
+      },
+      { z:4, tag:"RESULT — note: online MST is suboptimal without sorting",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// caveat: online MST ≠ global optimal MST</span>`},
+          {t:"fixed", code:`<span class="cm">// edges processed in arrival order, not weight order</span>`},
+          {t:"fixed", code:`<span class="cm">// for optimal MST, collect all edges then sort (Kruskal's)</span>`},
+          {t:"fixed", code:`};`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Critical and Pseudo-Critical Edges ────────────────────────────────
+  {
+    id:9, title:"Critical and Pseudo-Critical Edges", badge:"FORCE / FORBID EDGE", badgeColor:"var(--c1)",
+    hint:"Critical: remove edge → MST weight increases (or graph disconnects). Pseudo-critical: force edge first, then complete MST — weight equals base MST. Test each edge both ways.",
+    vizRows:[
+      {label:"base MST weight", nodes:["W = baseline"], cls:"mn-mst"},
+      {label:"remove edge i", nodes:["new MST weight > W?"], cls:"mn-skip"},
+      {label:"→ CRITICAL", nodes:["must be in every MST"], cls:"mn-dsu"},
+      {label:"force edge i", nodes:["MST weight still = W?"], cls:"mn-mst"},
+      {label:"→ PSEUDO-CRITICAL", nodes:["can be in some MST"], cls:"mn-edge"},
+    ],
+    zones:[
+      { z:1, tag:"compute base MST weight for comparison",
+        lines:[
+          {t:"blank", ph:"// find critical and pseudo-critical edges in MST...", ans:"vector<vector<int>> findCriticalPseudo(int n, vector<vector<int>>& edges) {", hint:"For each edge: test if removing raises MST weight (critical) or forcing it in keeps same weight (pseudo)."},
+          {t:"blank", ph:"// helper: run Kruskal's skipping edge 'skip', optionally forcing edge 'force'...", ans:"auto runMST=[&](int skip,int force)->int{ DSU dsu(n); int w=0,cnt=0; if(force!=-1){w+=edges[force][2];dsu.unite(edges[force][0],edges[force][1]);cnt++;} for(int i=0;i<(int)edges.size();i++){if(i==skip) continue; auto& e=edges[i]; if(dsu.unite(e[0],e[1])){w+=e[2];if(++cnt==n-1)break;}} return cnt==n-1?w:INT_MAX; };", hint:"force=-1: normal Kruskal's. force=i: add edge i first. skip=i: exclude edge i from consideration."},
+          {t:"blank", ph:"// base MST weight...", ans:"int baseW=runMST(-1,-1);", hint:"Baseline: normal Kruskal's gives MST weight to compare against."},
+        ]
+      },
+      { z:2, tag:"for each edge: test critical and pseudo-critical",
+        lines:[
+          {t:"blank", ph:"// classify each edge...", ans:"vector<int> critical,pseudo; for(int i=0;i<(int)edges.size();i++){", hint:"Test each edge independently — O(E²) total with Kruskal's being O(E log E)."},
+        ]
+      },
+      { z:3, tag:"critical: remove → weight increases · pseudo: force → weight same",
+        lines:[
+          {t:"blank", ph:"//   critical: MST without this edge is heavier...", ans:"if(runMST(i,-1)>baseW){ critical.push_back(i);", hint:"Removing critical edge increases MST weight (or disconnects graph → INT_MAX > baseW)."},
+          {t:"blank", ph:"//   pseudo-critical: forcing this edge gives same MST weight...", ans:"} else if(runMST(-1,i)==baseW){ pseudo.push_back(i); } }", hint:"Force edge i first. If resulting MST has same weight, edge can participate in some MST."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — two lists: critical and pseudo-critical edges",
+        lines:[
+          {t:"blank", ph:"// return {critical, pseudo-critical} edge index lists...", ans:"return {critical, pseudo};", hint:"Critical: must be in EVERY MST. Pseudo-critical: in SOME but not all MSTs."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── XOR MST ────────────────────────────────────────────────────────────
+  {
+    id:10, title:"XOR MST", badge:"TRIE + DIVIDE & CONQUER", badgeColor:"var(--c3)",
+    hint:"Edge weight = XOR of node values. Build MST where each edge (u,v) costs val[u]^val[v]. Key insight: sort nodes by value, use trie to find min-XOR pairs across bit boundaries. O(n log n).",
+    vizRows:[
+      {label:"sort node values", nodes:["0,1,3,4,7"], cls:"mn-edge"},
+      {label:"divide by bit b", nodes:["left:[bit=0]","right:[bit=1]"], cls:"mn-mst"},
+      {label:"min XOR cross-edge", nodes:["pair each left with min-XOR right"], cls:"mn-dsu"},
+    ],
+    zones:[
+      { z:1, tag:"sort values · divide by highest bit",
+        lines:[
+          {t:"blank", ph:"// XOR MST: edge weight = val[u]^val[v], find MST...", ans:"int xorMST(vector<int>& vals) {", hint:"Complete graph where edge(u,v) = val[u]^val[v]. Borůvka-based approach: find min XOR for each component."},
+          {t:"blank", ph:"// sort node values — enables bit-based divide and conquer...", ans:"sort(vals.begin(), vals.end()); int total=0;", hint:"Sorted values: nodes sharing high bits are in same subtree, minimizing XOR within groups."},
+        ]
+      },
+      { z:2, tag:"divide by bit — find min XOR connecting two halves",
+        lines:[
+          {t:"blank", ph:"// recursive: for range [l,r] find MST using divide by bit b...", ans:"function<void(int,int,int)> solve=[&](int l,int r,int b){", hint:"l,r = index range in sorted vals. b = current bit being used to split."},
+          {t:"blank", ph:"//   base cases...", ans:"if(l>=r||b<0) return;", hint:"Single element or no bits left — nothing to connect"},
+          {t:"blank", ph:"//   find split point where bit b changes from 0 to 1...", ans:"int mid=l; while(mid<=r&&!((vals[mid]>>b)&1)) mid++;", hint:"Elements before mid have bit b=0, elements from mid have bit b=1."},
+        ]
+      },
+      { z:3, tag:"use trie to find min-XOR pairs across the split",
+        lines:[
+          {t:"blank", ph:"//   recurse on each half independently...", ans:"solve(l,mid-1,b-1); solve(mid,r,b-1);", hint:"Build MST within left group and within right group separately."},
+          {t:"blank", ph:"//   find min XOR edge connecting left and right groups via trie...", ans:"BitTrieNode* trie=new BitTrieNode(); for(int i=mid;i<=r;i++) insertBit(trie,vals[i],b-1); for(int i=l;i<mid;i++) total+=queryMinXOR(trie,vals[i],b-1); };", hint:"Insert right half into trie. For each left element, query min XOR partner in right half. Connects both groups."},
+          {t:"blank", ph:"//   start recursion from full range and highest bit...", ans:"solve(0,vals.size()-1,29);", hint:"Start with full range and highest relevant bit (29 for 30-bit numbers)."},
+        ]
+      },
+      { z:4, tag:"RESULT — total = XOR MST weight",
+        lines:[
+          {t:"blank", ph:"// return XOR MST total weight...", ans:"return total;", hint:"Sum of min-XOR edges chosen. This approach is O(n log² n) with trie queries."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Edge Prep / Setup','DSU Init','Kruskal / Prim Loop','Result'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const rows=p.vizRows.map(row=>{
+    const nodes=row.nodes.map(nd=>`<div class="mst-node ${row.cls}">${nd}</div>`).join(`<span class="mst-arrow"> → </span>`);
+    return `<div class="mst-row"><div class="mst-label">${row.label}</div>${nodes}</div>`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="mst-viz">${rows}</div>
+    <div class="viz-legend">
+      <span style="color:var(--c4)">■</span> MST edge &nbsp;
+      <span style="color:var(--c3)">■</span> candidate edge &nbsp;
+      <span style="color:var(--c2)">■</span> DSU / result &nbsp;
+      <span style="color:var(--muted)">■</span> skipped (cycle) &nbsp;&nbsp;
+      <span style="color:var(--c3)">★ unite() returns false = cycle = skip &nbsp;|&nbsp; Prim: push {edge_w, v} not {dist+w, v}</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

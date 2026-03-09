@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shortest Path — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(74,222,128,0.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c4);border:1px solid rgba(74,222,128,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c4) 40%,var(--c2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c4);color:var(--text);}
+.sel-btn.active{background:rgba(74,222,128,0.1);border-color:var(--c4);color:var(--c4);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c4);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 0 60px rgba(74,222,128,0.03);}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c4);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:400px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c4);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(74,222,128,0.05);border-bottom-color:var(--c4);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.4);}
+.btn-check:hover{background:rgba(74,222,128,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(167,139,250,0.1);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-next:hover{background:rgba(167,139,250,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(74,222,128,0.04);border:1px solid rgba(74,222,128,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c4);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.sp-viz{display:flex;flex-direction:column;gap:8px;}
+.sp-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.sp-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);min-width:120px;text-align:right;padding-right:8px;flex-shrink:0;}
+.sp-node{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid;border-radius:3px;white-space:nowrap;}
+.sn-src{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.08);}
+.sn-mid{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.sn-dst{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.08);}
+.sn-neg{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.07);}
+.sp-edge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c}
+.op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 21 — Practice Mode</div>
+    <h1>Shortest Path</h1>
+    <p>// dist(n,INF) · dist[src]=0 · relax: dist[u]+w &lt; dist[v] → update · stale-skip: d&gt;dist[u] continue</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// SHORTEST PATH — 10 Manifestations
+//
+// UNIVERSAL RELAXATION (appears in 8/10):
+//   if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; }
+//
+// THREE FAMILIES:
+//   A) Dijkstra family — priority_queue, stale-skip, non-negative weights
+//      · Dijkstra · 0-1 BFS (deque) · A* (h(v) addend) · Bidirectional
+//   B) Bellman-Ford family — relax ALL edges N-1 times
+//      · Bellman-Ford · k-stops (relax k times) · Johnson's (BF reweight + Dijkstra)
+//   C) All-pairs — Floyd-Warshall (3-nested loops) · DAG (topo order + relax)
+//
+// 4 Blocks:
+//   ① INIT         — dist(n,INF), dist[src]=0, data structure choice
+//   ② SEED         — pq.push({0,src}) or fill queue or init dp
+//   ③ RELAXATION   — the core loop + relax step + stale-skip
+//   ④ RESULT       — dist[dst] · neg-cycle check · max(dist) · reconstruct path
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Dijkstra ───────────────────────────────────────────────────────────
+  {
+    id:1, title:"Dijkstra", badge:"MIN-HEAP + STALE-SKIP", badgeColor:"var(--c4)",
+    hint:"Min-heap stores {dist, node}. Pop cheapest. Stale-skip: if d > dist[u], skip. Relax all neighbors. Non-negative weights only — negative edges break the greedy invariant.",
+    vizRows:[
+      {label:"src=A, dist[A]=0", nodes:["A(0)→B(4)","A(0)→C(2)"], cls:"sn-src"},
+      {label:"pop C(2)", nodes:["C(2)→D(5)","C(2)→B(3)"], cls:"sn-mid"},
+      {label:"pop B(3)", nodes:["B(3)→D(4)"], cls:"sn-mid"},
+      {label:"pop D(4)", nodes:["DONE dist[D]=4"], cls:"sn-dst"},
+    ],
+    zones:[
+      { z:1, tag:"dist[src]=0, rest=INF · min-heap of {dist,node}",
+        lines:[
+          {t:"blank", ph:"// Dijkstra single-source shortest path...", ans:"vector<int> dijkstra(int n, vector<vector<pair<int,int>>>& adj, int src) {", hint:"adj[u]={{v,w},...}. Returns dist[] array from src to all nodes."},
+          {t:"blank", ph:"// init dist array + min-heap...", ans:"vector<int> dist(n, INT_MAX); dist[src]=0; priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> pq; pq.push({0,src});", hint:"greater<> makes it a min-heap. Push {dist,node} — dist first so heap orders by distance."},
+        ]
+      },
+      { z:2, tag:"seed — push {0, src} into min-heap",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// seed already pushed above: pq.push({0, src})</span>`},
+        ]
+      },
+      { z:3, tag:"pop · stale-skip · relax neighbors — THE Dijkstra loop",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">while</span> (!pq.empty()) {`},
+          {t:"blank", ph:"//   pop cheapest node...", ans:"auto [d, u] = pq.top(); pq.pop();", hint:"Structured binding: d = distance, u = node. Min-heap gives cheapest first."},
+          {t:"blank", ph:"//   STALE-SKIP: if outdated entry, ignore...", ans:"if (d > dist[u]) continue;", hint:"CRITICAL: lazy deletion. Old entry remains in heap after update. Skip if dist already improved."},
+          {t:"blank", ph:"//   relax all neighbors...", ans:"for (auto [v,w] : adj[u]) if (dist[u]+w < dist[v]) { dist[v]=dist[u]+w; pq.push({dist[v],v}); }", hint:"Relax: if going through u is cheaper, update dist[v] and push new entry."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — dist[] array or dist[dst] for single target",
+        lines:[
+          {t:"blank", ph:"// return dist array (INT_MAX = unreachable)...", ans:"return dist;", hint:"dist[v]=INT_MAX means v is unreachable from src. Check before using."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Bellman-Ford ───────────────────────────────────────────────────────
+  {
+    id:2, title:"Bellman-Ford", badge:"RELAX ALL EDGES N-1×", badgeColor:"var(--c3)",
+    hint:"Relax ALL edges exactly n-1 times. After i iterations, dist[v] = shortest path using at most i edges. n-1 iterations covers all simple paths. nth iteration detects negative cycle.",
+    vizRows:[
+      {label:"iter 1", nodes:["relax all edges"], cls:"sn-src"},
+      {label:"iter 2..n-1", nodes:["relax all edges"], cls:"sn-mid"},
+      {label:"iter n", nodes:["still relaxes? → neg cycle!"], cls:"sn-neg"},
+    ],
+    zones:[
+      { z:1, tag:"edge list format · dist[src]=0 · n-1 passes",
+        lines:[
+          {t:"blank", ph:"// Bellman-Ford — handles negative weights...", ans:"vector<int> bellmanFord(int n, vector<tuple<int,int,int>>& edges, int src) {", hint:"edges = {u,v,w}. Works with negative weights. Detects negative cycles."},
+          {t:"blank", ph:"// init dist array...", ans:"vector<int> dist(n, INT_MAX); dist[src]=0;", hint:"Same initialization as Dijkstra. No priority queue needed — just iterate."},
+        ]
+      },
+      { z:2, tag:"n-1 relaxation passes over ALL edges",
+        lines:[
+          {t:"blank", ph:"// relax ALL edges exactly n-1 times...", ans:"for (int i=0; i<n-1; i++) {", hint:"n-1 iterations: shortest path with at most n-1 edges covers all simple paths in n-node graph"},
+          {t:"blank", ph:"//   relax every edge in the graph...", ans:"for (auto [u,v,w] : edges) { if (dist[u]!=INT_MAX && dist[u]+w<dist[v]) dist[v]=dist[u]+w; }", hint:"Check dist[u]!=INT_MAX to avoid overflow. Relax regardless of order — converges in n-1 passes."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:3, tag:"nth pass — negative cycle detection",
+        lines:[
+          {t:"blank", ph:"// nth pass: if still relaxes, negative cycle exists...", ans:"for (auto [u,v,w] : edges) { if (dist[u]!=INT_MAX && dist[u]+w<dist[v]) return {}; }", hint:"If any edge can still be relaxed after n-1 passes, there's a negative cycle reachable from src."},
+        ]
+      },
+      { z:4, tag:"RESULT — dist[] or empty on negative cycle",
+        lines:[
+          {t:"blank", ph:"// return dist array...", ans:"return dist;", hint:"Empty vector signals negative cycle. Otherwise dist[v] = shortest path (possibly through negative edges)."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Floyd-Warshall ─────────────────────────────────────────────────────
+  {
+    id:3, title:"Floyd-Warshall", badge:"dp[i][j]=min via k", badgeColor:"var(--c2)",
+    hint:"dp[i][j] = shortest path from i to j using only nodes 0..k as intermediates. Try each intermediate k: dp[i][j] = min(dp[i][j], dp[i][k]+dp[k][j]). O(V³).",
+    vizRows:[
+      {label:"init: direct edges", nodes:["dist[i][j]=w(i,j)"], cls:"sn-src"},
+      {label:"try k=0,1,...,n-1", nodes:["via k: i→k→j"], cls:"sn-mid"},
+      {label:"result", nodes:["all-pairs shortest paths"], cls:"sn-dst"},
+    ],
+    zones:[
+      { z:1, tag:"n×n distance matrix · diagonal=0 · missing=INF",
+        lines:[
+          {t:"blank", ph:"// Floyd-Warshall all-pairs shortest path...", ans:"vector<vector<int>> floydWarshall(int n, vector<vector<pair<int,int>>>& adj) {", hint:"O(V³) time, O(V²) space. Dense graphs only. Handles negative weights (not cycles)."},
+          {t:"blank", ph:"// init dist matrix: 0 on diagonal, INF elsewhere...", ans:"vector<vector<int>> dist(n,vector<int>(n,INT_MAX/2)); for(int i=0;i<n;i++) dist[i][i]=0; for(int u=0;u<n;u++) for(auto[v,w]:adj[u]) dist[u][v]=min(dist[u][v],w);", hint:"INT_MAX/2 avoids overflow when adding. Direct edges set initial distances."},
+        ]
+      },
+      { z:2, tag:"outer loop: intermediate node k",
+        lines:[
+          {t:"blank", ph:"// try each node k as intermediate...", ans:"for (int k=0; k<n; k++)", hint:"k is the intermediate. After k-th iteration, dist[i][j] = shortest path using nodes {0..k} as intermediates."},
+        ]
+      },
+      { z:3, tag:"inner loops: relax all pairs via k",
+        lines:[
+          {t:"fixed", code:`        <span class="kw">for</span> (<span class="ty">int</span> i<span class="op">=</span><span class="nm">0</span>; i<span class="op">&lt;</span>n; i<span class="op">++</span>)`},
+          {t:"fixed", code:`            <span class="kw">for</span> (<span class="ty">int</span> j<span class="op">=</span><span class="nm">0</span>; j<span class="op">&lt;</span>n; j<span class="op">++</span>)`},
+          {t:"blank", ph:"//               relax i→j through k...", ans:"dist[i][j] = min(dist[i][j], dist[i][k]+dist[k][j]);", hint:"THE Floyd-Warshall relaxation. Try routing i→j through k. Same idea as Dijkstra relax but all-pairs."},
+        ]
+      },
+      { z:4, tag:"RESULT — dist matrix · negative cycle: dist[i][i]<0",
+        lines:[
+          {t:"blank", ph:"// negative cycle detection + return...", ans:"for(int i=0;i<n;i++) if(dist[i][i]<0) return {}; return dist;", hint:"Negative cycle: dist[i][i] < 0 after algorithm (can improve path from i back to i). Return empty."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── 0-1 BFS ────────────────────────────────────────────────────────────
+  {
+    id:4, title:"0-1 BFS", badge:"DEQUE: 0→FRONT 1→BACK", badgeColor:"var(--c1)",
+    hint:"When edge weights are only 0 or 1: use deque instead of priority queue. Cost-0 edges push to front (same cost level). Cost-1 edges push to back (next cost level). O(V+E) instead of O((V+E)logV).",
+    vizRows:[
+      {label:"deque front←→back", nodes:["w=0 → push_front","w=1 → push_back"], cls:"sn-src"},
+      {label:"pop front", nodes:["process cheapest first"], cls:"sn-mid"},
+      {label:"same as Dijkstra", nodes:["but O(V+E) not O(VlogV)"], cls:"sn-dst"},
+    ],
+    zones:[
+      { z:1, tag:"deque replaces priority_queue — O(V+E) for 0/1 weights",
+        lines:[
+          {t:"blank", ph:"// 0-1 BFS — O(V+E) when weights are only 0 or 1...", ans:"vector<int> zeroOneBFS(int n, vector<vector<pair<int,int>>>& adj, int src) {", hint:"Faster than Dijkstra for 0/1 weights. Uses deque instead of min-heap."},
+          {t:"blank", ph:"// dist + deque (replaces priority queue)...", ans:"vector<int> dist(n,INT_MAX); dist[src]=0; deque<int> dq; dq.push_back(src);", hint:"Initialize same as Dijkstra but use deque. No {dist,node} pairs — just node indices."},
+        ]
+      },
+      { z:2, tag:"seed — push src to back of deque",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// src pushed above: dq.push_back(src)</span>`},
+        ]
+      },
+      { z:3, tag:"pop front · weight-0 → push_front · weight-1 → push_back",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">while</span> (!dq.empty()) {`},
+          {t:"blank", ph:"//   pop from front (cheapest)...", ans:"int u=dq.front(); dq.pop_front();", hint:"Always pop from front — deque maintains cost ordering without a heap"},
+          {t:"blank", ph:"//   stale-skip still needed...", ans:"for(auto[v,w]:adj[u]){ if(dist[u]+w<dist[v]){ dist[v]=dist[u]+w;", hint:"Relax same as Dijkstra. Still need to check if improvement possible."},
+          {t:"blank", ph:"//   w=0: push_front (same cost level) · w=1: push_back...", ans:"if(w==0) dq.push_front(v); else dq.push_back(v); } }", hint:"THE 0-1 BFS trick: cost-0 neighbors go to front (process next), cost-1 go to back (process later)."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — same as Dijkstra, faster for 0/1 weights",
+        lines:[
+          {t:"blank", ph:"// return dist array...", ans:"return dist;", hint:"O(V+E) vs Dijkstra's O((V+E)logV). Same result, faster when only 0/1 weights exist."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Shortest Path in DAG ───────────────────────────────────────────────
+  {
+    id:5, title:"Shortest Path in DAG", badge:"TOPO ORDER + ONE PASS", badgeColor:"var(--c4)",
+    hint:"Topological order guarantees all predecessors of v are processed before v. One relaxation pass in topo order gives exact shortest paths. O(V+E). Handles negative weights too.",
+    vizRows:[
+      {label:"topo order", nodes:["A","B","C","D","E"], cls:"sn-src"},
+      {label:"relax in order", nodes:["dist[B]=min(...)","dist[C]=min(...)"], cls:"sn-mid"},
+      {label:"one pass=done", nodes:["no re-visits needed"], cls:"sn-dst"},
+    ],
+    zones:[
+      { z:1, tag:"Kahn's topo sort + dist[] relaxation in one BFS",
+        lines:[
+          {t:"blank", ph:"// shortest path in DAG — O(V+E), handles negative weights...", ans:"vector<int> dagShortestPath(int n, vector<vector<pair<int,int>>>& adj, int src) {", hint:"Only works on DAGs. Topo order ensures single pass is sufficient — no cycles to revisit."},
+          {t:"blank", ph:"// compute indegrees + init dist...", ans:"vector<int> indegree(n,0),dist(n,INT_MAX); dist[src]=0; for(int u=0;u<n;u++) for(auto[v,w]:adj[u]) indegree[v]++;", hint:"Combine Kahn's graph setup with dist initialization. src starts at 0."},
+        ]
+      },
+      { z:2, tag:"seed with indegree-0 nodes (Kahn's)",
+        lines:[
+          {t:"blank", ph:"// seed queue with indegree-0 nodes...", ans:"queue<int> q; for(int i=0;i<n;i++) if(indegree[i]==0) q.push(i);", hint:"Standard Kahn's seed. Note: src may not be indegree-0 in general DAG."},
+        ]
+      },
+      { z:3, tag:"Kahn's BFS + relax inside neighbor loop",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">while</span> (!q.empty()) {`},
+          {t:"blank", ph:"//   pop in topo order...", ans:"int u=q.front(); q.pop();", hint:"Process in topo order — all predecessors of u already relaxed"},
+          {t:"blank", ph:"//   relax neighbors + Kahn's indegree decrement...", ans:"for(auto[v,w]:adj[u]){ if(dist[u]!=INT_MAX&&dist[u]+w<dist[v]) dist[v]=dist[u]+w; if(--indegree[v]==0) q.push(v); }", hint:"Combine: relax dist[v] AND do Kahn's indegree decrement. Two operations per neighbor."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — O(V+E), works with negative weights",
+        lines:[
+          {t:"blank", ph:"// return dist array...", ans:"return dist;", hint:"One pass suffices — topo order is the key insight. Much faster than Dijkstra for DAGs."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Bidirectional Dijkstra ─────────────────────────────────────────────
+  {
+    id:6, title:"Bidirectional Dijkstra", badge:"MEET IN THE MIDDLE", badgeColor:"var(--c2)",
+    hint:"Run Dijkstra from src AND dst simultaneously. Stop when a node is settled by both. Answer = min over all settled nodes of distF[v] + distB[v]. ~√E speedup on average.",
+    vizRows:[
+      {label:"forward from src", nodes:["distF expanding→"], cls:"sn-src"},
+      {label:"backward from dst", nodes:["←distB expanding"], cls:"sn-dst"},
+      {label:"meeting node", nodes:["min(distF[v]+distB[v])"], cls:"sn-mid"},
+    ],
+    zones:[
+      { z:1, tag:"two dist arrays + two min-heaps",
+        lines:[
+          {t:"blank", ph:"// bidirectional Dijkstra — meet in middle...", ans:"int biDijkstra(int n, vector<vector<pair<int,int>>>& adj, vector<vector<pair<int,int>>>& radj, int src, int dst) {", hint:"radj = reversed adjacency list. Forward search from src, backward from dst on radj."},
+          {t:"blank", ph:"// two dist arrays + two priority queues...", ans:"vector<int> dF(n,INT_MAX),dB(n,INT_MAX); dF[src]=dB[dst]=0; priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> pqF,pqB; pqF.push({0,src}); pqB.push({0,dst});", hint:"dF = forward distances, dB = backward distances. Two independent Dijkstra runs."},
+        ]
+      },
+      { z:2, tag:"settled sets track which nodes are finalized",
+        lines:[
+          {t:"blank", ph:"// track settled nodes for both searches...", ans:"vector<bool> settledF(n,false),settledB(n,false); int ans=INT_MAX;", hint:"Node is settled when popped from min-heap (distance finalized). Meeting condition: settled by both."},
+        ]
+      },
+      { z:3, tag:"alternate steps: one forward, one backward",
+        lines:[
+          {t:"blank", ph:"// alternate forward and backward steps...", ans:"while(!pqF.empty()||!pqB.empty()){ auto relax=[&](auto& pq,auto& d,auto& adj,auto& settled,auto& dOther){ auto[dd,u]=pq.top();pq.pop(); if(dd>d[u]) return; settled[u]=true; if(dOther[u]!=INT_MAX) ans=min(ans,d[u]+dOther[u]); for(auto[v,w]:adj[u]) if(d[u]+w<d[v]){d[v]=d[u]+w;pq.push({d[v],v});} }; if(!pqF.empty()) relax(pqF,dF,adj,settledF,dB); if(!pqB.empty()) relax(pqB,dB,radj,settledB,dF); if(settledF[dst]||settledB[src]) break; }", hint:"Each step: pop from one pq, relax neighbors, check if meeting node found. Stop when dst settled forward or src settled backward."},
+        ]
+      },
+      { z:4, tag:"RESULT — min over all nodes of dF[v]+dB[v]",
+        lines:[
+          {t:"blank", ph:"// scan all nodes for best meeting point...", ans:"for(int v=0;v<n;v++) if(dF[v]!=INT_MAX&&dB[v]!=INT_MAX) ans=min(ans,dF[v]+dB[v]); return ans==INT_MAX?-1:ans;", hint:"Best answer might not be exactly where searches met — scan all candidates."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── A* Search ──────────────────────────────────────────────────────────
+  {
+    id:7, title:"A* Search", badge:"f(v) = dist[v] + h(v)", badgeColor:"var(--c3)",
+    hint:"A* = Dijkstra + heuristic h(v) = estimated remaining distance to goal. Priority queue ordered by f(v) = dist[v] + h(v). Admissible heuristic: h(v) never overestimates. Grid: h = Manhattan distance.",
+    vizRows:[
+      {label:"priority by f(v)", nodes:["f(v)=dist[v]+h(v)"], cls:"sn-src"},
+      {label:"h=Manhattan dist", nodes:["h(v)=|vx-gx|+|vy-gy|"], cls:"sn-mid"},
+      {label:"fewer nodes explored", nodes:["guided toward goal"], cls:"sn-dst"},
+    ],
+    zones:[
+      { z:1, tag:"dist[] + heuristic h() · pq ordered by dist+h",
+        lines:[
+          {t:"blank", ph:"// A* search on grid — heuristic-guided Dijkstra...", ans:"int aStar(vector<vector<int>>& grid, pair<int,int> src, pair<int,int> dst) {", hint:"A* finds shortest path faster than Dijkstra by biasing toward the goal."},
+          {t:"blank", ph:"// heuristic: Manhattan distance to goal...", ans:"auto h=[&](int r,int c){ return abs(r-dst.first)+abs(c-dst.second); };", hint:"Admissible heuristic: h(v) ≤ true distance. Manhattan never overestimates on grid with 4-directional moves."},
+          {t:"blank", ph:"// dist map + min-heap ordered by f=dist+h...", ans:"int R=grid.size(),C=grid[0].size(); map<pair<int,int>,int> dist; dist[src]=0; priority_queue<tuple<int,int,int>,vector<tuple<int,int,int>>,greater<>> pq; pq.push({h(src.first,src.second),src.first,src.second});", hint:"Push {f, row, col}. f = dist[src]+h(src) = 0+h(src). Heap orders by f value."},
+        ]
+      },
+      { z:2, tag:"seed — push src with f=h(src)",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// src pushed above with f = 0 + h(src)</span>`},
+        ]
+      },
+      { z:3, tag:"pop by f=dist+h · same relax as Dijkstra",
+        lines:[
+          {t:"fixed", code:`    <span class="kw">while</span> (!pq.empty()) {`},
+          {t:"blank", ph:"//   pop node with smallest f value...", ans:"auto[f,r,c]=pq.top(); pq.pop(); if(make_pair(r,c)==dst) return dist[dst];", hint:"Pop smallest f. If we pop the goal, we found the shortest path (admissible heuristic guarantees this)."},
+          {t:"blank", ph:"//   stale-skip + relax neighbors with f=new_dist+h...", ans:"if(dist.count({r,c})&&f>dist[{r,c}]+h(r,c)) continue; for(auto[dr,dc]:vector<pair<int,int>>{{0,1},{0,-1},{1,0},{-1,0}}){ int nr=r+dr,nc=c+dc; if(nr<0||nr>=R||nc<0||nc>=C||grid[nr][nc]) continue; int nd=dist[{r,c}]+1; if(!dist.count({nr,nc})||nd<dist[{nr,nc}]){dist[{nr,nc}]=nd;pq.push({nd+h(nr,nc),nr,nc});} }", hint:"Relax like Dijkstra but push f=new_dist+h(neighbor) instead of just new_dist."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — found when dst popped from heap",
+        lines:[
+          {t:"blank", ph:"// dst unreachable if queue empty...", ans:"return -1;", hint:"If queue empties without reaching dst, no path exists."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Shortest Path with K Stops ────────────────────────────────────────
+  {
+    id:8, title:"Shortest Path with K Stops", badge:"dp[k][v] BELLMAN K TIMES", badgeColor:"var(--c1)",
+    hint:"dp[k][v] = min cost reaching v using at most k edges. Relax exactly k times (one round per stop). Copy dp[k-1] before updating dp[k] to avoid using same-round edges.",
+    vizRows:[
+      {label:"dp[0][src]=0", nodes:["start: 0 edges used"], cls:"sn-src"},
+      {label:"dp[k]=relax dp[k-1]", nodes:["k=1,2,...,K+1 rounds"], cls:"sn-mid"},
+      {label:"answer: dp[K+1][dst]", nodes:["min cost ≤K stops"], cls:"sn-dst"},
+    ],
+    zones:[
+      { z:1, tag:"dp[k][v] = min cost using at most k edges",
+        lines:[
+          {t:"blank", ph:"// cheapest flights with at most k stops...", ans:"int findCheapestPrice(int n, vector<vector<int>>& flights, int src, int dst, int k) {", hint:"flights={u,v,w}. At most k stops = at most k+1 edges. Classic Bellman-Ford variant."},
+          {t:"blank", ph:"// dp[v] = min cost to reach v, copy each round to avoid using same-round edges...", ans:"vector<int> dp(n,INT_MAX); dp[src]=0;", hint:"1D dp — copy before each round. k+1 relaxation rounds (k stops + 1 final edge)."},
+        ]
+      },
+      { z:2, tag:"k+1 rounds of relaxation",
+        lines:[
+          {t:"blank", ph:"// run k+1 Bellman-Ford rounds (k stops + 1 edge)...", ans:"for (int i=0; i<=k; i++) {", hint:"k stops means k+1 edges. One round per edge count."},
+          {t:"blank", ph:"//   COPY dp before round — prevents using same-round edges...", ans:"vector<int> tmp=dp;", hint:"CRITICAL: copy before updating. Otherwise dp[u] updated in this round leaks into dp[v] same round."},
+        ]
+      },
+      { z:3, tag:"relax all edges using COPIED prev round values",
+        lines:[
+          {t:"blank", ph:"//   relax all flights from previous round snapshot...", ans:"for(auto& f:flights){ int u=f[0],v=f[1],w=f[2]; if(dp[u]!=INT_MAX&&dp[u]+w<tmp[v]) tmp[v]=dp[u]+w; }", hint:"Use dp[u] (last round) to update tmp[v] (this round). Prevents multi-hop in same round."},
+          {t:"blank", ph:"//   replace dp with this round's result...", ans:"dp=tmp;", hint:"After processing all flights for this stop count, advance dp."},
+          {t:"fixed", code:`    }`},
+        ]
+      },
+      { z:4, tag:"RESULT — dp[dst] after k+1 rounds",
+        lines:[
+          {t:"blank", ph:"// return answer or -1 if unreachable...", ans:"return dp[dst]==INT_MAX ? -1 : dp[dst];", hint:"dp[dst] after k+1 rounds = min cost with at most k stops."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Johnson's Algorithm ────────────────────────────────────────────────
+  {
+    id:9, title:"Johnson's Algorithm", badge:"REWEIGHT + DIJKSTRA×n", badgeColor:"var(--c3)",
+    hint:"Reweight edges to eliminate negatives: add virtual node, Bellman-Ford gives h[]. New weight w'(u,v) = w(u,v)+h[u]-h[v] ≥ 0. Run Dijkstra from each node. Adjust answers back.",
+    vizRows:[
+      {label:"step 1: virtual node", nodes:["add node q, 0-edges to all"], cls:"sn-src"},
+      {label:"step 2: Bellman-Ford", nodes:["h[v]=dist from q"], cls:"sn-mid"},
+      {label:"step 3: Dijkstra×n", nodes:["reweighted edges ≥0"], cls:"sn-dst"},
+    ],
+    zones:[
+      { z:1, tag:"virtual node + Bellman-Ford to get potential h[]",
+        lines:[
+          {t:"blank", ph:"// Johnson's: all-pairs shortest path with negative edges...", ans:"vector<vector<int>> johnson(int n, vector<tuple<int,int,int>>& edges) {", hint:"O(VE + V²logV). Better than Floyd-Warshall for sparse graphs with negative edges."},
+          {t:"blank", ph:"// add virtual node q with 0-weight edges to all nodes...", ans:"int q=n; for(int i=0;i<n;i++) edges.push_back({q,i,0});", hint:"Virtual node q connects to all nodes with weight 0. Bellman-Ford from q gives h[v]."},
+          {t:"blank", ph:"// run Bellman-Ford from virtual node to get potentials h[]...", ans:"vector<int> h(n+1,INT_MAX); h[q]=0; for(int i=0;i<n;i++) for(auto[u,v,w]:edges) if(h[u]!=INT_MAX&&h[u]+w<h[v]) h[v]=h[u]+w;", hint:"h[v] = shortest distance from virtual node. Used to reweight all edges."},
+        ]
+      },
+      { z:2, tag:"reweight edges: w'(u,v) = w+h[u]-h[v] ≥ 0",
+        lines:[
+          {t:"blank", ph:"// reweight: w'(u,v) = w(u,v) + h[u] - h[v]...", ans:"vector<vector<pair<int,int>>> radj(n); for(auto[u,v,w]:edges){ if(u==q) continue; radj[u].push_back({v,w+h[u]-h[v]}); }", hint:"Reweighted edges are always ≥ 0 (triangle inequality). Now safe to use Dijkstra."},
+        ]
+      },
+      { z:3, tag:"Dijkstra from every node on reweighted graph",
+        lines:[
+          {t:"blank", ph:"// run Dijkstra from each source node...", ans:"vector<vector<int>> dist(n); for(int s=0;s<n;s++){ dist[s]=dijkstra_1d(n,radj,s);", hint:"Standard Dijkstra on reweighted graph. O(V²logV) total for all V sources."},
+          {t:"blank", ph:"//   adjust distances back using potentials...", ans:"for(int v=0;v<n;v++) if(dist[s][v]!=INT_MAX) dist[s][v]+=h[v]-h[s]; }", hint:"Reverse the reweighting: true dist = dijkstra_dist + h[v] - h[s]."},
+          {t:"fixed", code:`    return dist; }`},
+        ]
+      },
+      { z:4, tag:"RESULT — all-pairs shortest path matrix",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// dist[s][v] = true shortest path from s to v</span>`},
+          {t:"fixed", code:`<span class="cm">// better than Floyd for sparse: O(VE+V²logV) vs O(V³)</span>`},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Virtual Node Technique ─────────────────────────────────────────────
+  {
+    id:10, title:"Virtual Node Technique", badge:"DUMMY SOURCE/SINK", badgeColor:"var(--c4)",
+    hint:"Multiple sources → add virtual source with 0-weight edges to all real sources. Multiple sinks → virtual sink. Turns multi-source/sink into standard single-source Dijkstra.",
+    vizRows:[
+      {label:"virtual src", nodes:["v_src→(0)→A","v_src→(0)→B"], cls:"sn-src"},
+      {label:"single Dijkstra", nodes:["from v_src"], cls:"sn-mid"},
+      {label:"result", nodes:["multi-source dist[]"], cls:"sn-dst"},
+    ],
+    zones:[
+      { z:1, tag:"add virtual node n with 0-weight edges to all sources",
+        lines:[
+          {t:"blank", ph:"// multi-source shortest path using virtual node...", ans:"vector<int> multiSourceDijkstra(int n, vector<vector<pair<int,int>>>& adj, vector<int>& sources) {", hint:"Instead of running Dijkstra from each source and taking min, run once from virtual node."},
+          {t:"blank", ph:"// add virtual source node at index n...", ans:"adj.resize(n+1); for(int s:sources) adj[n].push_back({s,0});", hint:"Virtual node n connects to all real sources with 0-weight edges. Dijkstra from n = multi-source."},
+          {t:"blank", ph:"// dist + min-heap from virtual source n...", ans:"vector<int> dist(n+1,INT_MAX); dist[n]=0; priority_queue<pair<int,int>,vector<pair<int,int>>,greater<>> pq; pq.push({0,n});", hint:"Run standard Dijkstra from virtual node n. Its 0-weight edges immediately reach all sources."},
+        ]
+      },
+      { z:2, tag:"seed — virtual node with dist=0",
+        lines:[
+          {t:"fixed", code:`    <span class="cm">// virtual node n already seeded above</span>`},
+        ]
+      },
+      { z:3, tag:"standard Dijkstra from virtual node",
+        lines:[
+          {t:"blank", ph:"// identical Dijkstra loop from virtual node...", ans:"while(!pq.empty()){ auto[d,u]=pq.top();pq.pop(); if(d>dist[u]) continue; for(auto[v,w]:adj[u]) if(dist[u]+w<dist[v]){dist[v]=dist[u]+w;pq.push({dist[v],v});} }", hint:"Exactly the same Dijkstra loop. Virtual node is just another node in the graph."},
+        ]
+      },
+      { z:4, tag:"RESULT — dist[0..n-1] are multi-source distances",
+        lines:[
+          {t:"blank", ph:"// return distances for real nodes only (exclude virtual)...", ans:"return vector<int>(dist.begin(), dist.begin()+n);", hint:"Trim virtual node from result. dist[v] = min distance from any source to v."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Init','Seed / Setup','Relaxation Loop','Result'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const rows=p.vizRows.map(row=>{
+    const nodes=row.nodes.map(nd=>`<div class="sp-node ${row.cls}">${nd}</div>`).join(`<span class="sp-edge"> → </span>`);
+    return `<div class="sp-row"><div class="sp-label">${row.label}</div>${nodes}</div>`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="sp-viz">${rows}</div>
+    <div class="viz-legend">
+      <span style="color:var(--c4)">■</span> source/start &nbsp;
+      <span style="color:var(--c2)">■</span> intermediate &nbsp;
+      <span style="color:var(--c1)">■</span> destination &nbsp;
+      <span style="color:var(--c3)">■</span> negative/warning &nbsp;&nbsp;
+      <span style="color:var(--c4)">★ relax: dist[u]+w &lt; dist[v] → update &nbsp;|&nbsp; stale-skip: d &gt; dist[u] → continue</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

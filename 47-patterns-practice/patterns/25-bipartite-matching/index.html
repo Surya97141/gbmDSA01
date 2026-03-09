@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bipartite Matching — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(74,222,128,0.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c4);border:1px solid rgba(74,222,128,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c4) 40%,var(--c1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c4);color:var(--text);}
+.sel-btn.active{background:rgba(74,222,128,0.1);border-color:var(--c4);color:var(--c4);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c4);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c4);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:420px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c4);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(74,222,128,0.05);border-bottom-color:var(--c4);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(56,189,248,0.07);border-bottom-color:var(--c2)!important;color:var(--c2);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.4);}
+.btn-check:hover{background:rgba(74,222,128,0.2);}
+.btn-reveal{background:rgba(56,189,248,0.08);color:var(--c2);border-color:rgba(56,189,248,0.3);}
+.btn-reveal:hover{background:rgba(56,189,248,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(167,139,250,0.1);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-next:hover{background:rgba(167,139,250,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(74,222,128,0.04);border:1px solid rgba(74,222,128,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c4);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.bm-viz{display:flex;flex-direction:column;gap:8px;}
+.bm-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.bm-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);min-width:140px;text-align:right;padding-right:8px;flex-shrink:0;}
+.bm-node{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid;border-radius:3px;white-space:nowrap;}
+.bn-left{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.07);}
+.bn-right{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.bn-match{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.08);}
+.bn-cover{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.07);}
+.bm-arrow{color:var(--muted);font-size:12px;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c}
+.op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--c2);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 25 — Practice Mode</div>
+    <h1>Bipartite Matching</h1>
+    <p>// match_l/match_r=-1 · augment: vis[v]=true, flip match on success · König: M=VC · n−M=IS=EdgeCover</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// BIPARTITE MATCHING — 10 Manifestations
+//
+// CORE PRIMITIVE: augmenting path DFS
+//   match_l[u] = right node u matched to  (-1=unmatched)
+//   match_r[v] = left node v matched to   (-1=unmatched)
+//   augment(u): try each neighbor v; if v free OR match_r[v] can re-augment → flip
+//   flip: match_l[u]=v; match_r[v]=u
+//
+// HOPCROFT-KARP (O(√V·E)):
+//   BFS: find all shortest augmenting paths simultaneously → dist[]
+//   DFS: augment all of them; dist[u]=INF on failure (current-arc optimization)
+//   Repeat until BFS finds no more augmenting paths
+//
+// KÖNIG'S THEOREM CHAIN (bipartite only!):
+//   Max Matching M  =  Min Vertex Cover
+//   Max Independent Set  =  n − M
+//   Min Edge Cover  =  n − M  (no isolated vertices)
+//
+// 4 Blocks:
+//   ① SETUP      — match_l(L,-1), match_r(R,-1), adj[] built
+//   ② BFS PHASE  — seed unmatched left nodes, BFS through right→matched pairs
+//   ③ DFS AUGMENT — try each adj v; if free or recurse succeeds → flip match
+//   ④ RESULT     — while(bfs): augment all unmatched · König/n−M post-processing
+// ─────────────────────────────────────────────────────────────────────────────
+
+const P = [
+
+  // 01 ── Maximum Bipartite Matching (Hopcroft-Karp) ─────────────────────────
+  {
+    id:1, title:"Maximum Bipartite Matching", badge:"HOPCROFT-KARP O(√V·E)", badgeColor:"var(--c4)",
+    hint:"BFS finds all shortest augmenting paths simultaneously. DFS augments all of them. After O(√V) BFS phases, no more augmenting paths exist. dist[u]=INF after failed DFS = current-arc optimization.",
+    vizRows:[
+      {label:"unmatched left nodes", nodes:["seed BFS dist=0"], cls:"bn-left"},
+      {label:"BFS finds layers", nodes:["L0→R→L1→R→...→free R"], cls:"bn-right"},
+      {label:"DFS augments all", nodes:["flip match along path"], cls:"bn-match"},
+      {label:"repeat O(√V) phases", nodes:["until BFS finds nothing"], cls:"bn-cover"},
+    ],
+    zones:[
+      { z:1, tag:"match_l/match_r arrays + dist[] for BFS layering",
+        lines:[
+          {t:"blank", ph:"// Hopcroft-Karp maximum bipartite matching...", ans:"int hopcroftKarp(int L, int R, vector<vector<int>>& adj) {", hint:"adj[u] = right nodes that left node u can match to. Returns max matching size."},
+          {t:"blank", ph:"// match arrays: -1 = unmatched...", ans:"vector<int> match_l(L,-1), match_r(R,-1), dist(L);", hint:"match_l[u]=v: left u matched to right v. match_r[v]=u: right v matched to left u. dist for BFS."},
+        ]
+      },
+      { z:2, tag:"BFS — seed unmatched left, find shortest augmenting paths",
+        lines:[
+          {t:"blank", ph:"// BFS: build layered graph from all free left nodes...", ans:"auto bfs=[&](){ dist.assign(L,INT_MAX); queue<int> q; for(int u=0;u<L;u++) if(match_l[u]==-1){dist[u]=0;q.push(u);}", hint:"Seed ALL unmatched left nodes simultaneously — this finds shortest augmenting paths in batch."},
+          {t:"blank", ph:"//   BFS through right nodes to their current matches...", ans:"bool found=false; while(!q.empty()){ int u=q.front();q.pop(); for(int v:adj[u]){ int w=match_r[v]; if(w==-1) found=true; else if(dist[w]==INT_MAX){dist[w]=dist[u]+1;q.push(w);} } } return found; };", hint:"w=match_r[v]: right node v is matched to left node w. If w==-1, found free right node (augmenting path end)."},
+        ]
+      },
+      { z:3, tag:"DFS — augment along layered graph, block dead ends",
+        lines:[
+          {t:"blank", ph:"// DFS: augment along layered graph...", ans:"function<bool(int)> dfs=[&](int u)->bool{ for(int v:adj[u]){ int w=match_r[v]; if(w==-1||(dist[w]==dist[u]+1&&dfs(w))){ match_l[u]=v;match_r[v]=u;return true; } }", hint:"Only follow edges where dist[w]==dist[u]+1 (respect layers). Flip match on success."},
+          {t:"blank", ph:"//   block this node on failure (current-arc optimization)...", ans:"dist[u]=INT_MAX; return false; };", hint:"dist[u]=INF after failure prevents other paths from re-using this dead-end node in same phase."},
+        ]
+      },
+      { z:4, tag:"OUTER LOOP — BFS phases until no augmenting path",
+        lines:[
+          {t:"blank", ph:"// run phases until no augmenting paths remain...", ans:"int matching=0; while(bfs()) for(int u=0;u<L;u++) if(match_l[u]==-1&&dfs(u)) matching++; return matching;", hint:"Each BFS phase processes all shortest augmenting paths. O(√V) phases × O(E) per phase = O(√V·E)."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Minimum Vertex Cover ───────────────────────────────────────────────
+  {
+    id:2, title:"Minimum Vertex Cover", badge:"KÖNIG: M = MIN COVER", badgeColor:"var(--c3)",
+    hint:"König's theorem: in bipartite graphs, max matching = min vertex cover. Construction: alternating BFS from unmatched left nodes. Cover = left nodes NOT in alternating tree + right nodes IN alternating tree.",
+    vizRows:[
+      {label:"max matching M", nodes:["run Hopcroft-Karp"], cls:"bn-left"},
+      {label:"BFS from free left", nodes:["alternating unmatched/matched"], cls:"bn-right"},
+      {label:"cover = left∉tree", nodes:["+ right∈tree"], cls:"bn-cover"},
+      {label:"|cover| = M", nodes:["König's theorem!"], cls:"bn-match"},
+    ],
+    zones:[
+      { z:1, tag:"run max matching, then alternating BFS from unmatched left",
+        lines:[
+          {t:"blank", ph:"// minimum vertex cover via König's theorem...", ans:"pair<vector<int>,vector<int>> minVertexCover(int L, int R, vector<vector<int>>& adj) {", hint:"Returns {left_nodes_in_cover, right_nodes_in_cover}. Size = max matching (König's theorem)."},
+          {t:"blank", ph:"// first get max matching...", ans:"vector<int> match_l(L,-1), match_r(R,-1); hopcroftKarp(L,R,adj,match_l,match_r);", hint:"Run max matching to populate match_l and match_r arrays."},
+        ]
+      },
+      { z:2, tag:"alternating BFS from unmatched left nodes",
+        lines:[
+          {t:"blank", ph:"// BFS: alternating paths from unmatched left nodes...", ans:"vector<bool> visitL(L,false), visitR(R,false); queue<int> q; for(int u=0;u<L;u++) if(match_l[u]==-1){visitL[u]=true;q.push(u);}",hint:"Start BFS from ALL unmatched left nodes — these form the 'alternating tree' roots."},
+          {t:"blank", ph:"// traverse: unmatched edges L→R, then matched edges R→L...", ans:"while(!q.empty()){ int u=q.front();q.pop(); for(int v:adj[u]){ if(!visitR[v]){visitR[v]=true; if(match_r[v]!=-1&&!visitL[match_r[v]]){visitL[match_r[v]]=true;q.push(match_r[v]);} } } }", hint:"From left u: traverse unmatched edges to right v. From right v: follow matched edge back to left match_r[v]."},
+        ]
+      },
+      { z:3, tag:"cover = left NOT visited + right VISITED",
+        lines:[
+          {t:"blank", ph:"// König's construction: cover = left∉tree + right∈tree...", ans:"vector<int> covL, covR; for(int u=0;u<L;u++) if(!visitL[u]) covL.push_back(u); for(int v=0;v<R;v++) if(visitR[v]) covR.push_back(v);", hint:"Left nodes in alternating tree are NOT in cover. Right nodes in alternating tree ARE in cover. This is König's construction."},
+        ]
+      },
+      { z:4, tag:"RESULT — |covL| + |covR| = max matching (König's theorem)",
+        lines:[
+          {t:"blank", ph:"// return min vertex cover...", ans:"return {covL, covR};", hint:"Proof: every matching edge is covered. No edge is double-covered. Size equals matching. QED König's."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Maximum Independent Set ────────────────────────────────────────────
+  {
+    id:3, title:"Maximum Independent Set", badge:"n − MAX MATCHING", badgeColor:"var(--c4)",
+    hint:"In bipartite graphs, max independent set = n − min vertex cover = n − max matching. Nodes NOT in vertex cover form the maximum independent set. O(√V·E) via König's.",
+    vizRows:[
+      {label:"n = L + R nodes", nodes:["total nodes in bipartite graph"], cls:"bn-left"},
+      {label:"max matching M", nodes:["Hopcroft-Karp"], cls:"bn-right"},
+      {label:"min vertex cover", nodes:["= M (König's)"], cls:"bn-cover"},
+      {label:"max indep set = n−M", nodes:["complement of cover"], cls:"bn-match"},
+    ],
+    zones:[
+      { z:1, tag:"run matching, König's construction, complement",
+        lines:[
+          {t:"blank", ph:"// maximum independent set in bipartite graph...", ans:"vector<int> maxIndependentSet(int L, int R, vector<vector<int>>& adj) {", hint:"Max independent set = n − min vertex cover = n − max matching. Only valid for bipartite (NP-hard in general)."},
+          {t:"blank", ph:"// get min vertex cover via König's...", ans:"auto [covL, covR] = minVertexCover(L, R, adj);", hint:"Structured binding. covL = left nodes in cover, covR = right nodes in cover."},
+        ]
+      },
+      { z:2, tag:"mark covered nodes",
+        lines:[
+          {t:"blank", ph:"// mark which nodes are in the vertex cover...", ans:"vector<bool> inCoverL(L,false), inCoverR(R,false); for(int u:covL) inCoverL[u]=true; for(int v:covR) inCoverR[v]=true;", hint:"Convert index lists to boolean arrays for O(1) lookup."},
+        ]
+      },
+      { z:3, tag:"independent set = complement of vertex cover",
+        lines:[
+          {t:"blank", ph:"// independent set = nodes NOT in cover...", ans:"vector<int> indepSet; for(int u=0;u<L;u++) if(!inCoverL[u]) indepSet.push_back(u); for(int v=0;v<R;v++) if(!inCoverR[v]) indepSet.push_back(L+v);", hint:"Complement of min vertex cover = max independent set. Every edge has at least one endpoint in cover, so remaining nodes are independent."},
+        ]
+      },
+      { z:4, tag:"RESULT — n−M nodes form max independent set",
+        lines:[
+          {t:"blank", ph:"// return max independent set (size = n - max_matching)...", ans:"return indepSet;", hint:"Size verification: L+R − (|covL|+|covR|) = n − M. Three theorems, one algorithm."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Stable Marriage Problem ────────────────────────────────────────────
+  {
+    id:4, title:"Stable Marriage Problem", badge:"GALE-SHAPLEY O(n²)", badgeColor:"var(--c2)",
+    hint:"Men propose in preference order. Women accept best proposal so far, reject worse. A man keeps proposing until accepted. Terminates in O(n²). Result: man-optimal stable matching (each man gets best possible stable partner).",
+    vizRows:[
+      {label:"free man m", nodes:["propose to next on list"], cls:"bn-left"},
+      {label:"woman w free?", nodes:["accept m immediately"], cls:"bn-right"},
+      {label:"prefers m to current?", nodes:["upgrade: reject old partner"], cls:"bn-match"},
+      {label:"else: m rejected", nodes:["m rejoins free queue"], cls:"bn-cover"},
+    ],
+    zones:[
+      { z:1, tag:"preference lists + women's rank lookup table",
+        lines:[
+          {t:"blank", ph:"// Gale-Shapley stable marriage...", ans:"vector<int> galeShapley(int n, vector<vector<int>>& menPref, vector<vector<int>>& womenPref) {", hint:"n men, n women. menPref[m][i]=ith most preferred woman. Returns woman_partner[w]=man."},
+          {t:"blank", ph:"// women's rank table for O(1) preference comparison...", ans:"vector<vector<int>> wRank(n, vector<int>(n)); for(int w=0;w<n;w++) for(int i=0;i<n;i++) wRank[w][menPref[w][i]]=i;", hint:"wRank[w][m] = woman w's preference rank for man m. Lower rank = more preferred. O(1) comparison."},
+          {t:"blank", ph:"// free men queue + next proposal pointer...", ans:"queue<int> freeM; for(int i=0;i<n;i++) freeM.push(i); vector<int> nextProp(n,0), wPartner(n,-1);", hint:"nextProp[m] = index into menPref[m] of next woman to propose to. Each man proposes at most n times total."},
+        ]
+      },
+      { z:2, tag:"proposal loop — man proposes, woman decides",
+        lines:[
+          {t:"blank", ph:"// propose loop until all men matched...", ans:"while(!freeM.empty()){ int m=freeM.front(); freeM.pop(); int w=menPref[m][nextProp[m]++];", hint:"Pop free man. Propose to next woman on his list (advance pointer — never go back)."},
+        ]
+      },
+      { z:3, tag:"woman accepts, upgrades, or rejects",
+        lines:[
+          {t:"blank", ph:"//   w free: accept immediately...", ans:"if(wPartner[w]==-1) wPartner[w]=m;", hint:"Woman is free — accepts immediately. Simple case."},
+          {t:"blank", ph:"//   w prefers m to current: upgrade (reject old partner)...", ans:"else if(wRank[w][m]<wRank[w][wPartner[w]]){ freeM.push(wPartner[w]); wPartner[w]=m; }", hint:"Woman upgrades: old partner becomes free again and must propose to his next choice."},
+          {t:"blank", ph:"//   w prefers current: reject m...", ans:"else freeM.push(m); }", hint:"Woman rejects m — m goes back to queue to propose to next on his list."},
+        ]
+      },
+      { z:4, tag:"RESULT — man-optimal stable matching",
+        lines:[
+          {t:"blank", ph:"// return woman_partner array...", ans:"return wPartner;", hint:"wPartner[w]=m: woman w is matched to man m. Man-optimal: every man gets best possible stable partner."},
+          {t:"fixed", code:`}`},
+          {t:"fixed", code:`<span class="cm">// stable: no (m,w) pair both prefer each other over current partners</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Assignment Problem ─────────────────────────────────────────────────
+  {
+    id:5, title:"Assignment Problem", badge:"HUNGARIAN O(n³)", badgeColor:"var(--c1)",
+    hint:"Min cost perfect matching. Hungarian algorithm uses potential (dual) values u[i], v[j]. Maintains reduced costs = cost[i][j] - u[i] - v[j] ≥ 0. Augment along zero-cost edges. Update potentials when no augmenting path found.",
+    vizRows:[
+      {label:"cost matrix n×n", nodes:["cost[i][j] = assign i to j"], cls:"bn-left"},
+      {label:"potentials u[i],v[j]", nodes:["reduced cost ≥ 0"], cls:"bn-right"},
+      {label:"augment zero-cost", nodes:["find augmenting path"], cls:"bn-match"},
+      {label:"update potentials", nodes:["when no path found"], cls:"bn-cover"},
+    ],
+    zones:[
+      { z:1, tag:"potential arrays + reduced cost = cost - u - v",
+        lines:[
+          {t:"blank", ph:"// Hungarian algorithm for min-cost assignment...", ans:"int hungarian(int n, vector<vector<int>>& cost) {", hint:"n workers, n jobs. cost[i][j] = cost of assigning worker i to job j. Returns min total cost."},
+          {t:"blank", ph:"// potential arrays for dual variables...", ans:"vector<int> u(n+1,0),v(n+1,0),match_w(n+1,0),match_j(n+1,0); for(int i=1;i<=n;i++){", hint:"u[i]=worker potential, v[j]=job potential. Reduced cost = cost[i][j]-u[i]-v[j] ≥ 0 always."},
+        ]
+      },
+      { z:2, tag:"for each worker: find augmenting path via shortest path",
+        lines:[
+          {t:"blank", ph:"//   add worker i, find shortest path in reduced cost graph...", ans:"vector<int> p(n+1,0),way(n+1,0); vector<int> minVal(n+1,INT_MAX); vector<bool> used(n+1,false); p[0]=i;", hint:"p[j]=which worker is trying to match job j. way[j]=which job led us here (for path reconstruction)."},
+          {t:"blank", ph:"//   Dijkstra-like: find min reduced cost path to free job...", ans:"do{ used[0]=true; int j0=0,j1,delta=INT_MAX; for(int j=1;j<=n;j++) if(!used[j]){ int cur=cost[p[j0]-1][j-1]-u[p[j0]]-v[j]; if(cur<minVal[j]){minVal[j]=cur;way[j]=j0;} if(minVal[j]<delta){delta=minVal[j];j1=j;} } for(int j=0;j<=n;j++) if(used[j]){u[p[j]]+=delta;v[j]-=delta;} else minVal[j]-=delta; used[j1]=true;j0=j1; }while(p[j0]!=0);", hint:"Iteratively find minimum reduced cost, update potentials (delta), mark job as used. Maintains reduced costs ≥ 0."},
+        ]
+      },
+      { z:3, tag:"augment: trace back path and update matching",
+        lines:[
+          {t:"blank", ph:"//   augment: follow way[] back to update matching...", ans:"for(int j0=j0;j0;){ match_w[j0]=p[j0]; match_j[p[j0]]=j0; j0=way[j0]; } }", hint:"Trace back via way[] array (like parent pointers). Each step flips the matching assignment."},
+        ]
+      },
+      { z:4, tag:"RESULT — total cost from potential values",
+        lines:[
+          {t:"blank", ph:"// total cost = sum of u[] potentials for workers...", ans:"int ans=0; for(int i=1;i<=n;i++) ans+=u[i]; for(int j=1;j<=n;j++) ans+=v[j]; return ans;", hint:"Sum of all potentials = total assignment cost (dual LP optimality condition)."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Hall's Theorem Check ───────────────────────────────────────────────
+  {
+    id:6, title:"Hall's Theorem Check", badge:"∀S: |N(S)| ≥ |S|", badgeColor:"var(--c3)",
+    hint:"Perfect matching exists iff for every subset S of left nodes, |N(S)| ≥ |S| (Hall's condition). Equivalent: max matching = L. If max matching < L, Hall's condition is violated for some S.",
+    vizRows:[
+      {label:"check max matching", nodes:["= L ? → perfect matching"], cls:"bn-left"},
+      {label:"if match < L", nodes:["Hall's violated for some S"], cls:"bn-cover"},
+      {label:"find violating S", nodes:["König's alternating tree"], cls:"bn-right"},
+      {label:"|S| − |N(S)| = deficit", nodes:["deficiency = L − matching"], cls:"bn-match"},
+    ],
+    zones:[
+      { z:1, tag:"Hall's condition ↔ max matching = L",
+        lines:[
+          {t:"blank", ph:"// Hall's theorem: perfect matching exists iff |N(S)|≥|S| for all S...", ans:"bool hallsCheck(int L, int R, vector<vector<int>>& adj) {", hint:"Fastest check: run max matching. Hall's condition holds iff max matching = L (every left node matched)."},
+          {t:"blank", ph:"// Hall's condition equivalent to perfect matching existence...", ans:"return hopcroftKarp(L, R, adj) == L;", hint:"If max matching < L, some left node is unmatched → Hall's condition violated for some subset S."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:2, tag:"find the violating subset S (when Hall's fails)",
+        lines:[
+          {t:"blank", ph:"// find violating subset S where |N(S)| < |S|...", ans:"vector<int> hallViolator(int L, int R, vector<vector<int>>& adj, vector<int>& match_l, vector<int>& match_r) {", hint:"Returns subset S of left nodes with |N(S)| < |S|. S = unmatched left + alternating tree."},
+          {t:"blank", ph:"// alternating BFS from unmatched left nodes...", ans:"vector<bool> visitL(L,false),visitR(R,false); queue<int> q; for(int u=0;u<L;u++) if(match_l[u]==-1){visitL[u]=true;q.push(u);} while(!q.empty()){int u=q.front();q.pop();for(int v:adj[u]) if(!visitR[v]){visitR[v]=true;if(match_r[v]!=-1&&!visitL[match_r[v]]){visitL[match_r[v]]=true;q.push(match_r[v]);}}} ", hint:"Same alternating BFS as König's construction. visitL = S (violating set), visitR = N(S)."},
+        ]
+      },
+      { z:3, tag:"S = visited left nodes, N(S) = visited right nodes",
+        lines:[
+          {t:"blank", ph:"// S = visited left nodes, N(S) = visited right nodes...", ans:"vector<int> S; for(int u=0;u<L;u++) if(visitL[u]) S.push_back(u); return S;", hint:"|S| − |N(S)| = deficiency. This is the subset that witnesses Hall's condition failure."},
+        ]
+      },
+      { z:4, tag:"RESULT — S violates Hall's: |N(S)| < |S|",
+        lines:[
+          {t:"fixed", code:`}`},
+          {t:"fixed", code:`<span class="cm">// deficiency theorem: max matching = L - max_{S}(|S| - |N(S)|)</span>`},
+          {t:"fixed", code:`<span class="cm">// Hall's holds iff deficiency = 0 iff max matching = L</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Edge Coloring Bipartite ────────────────────────────────────────────
+  {
+    id:7, title:"Edge Coloring Bipartite", badge:"Δ MATCHINGS = Δ COLORS", badgeColor:"var(--c4)",
+    hint:"Vizing's theorem for bipartite: χ'(G) = Δ (max degree). Edge color = which matching it belongs to. Repeatedly find max matching on remaining uncolored edges, assign next color, remove matched edges.",
+    vizRows:[
+      {label:"max degree = Δ", nodes:["need exactly Δ colors"], cls:"bn-left"},
+      {label:"find matching M1", nodes:["assign color 1"], cls:"bn-match"},
+      {label:"remove M1, find M2", nodes:["assign color 2"], cls:"bn-right"},
+      {label:"repeat Δ times", nodes:["all edges colored"], cls:"bn-cover"},
+    ],
+    zones:[
+      { z:1, tag:"compute max degree Δ — need exactly Δ matchings",
+        lines:[
+          {t:"blank", ph:"// edge coloring bipartite graph: χ'(G) = Δ colors...", ans:"vector<int> edgeColor(int L, int R, vector<pair<int,int>>& edges) {", hint:"Returns color assignment for each edge. Bipartite: exactly max-degree colors needed (Vizing)."},
+          {t:"blank", ph:"// compute max degree Δ...", ans:"int maxDeg=0; vector<int> degL(L,0),degR(R,0); for(auto [u,v]:edges){degL[u]++;degR[v]++;} for(int d:degL) maxDeg=max(maxDeg,d); for(int d:degR) maxDeg=max(maxDeg,d);", hint:"Δ = max degree across all nodes. This is the chromatic index for bipartite graphs."},
+        ]
+      },
+      { z:2, tag:"for each color: find matching on remaining uncolored edges",
+        lines:[
+          {t:"blank", ph:"// assign colors: one matching per color class...", ans:"vector<int> color(edges.size(),-1); for(int c=0;c<maxDeg;c++){", hint:"Δ iterations. Each iteration finds a matching on uncolored edges and assigns color c."},
+          {t:"blank", ph:"//   build adj from uncolored edges only...", ans:"vector<vector<pair<int,int>>> adjC(L); for(int i=0;i<(int)edges.size();i++) if(color[i]==-1) adjC[edges[i].first].push_back({edges[i].second,i});", hint:"Only include uncolored edges in the current matching problem."},
+        ]
+      },
+      { z:3, tag:"augmenting path on uncolored edges — assign color c",
+        lines:[
+          {t:"blank", ph:"//   find matching on uncolored edges...", ans:"vector<int> match_l(L,-1),match_r(R,-1); for(int u=0;u<L;u++){ vector<bool> vis(R,false); function<bool(int)> aug=[&](int x)->bool{ for(auto [v,ei]:adjC[x]) if(!vis[v]){vis[v]=true;if(match_r[v]==-1||aug(match_r[v])){match_l[x]=v;match_r[v]=x;return true;}} return false;}; aug(u); }", hint:"Standard augmenting path DFS on uncolored edges only."},
+          {t:"blank", ph:"//   assign color c to matched edges...", ans:"for(int i=0;i<(int)edges.size();i++) if(color[i]==-1&&match_l[edges[i].first]==edges[i].second) color[i]=c; }", hint:"Mark edges used in this matching with color c. They're done."},
+        ]
+      },
+      { z:4, tag:"RESULT — all edges colored with Δ colors",
+        lines:[
+          {t:"blank", ph:"// return color assignment for each edge...", ans:"return color;", hint:"color[i] = which color (0..Δ-1) edge i is assigned. Adjacent edges at same vertex have different colors."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Minimum Edge Cover ─────────────────────────────────────────────────
+  {
+    id:8, title:"Minimum Edge Cover", badge:"n − MAX MATCHING", badgeColor:"var(--c2)",
+    hint:"Edge cover: set of edges covering all vertices. Min edge cover = n − max matching (Gallai's theorem). Start with one edge per unmatched node, matching edges handle the rest. Requires no isolated vertices.",
+    vizRows:[
+      {label:"max matching M", nodes:["covers 2M nodes"], cls:"bn-left"},
+      {label:"n − 2M unmatched", nodes:["need one edge each"], cls:"bn-right"},
+      {label:"min edge cover", nodes:["M + (n−2M) = n−M"], cls:"bn-match"},
+      {label:"Gallai's theorem", nodes:["min_cover + max_match = n"], cls:"bn-cover"},
+    ],
+    zones:[
+      { z:1, tag:"Gallai's theorem: min edge cover + max matching = n",
+        lines:[
+          {t:"blank", ph:"// minimum edge cover — Gallai's theorem: cover + matching = n...", ans:"int minEdgeCover(int L, int R, vector<vector<int>>& adj) {", hint:"Edge cover = set of edges such that every vertex has at least one incident edge. Min = n − max_matching."},
+          {t:"blank", ph:"// min edge cover = total nodes minus max matching...", ans:"int n=L+R, matching=hopcroftKarp(L,R,adj); return n-matching;", hint:"Each matching edge covers 2 nodes. n−2M nodes need their own edge → M + (n−2M) = n−M edges total."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:2, tag:"construct actual edge cover",
+        lines:[
+          {t:"blank", ph:"// construct the actual minimum edge cover...", ans:"vector<pair<int,int>> buildEdgeCover(int L, int R, vector<vector<int>>& adj, vector<int>& match_l, vector<int>& match_r) {", hint:"Returns list of edges forming minimum edge cover."},
+          {t:"blank", ph:"// start with all matching edges...", ans:"vector<pair<int,int>> cover; for(int u=0;u<L;u++) if(match_l[u]!=-1) cover.push_back({u,match_l[u]});", hint:"Matching edges are the foundation — they cover 2 nodes each efficiently."},
+        ]
+      },
+      { z:3, tag:"add one edge for each unmatched node",
+        lines:[
+          {t:"blank", ph:"// for each unmatched left node, add any incident edge...", ans:"for(int u=0;u<L;u++) if(match_l[u]==-1&&!adj[u].empty()) cover.push_back({u,adj[u][0]});", hint:"Each unmatched left node needs exactly one incident edge. Any edge works — pick first available."},
+          {t:"blank", ph:"// for each unmatched right node, add any incident edge...", ans:"for(int v=0;v<R;v++) if(match_r[v]==-1) for(int u:adjR[v]){ cover.push_back({u,v}); break; }", hint:"Same for unmatched right nodes. adjR[v] = left nodes connected to right node v."},
+        ]
+      },
+      { z:4, tag:"RESULT — n−M edges cover all vertices",
+        lines:[
+          {t:"blank", ph:"// return minimum edge cover...", ans:"return cover;", hint:"Size = n − max_matching. Every vertex incident to at least one edge in cover."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Scheduling on Two Machines ─────────────────────────────────────────
+  {
+    id:9, title:"Scheduling on Two Machines", badge:"CONFLICT GRAPH MATCHING", badgeColor:"var(--c1)",
+    hint:"Jobs assigned to two machines. Jobs that conflict (can't run simultaneously) → edge in bipartite graph. Max independent set = max jobs runnable simultaneously = L+R − max matching.",
+    vizRows:[
+      {label:"machine A jobs", nodes:["left nodes L"], cls:"bn-left"},
+      {label:"machine B jobs", nodes:["right nodes R"], cls:"bn-right"},
+      {label:"conflicts → edges", nodes:["can't schedule together"], cls:"bn-cover"},
+      {label:"max schedule", nodes:["= n − max matching"], cls:"bn-match"},
+    ],
+    zones:[
+      { z:1, tag:"model conflicts as bipartite graph, find max independent set",
+        lines:[
+          {t:"blank", ph:"// scheduling: max jobs on two machines with conflicts...", ans:"int maxSchedule(int A, int B, vector<pair<int,int>>& conflicts) {", hint:"A jobs for machine 1, B jobs for machine 2. conflicts[i]={a,b}: job a and job b can't run simultaneously."},
+          {t:"blank", ph:"// build conflict graph and find max independent set...", ans:"vector<vector<int>> adj(A); for(auto [a,b]:conflicts) adj[a].push_back(b); int matching=hopcroftKarp(A,B,adj); return A+B-matching;", hint:"Max independent set = n − max matching (König's corollary). Non-conflicting jobs = independent set."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:2, tag:"find actual schedule (which jobs to run)",
+        lines:[
+          {t:"blank", ph:"// find which jobs can be scheduled simultaneously...", ans:"vector<int> schedule(int A, int B, vector<pair<int,int>>& conflicts) {", hint:"Returns list of job indices that form the maximum independent set."},
+          {t:"blank", ph:"// get max independent set via König's...", ans:"vector<vector<int>> adj(A); for(auto [a,b]:conflicts) adj[a].push_back(b); return maxIndependentSet(A,B,adj);", hint:"These jobs can all run simultaneously — no two are in conflict."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:3, tag:"verify no conflicts in scheduled set",
+        lines:[
+          {t:"blank", ph:"// verify: no two scheduled jobs conflict...", ans:"bool verifySchedule(vector<int>& sched, vector<pair<int,int>>& conflicts, int A) {", hint:"Verification: independent set means no edge between any two nodes in the set."},
+          {t:"blank", ph:"//   check all conflict pairs...", ans:"set<int> inSched(sched.begin(),sched.end()); for(auto [a,b]:conflicts) if(inSched.count(a)&&inSched.count(b+A)) return false; return true;", hint:"If both endpoints of any conflict edge are scheduled, the schedule is invalid."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:4, tag:"RESULT — max simultaneous jobs = n − matching",
+        lines:[
+          {t:"fixed", code:`<span class="cm">// max simultaneous schedule = A + B - max_matching</span>`},
+          {t:"fixed", code:`<span class="cm">// same formula as max independent set = n - min vertex cover</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Deficiency Version ─────────────────────────────────────────────────
+  {
+    id:10, title:"Deficiency Version", badge:"MAX MATCH = n − DEFICIENCY", badgeColor:"var(--c3)",
+    hint:"When perfect matching is impossible, deficiency formula gives max matching: M = L − max_{S⊆L}(|S| − |N(S)|). Deficiency = max excess of |S| over |N(S)|. The violating set S is found via alternating tree.",
+    vizRows:[
+      {label:"Hall's fails for S", nodes:["|S|=3, |N(S)|=2"], cls:"bn-cover"},
+      {label:"deficiency = |S|−|N(S)|", nodes:["= 3−2 = 1"], cls:"bn-right"},
+      {label:"max matching", nodes:["= L − deficiency = L−1"], cls:"bn-match"},
+      {label:"tight set S", nodes:["found via König's BFS"], cls:"bn-left"},
+    ],
+    zones:[
+      { z:1, tag:"run matching, compute deficiency from unmatched count",
+        lines:[
+          {t:"blank", ph:"// deficiency version: max matching when perfect match impossible...", ans:"int deficiencyMatching(int L, int R, vector<vector<int>>& adj) {", hint:"Deficiency = L − max_matching. Deficiency > 0 means Hall's condition violated."},
+          {t:"blank", ph:"// max matching IS the answer — deficiency is just L minus it...", ans:"int M=hopcroftKarp(L,R,adj); return M;", hint:"Max matching algorithm handles deficiency automatically. It just returns < L when Hall's fails."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+      { z:2, tag:"find tightest violating set S (max deficiency set)",
+        lines:[
+          {t:"blank", ph:"// find set S with maximum deficiency |S| - |N(S)|...", ans:"vector<int> maxDeficiencySet(int L, int R, vector<vector<int>>& adj) {", hint:"The alternating tree from unmatched left nodes gives the max deficiency set."},
+          {t:"blank", ph:"// run matching + alternating BFS...", ans:"vector<int> match_l(L,-1),match_r(R,-1); hopcroftKarpFull(L,R,adj,match_l,match_r); vector<bool> visL(L,false),visR(R,false); queue<int> q; for(int u=0;u<L;u++) if(match_l[u]==-1){visL[u]=true;q.push(u);} while(!q.empty()){int u=q.front();q.pop();for(int v:adj[u]) if(!visR[v]){visR[v]=true;if(match_r[v]!=-1&&!visL[match_r[v]]){visL[match_r[v]]=true;q.push(match_r[v]);}}} ", hint:"Standard alternating BFS from unmatched nodes — this finds the max deficiency set S = visL."},
+        ]
+      },
+      { z:3, tag:"S = visited left nodes, deficiency = |S| − |N(S)|",
+        lines:[
+          {t:"blank", ph:"// S = alternating tree left nodes, N(S) = alternating tree right nodes...", ans:"vector<int> S; int NS=0; for(int u=0;u<L;u++) if(visL[u]) S.push_back(u); for(int v=0;v<R;v++) if(visR[v]) NS++; return S;", hint:"|S| − |N(S)| = deficiency. Verify: deficiency = L − max_matching."},
+        ]
+      },
+      { z:4, tag:"RESULT — deficiency = L − M, max matching = L − deficiency",
+        lines:[
+          {t:"blank", ph:"// deficiency formula verification...", ans:"return S;", hint:"Deficiency theorem: max_matching = L − max_{S}(|S|−|N(S)|). Tight set S witnesses why perfect matching is impossible."},
+          {t:"fixed", code:`}`},
+          {t:"fixed", code:`<span class="cm">// deficiency = 0 ↔ Hall's condition holds ↔ perfect matching exists</span>`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Setup','BFS Phase / Init','DFS Augment / Core','Result'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const rows=p.vizRows.map(row=>{
+    const nodes=row.nodes.map(nd=>`<div class="bm-node ${row.cls}">${nd}</div>`).join(`<span class="bm-arrow"> → </span>`);
+    return `<div class="bm-row"><div class="bm-label">${row.label}</div>${nodes}</div>`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="bm-viz">${rows}</div>
+    <div class="viz-legend">
+      <span style="color:var(--c4)">■</span> left nodes &nbsp;
+      <span style="color:var(--c2)">■</span> right nodes &nbsp;
+      <span style="color:var(--c1)">■</span> matched pair &nbsp;
+      <span style="color:var(--c3)">■</span> cover / key result &nbsp;&nbsp;
+      <span style="color:var(--c4)">★ König: M=VC &nbsp;|&nbsp; n−M=IS=EdgeCover &nbsp;|&nbsp; augment: flip match_l[u]=v; match_r[v]=u</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>

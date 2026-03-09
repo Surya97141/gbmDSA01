@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Flow — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --b1:rgba(167,139,250,0.08); --b2:rgba(56,189,248,0.07);
+  --b3:rgba(251,146,60,0.08);  --b4:rgba(74,222,128,0.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(56,189,248,0.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+.wrap{width:100%;max-width:860px;padding:48px 24px 80px;position:relative;z-index:1;}
+
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c2);border:1px solid rgba(56,189,248,0.3);padding:4px 14px;border-radius:20px;margin-bottom:16px;}
+.hdr h1{font-size:clamp(22px,4.5vw,48px);font-weight:800;letter-spacing:-1.5px;line-height:1;background:linear-gradient(120deg,#fff 0%,var(--c2) 40%,var(--c1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hdr p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+.selector-wrap{margin-bottom:28px;}
+.selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.selector{display:flex;flex-wrap:wrap;gap:8px;}
+.sel-btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:var(--faint);color:var(--muted);border-radius:3px;cursor:pointer;transition:all .15s;user-select:none;}
+.sel-btn:hover{border-color:var(--c2);color:var(--text);}
+.sel-btn.active{background:rgba(56,189,248,0.1);border-color:var(--c2);color:var(--c2);}
+
+.scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-item{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;}
+.score-item strong{font-size:20px;font-weight:700;color:var(--text);line-height:1;}
+.score-item.good strong{color:var(--c4);} .score-item.bad strong{color:var(--c3);}
+.progress-bar{flex:1;margin:0 20px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--c2);border-radius:2px;transition:width .4s;}
+
+.template-box{background:var(--card);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.tbox-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);}
+.tbox-title{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--c2);font-weight:600;}
+.tbox-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px;border:1px solid;}
+
+.zone{border-bottom:1px solid var(--border);}
+.zone:last-child{border-bottom:none;}
+.zone-header{display:flex;align-items:center;gap:10px;padding:10px 20px 8px;}
+.zone-num{font-size:18px;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace;}
+.zone-name{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.6;}
+.zone-tag{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 8px;border-radius:2px;opacity:.8;text-align:right;max-width:420px;}
+.zone-1{background:var(--b1)} .zone-2{background:var(--b2)} .zone-3{background:var(--b3)} .zone-4{background:var(--b4)}
+.zone-1 .zone-num,.zone-1 .zone-name{color:var(--c1)} .zone-2 .zone-num,.zone-2 .zone-name{color:var(--c2)}
+.zone-3 .zone-num,.zone-3 .zone-name{color:var(--c3)} .zone-4 .zone-num,.zone-4 .zone-name{color:var(--c4)}
+.zone-1 .zone-tag{background:rgba(167,139,250,0.1);color:var(--c1)} .zone-2 .zone-tag{background:rgba(56,189,248,0.1);color:var(--c2)}
+.zone-3 .zone-tag{background:rgba(251,146,60,0.1);color:var(--c3)} .zone-4 .zone-tag{background:rgba(74,222,128,0.1);color:var(--c4)}
+
+.zone-body{padding:0 20px 14px 24px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.8;}
+.fixed-line{display:block;color:var(--text);white-space:pre;}
+.fill-wrap{display:flex;align-items:center;margin:2px 0;}
+.fill-indent{color:var(--muted);opacity:.3;font-size:12px;white-space:pre;user-select:none;}
+.fill-input{background:rgba(0,0,0,0.25);border:none;border-bottom:1px dashed rgba(255,255,255,0.15);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:2px 6px;width:100%;outline:none;caret-color:var(--c2);transition:border-color .2s,background .2s;border-radius:2px 2px 0 0;}
+.fill-input:focus{background:rgba(56,189,248,0.05);border-bottom-color:var(--c2);}
+.fill-input.correct{background:rgba(74,222,128,0.07);border-bottom-color:var(--c4)!important;color:var(--c4);}
+.fill-input.wrong{background:rgba(251,146,60,0.07);border-bottom-color:var(--c3)!important;color:var(--c3);animation:shake .3s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fill-input.revealed{background:rgba(167,139,250,0.07);border-bottom-color:var(--c1)!important;color:var(--c1);}
+
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;padding:9px 20px;border-radius:3px;cursor:pointer;border:1px solid;transition:all .15s;letter-spacing:.5px;}
+.btn-check{background:rgba(56,189,248,0.1);color:var(--c2);border-color:rgba(56,189,248,0.4);}
+.btn-check:hover{background:rgba(56,189,248,0.2);}
+.btn-reveal{background:rgba(167,139,250,0.08);color:var(--c1);border-color:rgba(167,139,250,0.3);}
+.btn-reveal:hover{background:rgba(167,139,250,0.15);}
+.btn-reset{background:transparent;color:var(--muted);border-color:var(--border);}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+.btn-next{margin-left:auto;background:rgba(74,222,128,0.1);color:var(--c4);border-color:rgba(74,222,128,0.3);}
+.btn-next:hover{background:rgba(74,222,128,0.18);}
+
+.hint-row{display:none;align-items:flex-start;gap:10px;margin-top:14px;padding:10px 14px;background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.15);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--c2);line-height:1.6;}
+.hint-row.show{display:flex;}
+
+.viz-row{padding:14px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);overflow-x:auto;}
+.flow-viz{display:flex;flex-direction:column;gap:8px;}
+.flow-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.flow-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);min-width:130px;text-align:right;padding-right:8px;flex-shrink:0;}
+.flow-node{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border:1px solid;border-radius:3px;white-space:nowrap;}
+.fn-src{border-color:var(--c4);color:var(--c4);background:rgba(74,222,128,0.07);}
+.fn-mid{border-color:var(--c2);color:var(--c2);background:rgba(56,189,248,0.07);}
+.fn-sink{border-color:var(--c1);color:var(--c1);background:rgba(167,139,250,0.08);}
+.fn-cut{border-color:var(--c3);color:var(--c3);background:rgba(251,146,60,0.07);}
+.flow-arrow{color:var(--muted);font-size:12px;}
+.viz-legend{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:2;margin-top:10px;}
+
+.kw{color:#c792ea;font-weight:600} .ty{color:#82aaff} .nm{color:#f78c6c}
+.op{color:#ff6b35} .fn{color:#7dd3fc} .cm{color:#3d4f5c;font-style:italic}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 24px;border-radius:4px;opacity:0;transition:all .3s;z-index:100;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.4);color:var(--c4);}
+.toast.err{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.3);color:var(--c3);}
+.toast.inf{background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);color:var(--c1);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-pill">Pattern 24 — Practice Mode</div>
+    <h1>Network Flow</h1>
+    <p>// Edge{to,rev,cap} · addEdge adds back-edge cap=0 · e.cap-=d; graph[to][rev].cap+=d · level[t]!=-1 → path exists</p>
+  </div>
+
+  <div class="selector-wrap">
+    <div class="selector-label">Select manifestation</div>
+    <div class="selector" id="selector"></div>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-item good"><strong id="s-correct">0</strong>correct</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="score-item bad"><strong id="s-wrong">0</strong>wrong</div>
+    <div class="score-item" style="margin-left:16px"><strong id="s-streak">0</strong>streak🔥</div>
+  </div>
+
+  <div class="template-box">
+    <div class="tbox-header">
+      <span class="tbox-title" id="tbox-title">TEMPLATE.cpp</span>
+      <span class="tbox-badge" id="tbox-badge"></span>
+    </div>
+    <div id="zones"></div>
+    <div class="viz-row" id="viz"></div>
+  </div>
+
+  <div class="hint-row" id="hint-row"><span>💡</span><span id="hint-text"></span></div>
+
+  <div class="actions">
+    <button class="btn btn-check"  onclick="checkAll()">Check Answers</button>
+    <button class="btn btn-reveal" onclick="revealAll()">Reveal</button>
+    <button class="btn btn-reset"  onclick="resetInputs()">Reset</button>
+    <button class="btn btn-next"   onclick="nextPattern()">Next →</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// NETWORK FLOW — 10 Manifestations
+//
+// UNIVERSAL STRUCTURE (Dinic's Algorithm):
+//   Edge struct: {to, rev, cap}
+//   addEdge(u,v,cap): forward cap + back edge cap=0
+//   BFS: build level graph — level[t]!=-1 means path exists
+//   DFS: blocking flow using iter[] (current arc optimization)
+//   Residual update: e.cap -= d; graph[e.to][e.rev].cap += d
+//   Outer loop: while(bfs()) { reset iter; while(dfs > 0) flow += d }
+//
+// WHAT VARIES: only the graph construction
+//   bipartite matching: source→L(cap1), R→sink(cap1), L-R edges(cap1)
+//   min cut:            after max flow, BFS on residual → reachable set
+//   vertex capacity:    split u → u_in, u_out with edge cap=vertex_cap
+//   project selection:  source→projects(profit), costs→sink(cost), INF dep edges
+//   min path cover:     split nodes, DAG edges, n − max_matching
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DINIC_BFS = `    <span class="cm">// BFS: build level graph</span>
+    <span class="kw">auto</span> bfs <span class="op">=</span> [<span class="op">&</span>]() {
+        level.assign(n, <span class="op">-</span><span class="nm">1</span>); level[s]<span class="op">=</span><span class="nm">0</span>;
+        queue<span class="op">&lt;</span><span class="ty">int</span><span class="op">&gt;</span> q; q.push(s);
+        <span class="kw">while</span>(!q.empty()) {
+            <span class="ty">int</span> u<span class="op">=</span>q.front(); q.pop();
+            <span class="kw">for</span>(<span class="kw">auto</span><span class="op">&amp;</span> e:g[u]) <span class="kw">if</span>(e.cap<span class="op">&gt;</span><span class="nm">0</span><span class="op">&amp;&amp;</span>level[e.to]<span class="op">==</span><span class="op">-</span><span class="nm">1</span>)
+                { level[e.to]<span class="op">=</span>level[u]<span class="op">+</span><span class="nm">1</span>; q.push(e.to); }
+        }
+        <span class="kw">return</span> level[t]<span class="op">!=</span><span class="op">-</span><span class="nm">1</span>;
+    };`;
+
+const DINIC_DFS = `    <span class="cm">// DFS: blocking flow with current-arc optimization</span>
+    function<span class="op">&lt;</span><span class="ty">int</span>(int,int)<span class="op">&gt;</span> dfs<span class="op">=</span>[<span class="op">&</span>](<span class="ty">int</span> u,<span class="ty">int</span> pushed)<span class="op">-&gt;</span><span class="ty">int</span>{
+        <span class="kw">if</span>(u<span class="op">==</span>t) <span class="kw">return</span> pushed;
+        <span class="kw">for</span>(<span class="ty">int</span><span class="op">&amp;</span> i<span class="op">=</span>iter[u]; i<span class="op">&lt;</span>(<span class="ty">int</span>)g[u].size(); i<span class="op">++</span>) {
+            <span class="kw">auto</span><span class="op">&amp;</span> e<span class="op">=</span>g[u][i];
+            <span class="kw">if</span>(e.cap<span class="op">&gt;</span><span class="nm">0</span><span class="op">&amp;&amp;</span>level[e.to]<span class="op">==</span>level[u]<span class="op">+</span><span class="nm">1</span>) {
+                <span class="ty">int</span> d<span class="op">=</span>dfs(e.to,min(pushed,e.cap));
+                <span class="kw">if</span>(d<span class="op">&gt;</span><span class="nm">0</span>){ e.cap<span class="op">-=</span>d; g[e.to][e.rev].cap<span class="op">+=</span>d; <span class="kw">return</span> d; }
+            }
+        } <span class="kw">return</span> <span class="nm">0</span>;
+    };`;
+
+const P = [
+
+  // 01 ── Maximum Flow (Dinic's) ─────────────────────────────────────────────
+  {
+    id:1, title:"Maximum Flow (Dinic's)", badge:"O(V²E) LEVEL GRAPH", badgeColor:"var(--c4)",
+    hint:"Dinic's: BFS builds level graph (layers by distance from source). DFS finds blocking flow using iter[] to avoid re-visiting dead ends. Repeat until no s-t path in residual.",
+    vizRows:[
+      {label:"BFS: level graph", nodes:["s(0)→A(1)→B(2)→t(3)"], cls:"fn-src"},
+      {label:"DFS: blocking flow", nodes:["push along level edges"], cls:"fn-mid"},
+      {label:"residual updated", nodes:["e.cap-=d, back.cap+=d"], cls:"fn-sink"},
+      {label:"repeat until", nodes:["BFS finds no s-t path"], cls:"fn-cut"},
+    ],
+    zones:[
+      { z:1, tag:"Edge struct + addEdge — universal residual graph",
+        lines:[
+          {t:"blank", ph:"// Dinic's max flow — O(V²E)...", ans:"struct Edge { int to,rev,cap; };", hint:"rev = index of reverse edge in adj[to]. Allows O(1) residual graph update."},
+          {t:"blank", ph:"// graph + addEdge building forward + back edge...", ans:"vector<vector<Edge>> g(n); auto addEdge=[&](int u,int v,int c){ g[u].push_back({v,(int)g[v].size(),c}); g[v].push_back({u,(int)g[u].size()-1,0}); };", hint:"Back edge has cap=0. When flow pushed u→v: forward.cap-=d, back.cap+=d (enables cancellation)."},
+        ]
+      },
+      { z:2, tag:"BFS builds level graph — return false when sink unreachable",
+        lines:[
+          {t:"blank", ph:"// level[] and iter[] arrays for Dinic's...", ans:"vector<int> level(n), iter(n);", hint:"level[v] = BFS distance from source. iter[v] = current edge index (current-arc optimization)."},
+          {t:"fixed", code:DINIC_BFS},
+        ]
+      },
+      { z:3, tag:"DFS blocking flow — iter[] avoids re-exploring dead ends",
+        lines:[
+          {t:"fixed", code:DINIC_DFS},
+        ]
+      },
+      { z:4, tag:"OUTER LOOP — BFS then DFS until no augmenting path",
+        lines:[
+          {t:"blank", ph:"// outer loop: while BFS finds level graph, push blocking flows...", ans:"int flow=0; while(bfs()){ iter.assign(n,0); int d; while((d=dfs(s,INT_MAX))>0) flow+=d; } return flow;", hint:"Each BFS phase increases level[t] by at least 1. At most O(V) phases. Total: O(V²E)."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 02 ── Minimum Cut ────────────────────────────────────────────────────────
+  {
+    id:2, title:"Minimum Cut", badge:"MAX FLOW = MIN CUT", badgeColor:"var(--c3)",
+    hint:"After running max flow, BFS on residual graph from source. Nodes reachable = S side. Nodes unreachable = T side. Edges from S to T with zero remaining capacity = min cut edges.",
+    vizRows:[
+      {label:"run max flow", nodes:["saturate some edges"], cls:"fn-src"},
+      {label:"BFS on residual", nodes:["reachable from s = S-side"], cls:"fn-mid"},
+      {label:"cut edges", nodes:["S→T, cap=0 in residual"], cls:"fn-cut"},
+      {label:"min cut weight", nodes:["= max flow value"], cls:"fn-sink"},
+    ],
+    zones:[
+      { z:1, tag:"same graph structure — run max flow first",
+        lines:[
+          {t:"blank", ph:"// minimum cut = max flow by max-flow min-cut theorem...", ans:"pair<int,vector<pair<int,int>>> minCut(int n, vector<tuple<int,int,int>>& edges, int s, int t) {", hint:"Returns {cut_value, list of cut edges}. Cut value = max flow value (theorem)."},
+          {t:"blank", ph:"// build graph and run Dinic's max flow...", ans:"struct Edge{int to,rev,cap;}; vector<vector<Edge>> g(n); auto addEdge=[&](int u,int v,int c){g[u].push_back({v,(int)g[v].size(),c});g[v].push_back({u,(int)g[u].size()-1,0});}; for(auto[u,v,c]:edges) addEdge(u,v,c); int flow=dinic(g,n,s,t);", hint:"First run max flow to saturation. Then identify cut from residual graph."},
+        ]
+      },
+      { z:2, tag:"BFS on residual to find S-side (reachable from source)",
+        lines:[
+          {t:"blank", ph:"// BFS on residual graph to find reachable nodes from s...", ans:"vector<bool> reachable(n,false); queue<int> q; q.push(s); reachable[s]=true; while(!q.empty()){ int u=q.front();q.pop(); for(auto& e:g[u]) if(e.cap>0&&!reachable[e.to]){reachable[e.to]=true;q.push(e.to);} }", hint:"Only traverse edges with cap > 0 in residual. Saturated edges (cap=0) cannot be crossed."},
+        ]
+      },
+      { z:3, tag:"cut edges: reachable u → unreachable v, originally had capacity",
+        lines:[
+          {t:"blank", ph:"// identify cut edges: from S-side to T-side...", ans:"vector<pair<int,int>> cutEdges; for(int u=0;u<n;u++) if(reachable[u]) for(auto& e:g[u]) if(!reachable[e.to]&&g[e.to][e.rev].cap>0) cutEdges.push_back({u,e.to});", hint:"Edge u→v is in min cut if: u reachable, v not reachable, and back edge has flow (g[v][rev].cap > 0 means flow was pushed)."},
+        ]
+      },
+      { z:4, tag:"RESULT — cut value = max flow, cut edges identified",
+        lines:[
+          {t:"blank", ph:"// return max flow value (= min cut) and cut edges...", ans:"return {flow, cutEdges};", hint:"By max-flow min-cut theorem: max flow = min cut weight. The identified edges are the bottleneck."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 03 ── Bipartite Matching ─────────────────────────────────────────────────
+  {
+    id:3, title:"Bipartite Matching", badge:"SOURCE→L→R→SINK cap=1", badgeColor:"var(--c2)",
+    hint:"Add virtual source→each left node (cap 1). Each right node→virtual sink (cap 1). Original edges L→R have cap 1. Max flow = max matching. Cap 1 enforces each node matched at most once.",
+    vizRows:[
+      {label:"super-source s", nodes:["s→L1(1)","s→L2(1)"], cls:"fn-src"},
+      {label:"L-R edges cap=1", nodes:["L1→R1","L1→R2","L2→R2"], cls:"fn-mid"},
+      {label:"super-sink t", nodes:["R1→t(1)","R2→t(1)"], cls:"fn-sink"},
+      {label:"max flow = matching", nodes:["each node matched ≤1"], cls:"fn-cut"},
+    ],
+    zones:[
+      { z:1, tag:"2+L+R nodes: index 0=source, 1..L=left, L+1..L+R=right, last=sink",
+        lines:[
+          {t:"blank", ph:"// bipartite matching via max flow...", ans:"int bipartiteMatching(int L, int R, vector<pair<int,int>>& edges) {", hint:"L left nodes, R right nodes. edges[i]={l,r} means left node l can match right node r."},
+          {t:"blank", ph:"// total nodes: source + L + R + sink...", ans:"int n=L+R+2, s=0, t=n-1; struct Edge{int to,rev,cap;}; vector<vector<Edge>> g(n); auto addEdge=[&](int u,int v,int c){g[u].push_back({v,(int)g[v].size(),c});g[v].push_back({u,(int)g[u].size()-1,0});};", hint:"Node numbering: 0=source, 1..L=left nodes, L+1..L+R=right nodes, n-1=sink."},
+        ]
+      },
+      { z:2, tag:"source→left (cap 1), right→sink (cap 1)",
+        lines:[
+          {t:"blank", ph:"// source to each left node with capacity 1...", ans:"for(int i=1;i<=L;i++) addEdge(s,i,1);", hint:"Cap 1: each left node can be matched to at most one right node."},
+          {t:"blank", ph:"// each right node to sink with capacity 1...", ans:"for(int i=1;i<=R;i++) addEdge(L+i,t,1);", hint:"Cap 1: each right node can be matched to at most one left node."},
+          {t:"blank", ph:"// L-R matching edges with capacity 1...", ans:"for(auto [l,r]:edges) addEdge(l,L+r,1);", hint:"Each possible match is an edge with cap 1. Flow through it = matched."},
+        ]
+      },
+      { z:3, tag:"run Dinic's — identical to max flow",
+        lines:[
+          {t:"blank", ph:"// run Dinic's max flow on constructed graph...", ans:"return dinic(g,n,s,t);", hint:"Max flow = max matching. Each unit of flow = one matched pair."},
+        ]
+      },
+      { z:4, tag:"RESULT — flow = matching size · inspect edges for actual pairs",
+        lines:[
+          {t:"fixed", code:`}`},
+          {t:"fixed", code:`<span class="cm">// to find actual matching: check L-R edges where flow was used</span>`},
+          {t:"fixed", code:`<span class="cm">// (original cap was 1, remaining cap = 0 means matched)</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 04 ── Project Selection ──────────────────────────────────────────────────
+  {
+    id:4, title:"Project Selection", badge:"CLOSURE / MIN CUT", badgeColor:"var(--c1)",
+    hint:"Closure problem: select subset of projects maximizing profit minus costs, respecting dependencies. Source→profitable projects (cap=profit). Cost nodes→sink (cap=cost). Dependency edges INF. Max profit = sum(profits) − min_cut.",
+    vizRows:[
+      {label:"source s", nodes:["→P1(profit=5)","→P2(profit=3)"], cls:"fn-src"},
+      {label:"dependency INF", nodes:["P1→C1(INF)","P2→C2(INF)"], cls:"fn-mid"},
+      {label:"cost nodes→sink", nodes:["C1→t(cost=2)","C2→t(cost=4)"], cls:"fn-sink"},
+      {label:"max profit", nodes:["= sum_profits − min_cut"], cls:"fn-cut"},
+    ],
+    zones:[
+      { z:1, tag:"source→projects (cap=profit), costs→sink (cap=cost)",
+        lines:[
+          {t:"blank", ph:"// project selection / closure problem...", ans:"int projectSelection(vector<int>& profit, vector<int>& cost, vector<pair<int,int>>& deps) {", hint:"Select projects to maximize profit-cost. Dependency: if you take project i, you must take cost j."},
+          {t:"blank", ph:"// nodes: source=0, projects=1..P, costs=P+1..P+C, sink=last...", ans:"int P=profit.size(),C=cost.size(),n=P+C+2,s=0,t=n-1; struct Edge{int to,rev,cap;}; vector<vector<Edge>> g(n); auto addEdge=[&](int u,int v,int c){g[u].push_back({v,(int)g[v].size(),c});g[v].push_back({u,(int)g[u].size()-1,0});};", hint:"Standard node numbering. Projects indexed 1..P, costs P+1..P+C."},
+          {t:"blank", ph:"// source to profitable projects (cap = profit value)...", ans:"int totalProfit=0; for(int i=0;i<P;i++){addEdge(s,i+1,profit[i]); totalProfit+=profit[i];}",hint:"Cap = profit: cutting this edge means NOT selecting this project, losing that profit."},
+          {t:"blank", ph:"// cost nodes to sink (cap = cost value)...", ans:"for(int i=0;i<C;i++) addEdge(P+i+1,t,cost[i]);", hint:"Cap = cost: cutting this edge means NOT paying this cost."},
+        ]
+      },
+      { z:2, tag:"dependency edges with INF capacity",
+        lines:[
+          {t:"blank", ph:"// dependency edges: project→cost with INF capacity...", ans:"for(auto [p,c]:deps) addEdge(p+1,P+c+1,INT_MAX/2);", hint:"INF cap: these edges are never cut. If project p selected, cost c MUST be paid (can't cut dependency)."},
+        ]
+      },
+      { z:3, tag:"max profit = total profit − min cut",
+        lines:[
+          {t:"blank", ph:"// max profit = total profit - min cut...", ans:"int minCutVal=dinic(g,n,s,t); return totalProfit-minCutVal;", hint:"Min cut separates selected projects (S-side) from unselected + costs (T-side). Max profit = sum profits − cut cost."},
+        ]
+      },
+      { z:4, tag:"RESULT — selected projects are S-side of min cut",
+        lines:[
+          {t:"fixed", code:`}`},
+          {t:"fixed", code:`<span class="cm">// selected projects: BFS on residual, project nodes reachable from s</span>`},
+          {t:"fixed", code:`<span class="cm">// INF edges ensure dependency constraints are always respected</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 05 ── Circulation with Demands ───────────────────────────────────────────
+  {
+    id:5, title:"Circulation with Demands", badge:"LOWER BOUNDS → FEASIBILITY", badgeColor:"var(--c3)",
+    hint:"Each edge has [lower, upper] bound. Transform: add supersource S and supersink T. For each edge with lower bound l: addEdge(S, v, l) and addEdge(u, T, l). Capacity becomes upper-lower. Feasible if max flow from S saturates all S-edges.",
+    vizRows:[
+      {label:"edge [l,u] demand", nodes:["subtract lower bound l"], cls:"fn-src"},
+      {label:"add S→v (cap=l)", nodes:["and u→T (cap=l)"], cls:"fn-mid"},
+      {label:"edge cap = u-l", nodes:["residual capacity only"], cls:"fn-sink"},
+      {label:"feasible if", nodes:["S-edges fully saturated"], cls:"fn-cut"},
+    ],
+    zones:[
+      { z:1, tag:"supersource S and supersink T handle lower bounds",
+        lines:[
+          {t:"blank", ph:"// circulation with demands — feasibility check...", ans:"bool circulationFeasible(int n, vector<tuple<int,int,int,int>>& edges) {", hint:"edges = {u, v, lower, upper}. Check if valid flow exists satisfying all demands."},
+          {t:"blank", ph:"// add supersource S=n and supersink T=n+1...", ans:"int S=n, T=n+1, total=n+2; struct Edge{int to,rev,cap;}; vector<vector<Edge>> g(total); auto addEdge=[&](int u,int v,int c){g[u].push_back({v,(int)g[v].size(),c});g[v].push_back({u,(int)g[u].size()-1,0});};", hint:"S and T are virtual nodes added to handle lower bound constraints."},
+        ]
+      },
+      { z:2, tag:"transform each edge: subtract lower, add S/T edges",
+        lines:[
+          {t:"blank", ph:"// transform edges: for each [l,u] edge from a to b...", ans:"int mustFlow=0; for(auto [a,b,lo,hi]:edges){ addEdge(a,b,hi-lo); addEdge(S,b,lo); addEdge(a,T,lo); mustFlow+=lo; }", hint:"Edge (a,b,[l,u]): add (a,b,u-l), add (S,b,l), add (a,T,l). The l units MUST flow — enforced via S/T."},
+        ]
+      },
+      { z:3, tag:"original s→t edge + check if S-edges saturated",
+        lines:[
+          {t:"blank", ph:"// add original source-sink edge to complete circulation...", ans:"addEdge(0,n-1,INT_MAX/2);", hint:"Allow free flow from original source to sink to complete the circulation."},
+          {t:"blank", ph:"// run max flow from S to T — must equal mustFlow for feasibility...", ans:"int flow=dinic(g,total,S,T); return flow==mustFlow;", hint:"All lower-bound demands satisfied iff max flow from S equals total mandatory flow (mustFlow)."},
+        ]
+      },
+      { z:4, tag:"RESULT — feasible if S completely drained",
+        lines:[
+          {t:"fixed", code:`}`},
+          {t:"fixed", code:`<span class="cm">// flow==mustFlow: every lower bound edge has its demand met</span>`},
+          {t:"fixed", code:`<span class="cm">// actual flow on edge (a,b) = lo + flow on transformed (a,b) edge</span>`},
+        ]
+      },
+    ]
+  },
+
+  // 06 ── Baseball Elimination ───────────────────────────────────────────────
+  {
+    id:6, title:"Baseball Elimination", badge:"GAME NODES + TEAM NODES", badgeColor:"var(--c4)",
+    hint:"Can team x be eliminated? Max wins team x can get = w[x]+r[x]. For all other teams i,j: game node g_ij → source (cap=games_ij). g_ij → team_i and team_j (cap INF). team_i → sink (cap = max_x - w[i]). x eliminated if max flow < sum of remaining games.",
+    vizRows:[
+      {label:"source s", nodes:["→game(i,j) cap=r[i][j]"], cls:"fn-src"},
+      {label:"game→teams INF", nodes:["g_ij→i (INF)","g_ij→j (INF)"], cls:"fn-mid"},
+      {label:"team→sink", nodes:["i→t (max_x−w[i])"], cls:"fn-sink"},
+      {label:"eliminated if", nodes:["flow < Σr[i][j]"], cls:"fn-cut"},
+    ],
+    zones:[
+      { z:1, tag:"game nodes + team nodes + source + sink",
+        lines:[
+          {t:"blank", ph:"// baseball elimination: can team x still win?...", ans:"bool isEliminated(int x, vector<int>& w, vector<int>& r_rem, vector<vector<int>>& g) {", hint:"w[i]=wins, r_rem[i]=remaining games, g[i][j]=games left between i and j."},
+          {t:"blank", ph:"// max wins team x can achieve...", ans:"int n=w.size(), maxWins=w[x]+r_rem[x];", hint:"If any team already has more wins than maxWins, trivially eliminated (check first)."},
+          {t:"blank", ph:"// trivial elimination check...", ans:"for(int i=0;i<n;i++) if(i!=x&&w[i]>maxWins) return true;", hint:"If any team already beats x's maximum possible wins, x is eliminated regardless of other games."},
+        ]
+      },
+      { z:2, tag:"build flow network: source, game nodes, team nodes, sink",
+        lines:[
+          {t:"blank", ph:"// nodes: s=0, game nodes, team nodes (skip x), t=last...", ans:"int numGames=0; for(int i=0;i<n;i++) for(int j=i+1;j<n;j++) if(i!=x&&j!=x) numGames++; int total=1+numGames+(n-1)+1, s=0, t=total-1; struct Edge{int to,rev,cap;}; vector<vector<Edge>> gr(total); auto addEdge=[&](int u,int v,int c){gr[u].push_back({v,(int)gr[v].size(),c});gr[v].push_back({u,(int)gr[u].size()-1,0});};", hint:"One game node per pair (i,j) where i,j ≠ x. One team node per team ≠ x."},
+        ]
+      },
+      { z:3, tag:"source→game, game→teams(INF), teams→sink",
+        lines:[
+          {t:"blank", ph:"// wire up all game and team nodes...", ans:"int gNode=1,totalGames=0; for(int i=0;i<n;i++) for(int j=i+1;j<n;j++){ if(i==x||j==x) continue; addEdge(s,gNode,g[i][j]); totalGames+=g[i][j]; int ti=(i<x?i:i-1)+1+numGames, tj=(j<x?j:j-1)+1+numGames; addEdge(gNode,ti,INT_MAX/2); addEdge(gNode,tj,INT_MAX/2); gNode++; } for(int i=0;i<n;i++){ if(i==x) continue; int ti=(i<x?i:i-1)+1+numGames; addEdge(ti,t,maxWins-w[i]); }", hint:"Each game i-j must be won by i or j. Team node capacity = max x wins minus team's current wins."},
+        ]
+      },
+      { z:4, tag:"RESULT — eliminated if flow < total remaining games",
+        lines:[
+          {t:"blank", ph:"// x eliminated if not all games can be absorbed...", ans:"return dinic(gr,total,s,t) < totalGames;", hint:"If max flow < total games between other teams, some game outcome forces a team past maxWins → x eliminated."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 07 ── Image Segmentation ─────────────────────────────────────────────────
+  {
+    id:7, title:"Image Segmentation", badge:"MIN CUT ON PIXEL GRAPH", badgeColor:"var(--c2)",
+    hint:"Each pixel: source edge (cap=foreground_likelihood), sink edge (cap=background_likelihood). Adjacent pixels: bidirectional edges (cap=similarity penalty). Min cut separates foreground from background.",
+    vizRows:[
+      {label:"source=foreground", nodes:["s→pixel(fg_cost)"], cls:"fn-src"},
+      {label:"pixel adjacency", nodes:["p_i↔p_j (similarity)"], cls:"fn-mid"},
+      {label:"pixel→sink", nodes:["pixel→t (bg_cost)"], cls:"fn-sink"},
+      {label:"min cut = segmentation", nodes:["S=foreground, T=background"], cls:"fn-cut"},
+    ],
+    zones:[
+      { z:1, tag:"pixel nodes + source (foreground) + sink (background)",
+        lines:[
+          {t:"blank", ph:"// image segmentation as min cut problem...", ans:"int imageSegment(int rows, int cols, vector<vector<int>>& fg, vector<vector<int>>& bg, vector<vector<int>>& hEdge, vector<vector<int>>& vEdge) {", hint:"fg[r][c]=cost of putting pixel in background. bg[r][c]=cost of putting in foreground. hEdge/vEdge=adjacency penalties."},
+          {t:"blank", ph:"// nodes: pixels + source + sink...", ans:"int n=rows*cols, s=n, t=n+1; auto id=[&](int r,int c){return r*cols+c;}; struct Edge{int to,rev,cap;}; vector<vector<Edge>> g(n+2); auto addEdge=[&](int u,int v,int c){g[u].push_back({v,(int)g[v].size(),c});g[v].push_back({u,(int)g[u].size()-1,0});};", hint:"Pixel (r,c) → node id r*cols+c. Source=n, Sink=n+1."},
+        ]
+      },
+      { z:2, tag:"source/sink edges encode labeling costs",
+        lines:[
+          {t:"blank", ph:"// source→pixel (cost of NOT being foreground = bg penalty)...", ans:"for(int r=0;r<rows;r++) for(int c=0;c<cols;c++){ addEdge(s,id(r,c),fg[r][c]); addEdge(id(r,c),t,bg[r][c]); }", hint:"s→pixel: penalize putting pixel in background (cut = bg assignment). pixel→t: penalize fg assignment."},
+        ]
+      },
+      { z:3, tag:"adjacency edges encode smoothness penalty",
+        lines:[
+          {t:"blank", ph:"// horizontal adjacency edges (bidirectional)...", ans:"for(int r=0;r<rows;r++) for(int c=0;c<cols-1;c++){ addEdge(id(r,c),id(r,c+1),hEdge[r][c]); addEdge(id(r,c+1),id(r,c),hEdge[r][c]); }", hint:"Both directions with same capacity. Cut either direction = pay the smoothness penalty."},
+          {t:"blank", ph:"// vertical adjacency edges (bidirectional)...", ans:"for(int r=0;r<rows-1;r++) for(int c=0;c<cols;c++){ addEdge(id(r,c),id(r+1,c),vEdge[r][c]); addEdge(id(r+1,c),id(r,c),vEdge[r][c]); }", hint:"Penalize adjacent pixels being in different segments."},
+        ]
+      },
+      { z:4, tag:"RESULT — min cut = optimal segmentation cost",
+        lines:[
+          {t:"blank", ph:"// min cut = minimum total segmentation penalty...", ans:"return dinic(g,n+2,s,t);", hint:"After running, BFS on residual: reachable=foreground segment, unreachable=background."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 08 ── Minimum Path Cover in DAG ──────────────────────────────────────────
+  {
+    id:8, title:"Minimum Path Cover in DAG", badge:"n − MAX BIPARTITE MATCH", badgeColor:"var(--c1)",
+    hint:"Split each node u into u_out and u_in. For each DAG edge u→v, add matching edge u_out→v_in. Min path cover = n − max matching. Each matched edge 'chains' two nodes into same path.",
+    vizRows:[
+      {label:"split each node u", nodes:["u_out (left)","u_in (right)"], cls:"fn-src"},
+      {label:"DAG edge u→v", nodes:["u_out→v_in (cap 1)"], cls:"fn-mid"},
+      {label:"max matching M", nodes:["chains M node pairs"], cls:"fn-sink"},
+      {label:"min paths = n − M", nodes:["each match reduces count by 1"], cls:"fn-cut"},
+    ],
+    zones:[
+      { z:1, tag:"split nodes: u_out = u, u_in = u+n",
+        lines:[
+          {t:"blank", ph:"// minimum path cover in DAG = n - max bipartite matching...", ans:"int minPathCover(int n, vector<pair<int,int>>& dagEdges) {", hint:"Path cover: set of vertex-disjoint paths covering all nodes. Min = fewest paths needed."},
+          {t:"blank", ph:"// 2n nodes + source + sink: left=u, right=u+n...", ans:"int total=2*n+2, s=2*n, t=2*n+1; struct Edge{int to,rev,cap;}; vector<vector<Edge>> g(total); auto addEdge=[&](int u,int v,int c){g[u].push_back({v,(int)g[v].size(),c});g[v].push_back({u,(int)g[u].size()-1,0});};", hint:"u_out=u (left side), u_in=u+n (right side). Source=2n, Sink=2n+1."},
+        ]
+      },
+      { z:2, tag:"source→u_out (cap 1), u_in→sink (cap 1)",
+        lines:[
+          {t:"blank", ph:"// source to all out-nodes, all in-nodes to sink...", ans:"for(int i=0;i<n;i++){ addEdge(s,i,1); addEdge(i+n,t,1); }", hint:"Cap 1: each node can be the start of at most one path (out) and end of at most one path (in)."},
+          {t:"blank", ph:"// DAG edge u→v becomes matching edge u_out→v_in...", ans:"for(auto [u,v]:dagEdges) addEdge(u,v+n,1);", hint:"u_out→v_in: flow here means u is immediately followed by v in some path."},
+        ]
+      },
+      { z:3, tag:"max matching = max flow",
+        lines:[
+          {t:"blank", ph:"// max matching via max flow...", ans:"int matching=dinic(g,total,s,t);", hint:"Each unit of flow = one edge used in path chaining = two nodes joined into same path."},
+        ]
+      },
+      { z:4, tag:"RESULT — n minus matching",
+        lines:[
+          {t:"blank", ph:"// min path cover = n - max matching...", ans:"return n-matching;", hint:"Start with n single-node paths. Each match merges two paths into one. n − matching = final path count."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 09 ── Vertex Capacity Flow ───────────────────────────────────────────────
+  {
+    id:9, title:"Vertex Capacity Flow", badge:"SPLIT NODE u_in → u_out", badgeColor:"var(--c3)",
+    hint:"When vertices have capacity limits: split each u into u_in and u_out with edge cap = vertex capacity. All incoming edges go to u_in, all outgoing from u_out. Now vertex capacity acts like edge capacity.",
+    vizRows:[
+      {label:"vertex u, cap=k", nodes:["u_in → u_out (cap=k)"], cls:"fn-src"},
+      {label:"incoming edges", nodes:["v → u_in (original cap)"], cls:"fn-mid"},
+      {label:"outgoing edges", nodes:["u_out → w (original cap)"], cls:"fn-sink"},
+      {label:"bottleneck enforced", nodes:["at most k flow through u"], cls:"fn-cut"},
+    ],
+    zones:[
+      { z:1, tag:"double the nodes: u_in = u, u_out = u + n",
+        lines:[
+          {t:"blank", ph:"// vertex capacity flow — split each node into in/out...", ans:"int vertexCapFlow(int n, vector<tuple<int,int,int>>& edges, vector<int>& vcap, int s, int t) {", hint:"vcap[u] = how many units of flow can pass through node u. Transform to edge-capacity problem."},
+          {t:"blank", ph:"// 2n nodes: u_in=u, u_out=u+n...", ans:"int total=2*n; struct Edge{int to,rev,cap;}; vector<vector<Edge>> g(total); auto addEdge=[&](int u,int v,int c){g[u].push_back({v,(int)g[v].size(),c});g[v].push_back({u,(int)g[u].size()-1,0});};", hint:"u_in = u (receives flow), u_out = u+n (sends flow). Internal edge enforces vertex capacity."},
+        ]
+      },
+      { z:2, tag:"u_in → u_out with vertex capacity",
+        lines:[
+          {t:"blank", ph:"// add internal edge for each vertex: u_in → u_out (cap = vcap[u])...", ans:"for(int i=0;i<n;i++) addEdge(i, i+n, vcap[i]);", hint:"THE key transformation: this single edge per node enforces that at most vcap[i] flow passes through node i."},
+        ]
+      },
+      { z:3, tag:"original edges: u → v becomes u_out → v_in",
+        lines:[
+          {t:"blank", ph:"// original edges: u_out → v_in...", ans:"for(auto [u,v,c]:edges) addEdge(u+n, v, c);", hint:"Outgoing from u goes from u_out (u+n). Incoming to v goes to v_in (v). Preserves original edge capacities."},
+        ]
+      },
+      { z:4, tag:"RESULT — max flow respecting vertex capacities",
+        lines:[
+          {t:"blank", ph:"// run max flow on expanded graph...", ans:"return dinic(g, total, s+n, t);", hint:"Source is s_out = s+n (flow exits source's internal edge). Sink is t_in = t (flow enters sink)."},
+          {t:"fixed", code:`}`},
+        ]
+      },
+    ]
+  },
+
+  // 10 ── Multi-Commodity Flow ───────────────────────────────────────────────
+  {
+    id:10, title:"Multi-Commodity Flow", badge:"LP / SHARED CAPACITIES", badgeColor:"var(--c4)",
+    hint:"Multiple commodities (source-sink pairs) share edge capacities. Integer multi-commodity flow is NP-hard in general. Fractional version solved by LP. Special case: 2 commodities in undirected graphs is polynomial.",
+    vizRows:[
+      {label:"commodity 1: s1→t1", nodes:["flow f1 through network"], cls:"fn-src"},
+      {label:"commodity 2: s2→t2", nodes:["flow f2 through network"], cls:"fn-mid"},
+      {label:"shared edge (u,v)", nodes:["f1(u,v)+f2(u,v) ≤ cap(u,v)"], cls:"fn-sink"},
+      {label:"maximize Σ flow", nodes:["subject to shared capacities"], cls:"fn-cut"},
+    ],
+    zones:[
+      { z:1, tag:"LP formulation — one variable per commodity per edge",
+        lines:[
+          {t:"blank", ph:"// multi-commodity flow — LP relaxation approach...", ans:"struct MultiCommodity { int n; vector<tuple<int,int,int>> edges; vector<pair<int,int>> commodities;", hint:"Multiple source-sink pairs sharing the same edge capacities. Each commodity has its own flow."},
+          {t:"blank", ph:"// feasibility: can we route all demands simultaneously?...", ans:"bool feasible(vector<int>& demand) {", hint:"demand[k] = units of commodity k that must be routed. Feasible if all demands met within edge capacities."},
+        ]
+      },
+      { z:2, tag:"special case: 2 undirected commodities",
+        lines:[
+          {t:"blank", ph:"// 2-commodity special case: route both or neither...", ans:"if(commodities.size()==2){ auto [s1,t1]=commodities[0]; auto [s2,t2]=commodities[1];", hint:"2-commodity undirected flow has polynomial algorithm. More commodities → NP-hard for integers."},
+          {t:"blank", ph:"// check if single max flow can accommodate both demands...", ans:"int flow1=maxflow(s1,t1), flow2=maxflow(s2,t2); return flow1>=demand[0]&&flow2>=demand[1]; }", hint:"Simplified check. True multi-commodity requires LP to handle interaction between flows."},
+        ]
+      },
+      { z:3, tag:"general case — LP with flow conservation constraints",
+        lines:[
+          {t:"blank", ph:"// general: use LP solver with flow conservation per commodity...", ans:"return solveMCFLP(n, edges, commodities, demand);", hint:"Variables: f_k(u,v) for each commodity k and edge (u,v). Constraints: capacity (sum_k f_k ≤ cap), conservation (flow in = flow out at non-source/sink nodes)."},
+        ]
+      },
+      { z:4, tag:"RESULT — feasible or LP objective value",
+        lines:[
+          {t:"fixed", code:`    }`},
+          {t:"fixed", code:`};`},
+          {t:"fixed", code:`<span class="cm">// integer multi-commodity: NP-hard (reduce from 3-SAT)</span>`},
+          {t:"fixed", code:`<span class="cm">// fractional: polynomial via LP (ellipsoid or interior point)</span>`},
+          {t:"fixed", code:`<span class="cm">// 2-commodity undirected: polynomial (max-flow based)</span>`},
+        ]
+      },
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const zoneNames=['Graph Structure','BFS Level Graph','DFS / Construction','Result'];
+const zoneCls=['zone-1','zone-2','zone-3','zone-4'];
+const zoneNums=['①','②','③','④'];
+let current=0, answered=new Set(), stats={correct:0,wrong:0,streak:0};
+
+function buildSelector(){
+  const sel=document.getElementById('selector'); sel.innerHTML='';
+  P.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='sel-btn'+(i===0?' active':'');
+    b.textContent=`${String(i+1).padStart(2,'0')} ${p.title}`;
+    b.onclick=()=>loadPattern(i); sel.appendChild(b);
+  });
+}
+
+function loadPattern(idx){
+  current=idx; answered=new Set();
+  document.querySelectorAll('.sel-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+  const p=P[idx];
+  document.getElementById('tbox-title').textContent=p.title.replace(/ /g,'_')+'.cpp';
+  const badge=document.getElementById('tbox-badge');
+  badge.textContent=p.badge;
+  badge.style.cssText=`color:${p.badgeColor};border-color:${p.badgeColor};background:${p.badgeColor}18;`;
+  const zonesEl=document.getElementById('zones'); zonesEl.innerHTML='';
+  p.zones.forEach((zone,zi)=>{
+    const div=document.createElement('div'); div.className=`zone ${zoneCls[zi]}`;
+    let html='';
+    zone.lines.forEach((line,li)=>{
+      if(line.t==='fixed'){
+        html+=`<span class="fixed-line">${line.code}</span>`;
+      } else {
+        const key=`${idx}-${zi}-${li}`;
+        html+=`<div class="fill-wrap"><span class="fill-indent">  </span>
+          <input class="fill-input" data-key="${key}"
+            data-ans="${encodeURIComponent(line.ans)}"
+            data-hint="${encodeURIComponent(line.hint)}"
+            placeholder="${line.ph}" autocomplete="off" spellcheck="false"
+            onkeydown="handleKey(event,this)" oninput="clearState(this)"/></div>`;
+      }
+    });
+    div.innerHTML=`
+      <div class="zone-header">
+        <span class="zone-num">${zoneNums[zi]}</span>
+        <span class="zone-name">${zoneNames[zi]}</span>
+        <span class="zone-tag">${zone.tag}</span>
+      </div>
+      <div class="zone-body">${html}</div>`;
+    zonesEl.appendChild(div);
+  });
+  buildViz(p); document.getElementById('hint-row').classList.remove('show');
+}
+
+function buildViz(p){
+  const viz=document.getElementById('viz');
+  const rows=p.vizRows.map(row=>{
+    const nodes=row.nodes.map(nd=>`<div class="flow-node ${row.cls}">${nd}</div>`).join(`<span class="flow-arrow"> → </span>`);
+    return `<div class="flow-row"><div class="flow-label">${row.label}</div>${nodes}</div>`;
+  }).join('');
+  viz.innerHTML=`
+    <div class="flow-viz">${rows}</div>
+    <div class="viz-legend">
+      <span style="color:var(--c4)">■</span> source &nbsp;
+      <span style="color:var(--c2)">■</span> intermediate &nbsp;
+      <span style="color:var(--c1)">■</span> sink &nbsp;
+      <span style="color:var(--c3)">■</span> cut / key constraint &nbsp;&nbsp;
+      <span style="color:var(--c2)">★ e.cap-=d; graph[to][rev].cap+=d &nbsp;|&nbsp; back edge cap=0 at construction &nbsp;|&nbsp; iter[] avoids dead-end re-exploration</span>
+    </div>`;
+}
+
+function normalise(s){
+  return s.trim().toLowerCase()
+    .replace(/\s*([+\-*/%=<>!&|^~,;{}()\[\]])\s*/g,'$1')
+    .replace(/\s+/g,' ').replace(/;+$/,'')
+    .replace(/\+\+/g,'++').replace(/--/g,'--')
+    .replace(/\s*->\s*/g,'->').trim();
+}
+function handleKey(e,el){if(e.key==='Enter')checkSingle(el);if(e.key==='Tab'){e.preventDefault();focusNext(el);}}
+function clearState(el){el.classList.remove('correct','wrong','revealed');}
+function checkSingle(el){
+  const key=el.dataset.key; if(answered.has(key))return;
+  const ans=decodeURIComponent(el.dataset.ans);
+  if(normalise(el.value)===normalise(ans)){
+    el.classList.add('correct');el.classList.remove('wrong');
+    answered.add(key);stats.correct++;stats.streak++;
+    updateScore();showToast('✓ Correct!','ok');focusNext(el);
+  } else {
+    el.classList.add('wrong');el.classList.remove('correct');
+    stats.wrong++;stats.streak=0;updateScore();
+    showToast('✗ Not quite — check hint','err');
+    document.getElementById('hint-text').textContent=decodeURIComponent(el.dataset.hint);
+    document.getElementById('hint-row').classList.add('show');
+  }
+}
+function checkAll(){document.querySelectorAll('.fill-input').forEach(el=>{if(!answered.has(el.dataset.key))checkSingle(el);});}
+function revealAll(){
+  document.querySelectorAll('.fill-input').forEach(el=>{
+    if(!answered.has(el.dataset.key)){el.value=decodeURIComponent(el.dataset.ans);el.classList.add('revealed');el.classList.remove('correct','wrong');}
+  });
+  showToast('Answers revealed — study, then Reset!','inf');
+  document.getElementById('hint-text').textContent=P[current].hint;
+  document.getElementById('hint-row').classList.add('show');
+}
+function resetInputs(){
+  answered=new Set();
+  document.querySelectorAll('.fill-input').forEach(el=>{el.value='';el.classList.remove('correct','wrong','revealed');});
+  document.getElementById('hint-row').classList.remove('show');
+}
+function nextPattern(){loadPattern((current+1)%P.length);}
+function focusNext(el){const all=Array.from(document.querySelectorAll('.fill-input'));const i=all.indexOf(el);if(i<all.length-1)all[i+1].focus();}
+function updateScore(){
+  document.getElementById('s-correct').textContent=stats.correct;
+  document.getElementById('s-wrong').textContent=stats.wrong;
+  document.getElementById('s-streak').textContent=stats.streak;
+  const total=stats.correct+stats.wrong;
+  document.getElementById('prog').style.width=total?Math.round(stats.correct/total*100)+'%':'0%';
+}
+let toastTimer;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+buildSelector(); loadPattern(0);
+</script>
+</body>
+</html>
