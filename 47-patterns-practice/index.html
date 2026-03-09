@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>47 DSA Patterns — Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --card:#15151e; --border:#23233a;
+  --text:#e2e2f0; --muted:#52526e; --faint:#1e1e2e;
+  --c1:#a78bfa; --c2:#38bdf8; --c3:#fb923c; --c4:#4ade80;
+  --c5:#f472b6;
+  /* category colors */
+  --cat-a:#a78bfa; /* Fundamentals */
+  --cat-b:#38bdf8; /* Trees/Graphs */
+  --cat-c:#4ade80; /* Data Structures */
+  --cat-d:#fb923c; /* Advanced Graphs */
+  --cat-e:#f472b6; /* Strings/Math */
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;display:flex;flex-direction:column;}
+
+/* ── dot grid bg ── */
+body::before{content:'';position:fixed;inset:0;
+  background-image:radial-gradient(rgba(167,139,250,0.06) 1px,transparent 1px);
+  background-size:28px 28px;pointer-events:none;z-index:0;}
+
+/* ══════════════════════════════════════════
+   TOP NAV BAR
+══════════════════════════════════════════ */
+.topbar{
+  position:relative;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:56px;
+  background:rgba(12,12,18,0.95);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+  flex-shrink:0;
+}
+.topbar-logo{display:flex;align-items:center;gap:12px;cursor:pointer;text-decoration:none;}
+.logo-badge{
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  background:linear-gradient(135deg,var(--c1),var(--c2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  border:1px solid rgba(167,139,250,0.3);padding:3px 10px;border-radius:3px;
+  letter-spacing:1px;
+}
+.logo-title{font-size:15px;font-weight:800;letter-spacing:-0.5px;color:var(--text);}
+.logo-title span{color:var(--c1);}
+.topbar-center{
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  display:flex;align-items:center;gap:6px;
+}
+.topbar-center .sep{opacity:.3;}
+#topbar-pattern-name{color:var(--c2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.stat-chip{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:4px 10px;border:1px solid var(--border);border-radius:3px;
+  color:var(--muted);background:var(--faint);
+  display:flex;align-items:center;gap:6px;
+}
+.stat-chip strong{color:var(--text);}
+.btn-home{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;
+  padding:5px 14px;border:1px solid rgba(167,139,250,0.3);
+  background:rgba(167,139,250,0.08);color:var(--c1);border-radius:3px;
+  cursor:pointer;transition:all .15s;display:none;
+}
+.btn-home:hover{background:rgba(167,139,250,0.18);}
+.btn-home.show{display:block;}
+
+/* ══════════════════════════════════════════
+   MAIN LAYOUT — sidebar + content
+══════════════════════════════════════════ */
+.layout{display:flex;flex:1;overflow:hidden;position:relative;z-index:1;}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar{
+  width:280px;flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+.sidebar-search{
+  padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.search-input{
+  width:100%;background:var(--faint);border:1px solid var(--border);
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;
+  padding:7px 12px;border-radius:3px;outline:none;
+  transition:border-color .2s;
+}
+.search-input:focus{border-color:var(--c1);}
+.search-input::placeholder{color:var(--muted);}
+.sidebar-progress{
+  padding:10px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.prog-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;}
+.prog-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--c1),var(--c2));border-radius:2px;transition:width .5s;}
+.sidebar-list{overflow-y:auto;flex:1;}
+.sidebar-list::-webkit-scrollbar{width:3px;}
+.sidebar-list::-webkit-scrollbar-track{background:transparent;}
+.sidebar-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* category group */
+.cat-header{
+  font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;
+  text-transform:uppercase;padding:10px 16px 4px;color:var(--muted);
+  position:sticky;top:0;background:var(--surface);z-index:2;
+  border-bottom:1px solid rgba(35,35,58,0.5);
+}
+
+/* pattern row */
+.pat-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 16px;cursor:pointer;
+  border-bottom:1px solid rgba(35,35,58,0.4);
+  transition:background .12s;
+  text-decoration:none;color:inherit;
+  position:relative;
+}
+.pat-row:hover{background:rgba(255,255,255,0.03);}
+.pat-row.active{background:rgba(167,139,250,0.07);}
+.pat-row.active::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--c1);
+}
+.pat-num{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--muted);min-width:22px;
+}
+.pat-name{font-size:12px;font-weight:600;flex:1;line-height:1.3;}
+.pat-tag{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  padding:2px 6px;border-radius:2px;border:1px solid;
+  opacity:.7;white-space:nowrap;
+}
+.pat-status{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.status-done{background:var(--c4);}
+.status-pending{background:var(--border);}
+.status-active{background:var(--c1);box-shadow:0 0 6px var(--c1);}
+
+/* ── MAIN CONTENT AREA ── */
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+
+/* HERO (shown when no pattern selected) */
+.hero{
+  flex:1;overflow-y:auto;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;
+  padding:48px 32px 80px;
+}
+.hero-top{text-align:center;margin-bottom:48px;}
+.hero-eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  letter-spacing:3px;text-transform:uppercase;color:var(--c1);
+  border:1px solid rgba(167,139,250,0.25);
+  padding:4px 16px;border-radius:20px;display:inline-block;margin-bottom:20px;
+}
+.hero-title{
+  font-size:clamp(32px,5vw,64px);font-weight:800;
+  letter-spacing:-2px;line-height:.95;
+  background:linear-gradient(120deg,#fff 0%,var(--c1) 35%,var(--c2) 65%,var(--c4) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:16px;
+}
+.hero-sub{
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  color:var(--muted);max-width:420px;margin:0 auto;line-height:1.7;
+}
+.hero-stats{
+  display:flex;gap:24px;justify-content:center;margin-top:28px;flex-wrap:wrap;
+}
+.hstat{
+  text-align:center;
+  padding:16px 24px;background:var(--card);
+  border:1px solid var(--border);border-radius:4px;min-width:100px;
+}
+.hstat-num{
+  font-family:'JetBrains Mono',monospace;font-size:28px;
+  font-weight:700;line-height:1;
+}
+.hstat-label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+
+/* GRID of pattern cards */
+.grid-section{width:100%;max-width:800px;}
+.grid-cat-title{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  letter-spacing:3px;text-transform:uppercase;
+  padding:4px 0 12px;
+  display:flex;align-items:center;gap:10px;
+}
+.grid-cat-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:32px;}
+.grid-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:4px;padding:14px 16px;cursor:pointer;
+  transition:border-color .15s,transform .15s,background .15s;
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;gap:8px;
+  text-decoration:none;color:inherit;
+}
+.grid-card:hover{border-color:rgba(167,139,250,0.3);transform:translateY(-1px);background:#17172a;}
+.grid-card.done{border-color:rgba(74,222,128,0.2);}
+.grid-card.done::after{
+  content:'✓';position:absolute;top:8px;right:10px;
+  font-size:10px;color:var(--c4);opacity:.6;
+}
+.grid-card.active-card{border-color:var(--c1);background:rgba(167,139,250,0.05);}
+.gc-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);}
+.gc-name{font-size:12px;font-weight:700;line-height:1.3;}
+.gc-tag{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  padding:2px 7px;border-radius:2px;border:1px solid;
+  display:inline-block;opacity:.8;
+}
+.gc-bar{height:2px;background:var(--border);border-radius:1px;margin-top:4px;}
+.gc-bar-fill{height:100%;border-radius:1px;transition:width .4s;}
+
+/* IFRAME VIEWER */
+.iframe-wrap{
+  flex:1;display:none;flex-direction:column;
+  border-top:1px solid var(--border);
+}
+.iframe-wrap.show{display:flex;}
+.iframe-topbar{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 16px;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.iframe-url{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.iframe-actions{display:flex;gap:8px;}
+.ia-btn{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:4px 12px;border:1px solid var(--border);
+  background:var(--faint);color:var(--muted);border-radius:2px;
+  cursor:pointer;transition:all .12s;text-decoration:none;display:inline-block;
+}
+.ia-btn:hover{color:var(--text);border-color:var(--muted);}
+.ia-btn.close-btn:hover{color:var(--c3);border-color:var(--c3);}
+.pattern-iframe{flex:1;border:none;background:var(--bg);}
+
+/* ── MOBILE HAMBURGER ── */
+.hamburger{
+  display:none;width:36px;height:36px;
+  align-items:center;justify-content:center;
+  border:1px solid var(--border);border-radius:3px;
+  background:var(--faint);cursor:pointer;flex-shrink:0;
+}
+.hamburger span{
+  display:block;width:16px;height:1.5px;
+  background:var(--text);transition:all .2s;
+}
+.hamburger span+span{margin-top:4px;}
+
+/* mobile overlay */
+.sidebar-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.6);z-index:15;
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
+@media(max-width:768px){
+  .sidebar{
+    position:fixed;left:0;top:56px;bottom:0;z-index:16;
+    transform:translateX(-100%);
+    box-shadow:4px 0 24px rgba(0,0,0,0.5);
+  }
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-overlay.open{display:block;}
+  .hamburger{display:flex;}
+  .topbar-center{display:none;}
+  .hero{padding:24px 16px 60px;}
+  .hero-title{font-size:clamp(28px,8vw,48px);}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+  .hstat{padding:12px 16px;min-width:80px;}
+  .hstat-num{font-size:22px;}
+}
+
+/* ══════════════════════════════════════════
+   CATEGORY COLOR MAP
+══════════════════════════════════════════ */
+.cat-0 .pat-tag,.cat-0 .gc-tag{border-color:rgba(167,139,250,.4);color:var(--cat-a);}
+.cat-0 .gc-bar-fill{background:var(--cat-a);}
+.cat-0 .gc-card-accent{background:rgba(167,139,250,.06);}
+
+.cat-1 .pat-tag,.cat-1 .gc-tag{border-color:rgba(56,189,248,.4);color:var(--cat-b);}
+.cat-1 .gc-bar-fill{background:var(--cat-b);}
+
+.cat-2 .pat-tag,.cat-2 .gc-tag{border-color:rgba(74,222,128,.4);color:var(--cat-c);}
+.cat-2 .gc-bar-fill{background:var(--cat-c);}
+
+.cat-3 .pat-tag,.cat-3 .gc-tag{border-color:rgba(251,146,60,.4);color:var(--cat-d);}
+.cat-3 .gc-bar-fill{background:var(--cat-d);}
+
+.cat-4 .pat-tag,.cat-4 .gc-tag{border-color:rgba(244,114,182,.4);color:var(--cat-e);}
+.cat-4 .gc-bar-fill{background:var(--cat-e);}
+
+/* search highlight */
+.pat-row.hidden{display:none;}
+
+/* no-results */
+.no-results{
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  color:var(--muted);text-align:center;padding:32px 16px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ── -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="topbar-logo" onclick="showHero()" style="cursor:pointer;text-decoration:none;">
+      <div class="logo-badge">47</div>
+      <div class="logo-title">DSA <span>Patterns</span></div>
+    </a>
+  </div>
+  <div class="topbar-center">
+    <span id="topbar-cat" style="color:var(--muted);">Select a pattern</span>
+    <span class="sep">›</span>
+    <span id="topbar-pattern-name">—</span>
+  </div>
+  <div class="topbar-right">
+    <div class="stat-chip">
+      <span>done</span><strong id="stat-done">0</strong><span style="opacity:.4;">/</span><strong style="color:var(--muted);">25</strong>
+    </div>
+    <div class="stat-chip" id="streak-chip" style="display:none;">
+      <span>🔥</span><strong id="stat-streak">0</strong>
+    </div>
+    <button class="btn-home" id="btn-home" onclick="showHero()">← Home</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-search">
+      <input class="search-input" id="search" placeholder="search patterns..." oninput="filterPatterns(this.value)" autocomplete="off" spellcheck="false"/>
+    </div>
+    <div class="sidebar-progress">
+      <div class="prog-label">
+        <span>Progress</span>
+        <span id="prog-label-right">0 / 25 available</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="sidebar-prog" style="width:0%"></div></div>
+    </div>
+    <div class="sidebar-list" id="sidebar-list"></div>
+  </div>
+
+  <!-- ── SIDEBAR OVERLAY (mobile) ── -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="content" id="content">
+
+    <!-- HERO / GRID -->
+    <div class="hero" id="hero">
+      <div class="hero-top">
+        <div class="hero-eyebrow">The Complete DSA Muscle Memory System</div>
+        <div class="hero-title">47 Patterns.<br>Zero Excuses.</div>
+        <div class="hero-sub">// Fill in the blanks. Build the muscle memory.<br>Each pattern → 10 manifestations → 4 blocks → one template.</div>
+        <div class="hero-stats">
+          <div class="hstat"><div class="hstat-num" style="color:var(--c4)" id="hs-done">0</div><div class="hstat-label">Completed</div></div>
+          <div class="hstat"><div class="hstat-num" style="color:var(--c2)">25</div><div class="hstat-label">Available</div></div>
+          <div class="hstat"><div class="hstat-num" style="color:var(--c3)">22</div><div class="hstat-label">Coming Soon</div></div>
+          <div class="hstat"><div class="hstat-num" style="color:var(--c1)">470</div><div class="hstat-label">Total Exercises</div></div>
+        </div>
+      </div>
+      <div class="grid-section" id="grid-section"></div>
+    </div>
+
+    <!-- IFRAME PANEL -->
+    <div class="iframe-wrap" id="iframe-wrap">
+      <div class="iframe-topbar">
+        <div class="iframe-url" id="iframe-url"></div>
+        <div class="iframe-actions">
+          <a class="ia-btn" id="open-tab-btn" target="_blank" rel="noopener">↗ Open Tab</a>
+          <button class="ia-btn close-btn" onclick="showHero()">✕ Close</button>
+        </div>
+      </div>
+      <iframe class="pattern-iframe" id="pattern-iframe" title="Pattern Practice"></iframe>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /layout -->
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// PATTERN REGISTRY — 47 patterns, 25 built
+// ─────────────────────────────────────────────────────────────────────────────
+const CATS = [
+  { name:"Fundamentals", color:"var(--cat-a)", tag:"ARRAYS·POINTERS" },
+  { name:"Trees & Graphs", color:"var(--cat-b)", tag:"TRAVERSAL" },
+  { name:"Data Structures", color:"var(--cat-c)", tag:"DS" },
+  { name:"Advanced Graphs", color:"var(--cat-d)", tag:"GRAPH·THEORY" },
+  { name:"Strings & Math",  color:"var(--cat-e)", tag:"MATH·STRINGS" },
+];
+
+const PATTERNS = [
+  // ── cat 0: Fundamentals
+  { id:"01", name:"Two Pointers",          cat:0, path:"patterns/01-two-pointers/",          done:true  },
+  { id:"02", name:"Sliding Window",        cat:0, path:"patterns/02-sliding-window/",        done:true  },
+  { id:"03", name:"Binary Search",         cat:0, path:"patterns/03-binary-search/",         done:true  },
+  { id:"06", name:"Dynamic Programming",   cat:0, path:"patterns/06-dynamic-programming/",   done:true  },
+  { id:"07", name:"Greedy",                cat:0, path:"patterns/07-greedy/",                done:true  },
+  { id:"08", name:"Divide & Conquer",      cat:0, path:"patterns/08-divide-and-conquer/",    done:true  },
+  { id:"18", name:"Bit Manipulation",      cat:0, path:"patterns/18-bit-manipulation/",      done:true  },
+  { id:"19", name:"Bitmask DP",            cat:0, path:"patterns/19-bitmask-dp/",            done:true  },
+  // ── cat 1: Trees & Graphs
+  { id:"04", name:"DFS",                   cat:1, path:"patterns/04-dfs/",                   done:true  },
+  { id:"05", name:"BFS",                   cat:1, path:"patterns/05-bfs/",                   done:true  },
+  { id:"20", name:"Topological Sort",      cat:1, path:"patterns/20-topological-sort/",      done:true  },
+  { id:"21", name:"Shortest Path",         cat:1, path:"patterns/21-shortest-path/",         done:true  },
+  { id:"22", name:"MST",                   cat:1, path:"patterns/22-mst/",                   done:true  },
+  { id:"23", name:"SCC",                   cat:1, path:"patterns/23-scc/",                   done:true  },
+  { id:"24", name:"Network Flow",          cat:1, path:"patterns/24-network-flow/",          done:true  },
+  { id:"25", name:"Bipartite Matching",    cat:1, path:"patterns/25-bipartite-matching/",    done:true  },
+  // ── cat 2: Data Structures
+  { id:"09", name:"Stack",                 cat:2, path:"patterns/09-stack/",                 done:true  },
+  { id:"10", name:"Queue",                 cat:2, path:"patterns/10-queue/",                 done:true  },
+  { id:"11", name:"Deque",                 cat:2, path:"patterns/11-deque/",                 done:true  },
+  { id:"12", name:"Heap / Priority Queue", cat:2, path:"patterns/12-heap-priority-queue/",   done:true  },
+  { id:"13", name:"Hashing",               cat:2, path:"patterns/13-hashing/",               done:true  },
+  { id:"14", name:"Union Find (DSU)",      cat:2, path:"patterns/14-union-find-dsu/",        done:true  },
+  { id:"15", name:"Segment Tree",          cat:2, path:"patterns/15-segment-tree/",          done:true  },
+  { id:"16", name:"Fenwick Tree (BIT)",    cat:2, path:"patterns/16-fenwick-tree-bit/",      done:true  },
+  { id:"17", name:"Trie",                  cat:2, path:"patterns/17-trie/",                  done:true  },
+  // ── cat 3: Advanced Graphs (coming soon)
+  { id:"26", name:"Euler Path / Circuit",  cat:3, path:"", done:false },
+  { id:"27", name:"LCA / Binary Lifting",  cat:3, path:"", done:false },
+  { id:"28", name:"Heavy-Light Decomp",    cat:3, path:"", done:false },
+  { id:"29", name:"Centroid Decomp",       cat:3, path:"", done:false },
+  { id:"30", name:"Mo's Algorithm",        cat:3, path:"", done:false },
+  { id:"31", name:"Offline Queries",       cat:3, path:"", done:false },
+  { id:"32", name:"Sqrt Decomposition",    cat:3, path:"", done:false },
+  { id:"33", name:"Link-Cut Tree",         cat:3, path:"", done:false },
+  // ── cat 4: Strings & Math (coming soon)
+  { id:"34", name:"KMP",                   cat:4, path:"", done:false },
+  { id:"35", name:"Z-Algorithm",           cat:4, path:"", done:false },
+  { id:"36", name:"Suffix Array",          cat:4, path:"", done:false },
+  { id:"37", name:"Suffix Automaton",      cat:4, path:"", done:false },
+  { id:"38", name:"Aho-Corasick",          cat:4, path:"", done:false },
+  { id:"39", name:"Number Theory",         cat:4, path:"", done:false },
+  { id:"40", name:"Modular Arithmetic",    cat:4, path:"", done:false },
+  { id:"41", name:"FFT / NTT",             cat:4, path:"", done:false },
+  { id:"42", name:"Matrix Exponentiation", cat:4, path:"", done:false },
+  { id:"43", name:"Game Theory",           cat:4, path:"", done:false },
+  { id:"44", name:"Probability DP",        cat:4, path:"", done:false },
+  { id:"45", name:"Convex Hull Trick",     cat:4, path:"", done:false },
+  { id:"46", name:"Aliens Trick (WQS)",    cat:4, path:"", done:false },
+  { id:"47", name:"Persistent Data Structs",cat:4,path:"", done:false },
+];
+
+const DONE_COUNT = PATTERNS.filter(p=>p.done).length;
+let activeId = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUILD SIDEBAR
+// ─────────────────────────────────────────────────────────────────────────────
+function buildSidebar(){
+  const list = document.getElementById('sidebar-list');
+  list.innerHTML = '';
+  const byCat = {};
+  PATTERNS.forEach(p => { (byCat[p.cat] = byCat[p.cat]||[]).push(p); });
+  Object.entries(byCat).forEach(([ci, pats])=>{
+    const cat = CATS[ci];
+    const hdr = document.createElement('div');
+    hdr.className = 'cat-header';
+    hdr.textContent = cat.name;
+    list.appendChild(hdr);
+    pats.forEach(p => {
+      const row = document.createElement('div');
+      row.className = `pat-row cat-${p.cat}`;
+      row.dataset.id = p.id;
+      row.dataset.name = p.name.toLowerCase();
+      row.innerHTML = `
+        <span class="pat-num">${p.id}</span>
+        <span class="pat-name">${p.name}</span>
+        <span class="pat-tag">${CATS[p.cat].tag}</span>
+        <span class="pat-status ${p.done?'status-done':'status-pending'}"></span>`;
+      if(p.done){
+        row.onclick = () => openPattern(p);
+      } else {
+        row.style.opacity = '.4';
+        row.style.cursor = 'default';
+        row.title = 'Coming soon';
+      }
+      list.appendChild(row);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUILD HERO GRID
+// ─────────────────────────────────────────────────────────────────────────────
+function buildGrid(){
+  const gs = document.getElementById('grid-section');
+  gs.innerHTML = '';
+  const byCat = {};
+  PATTERNS.forEach(p => { (byCat[p.cat] = byCat[p.cat]||[]).push(p); });
+  Object.entries(byCat).forEach(([ci, pats])=>{
+    const cat = CATS[ci];
+    const catColor = cat.color;
+    const sec = document.createElement('div');
+    const title = document.createElement('div');
+    title.className = 'grid-cat-title';
+    title.style.color = catColor;
+    title.textContent = cat.name;
+    sec.appendChild(title);
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    pats.forEach(p => {
+      const card = document.createElement('div');
+      card.className = `grid-card cat-${p.cat}${p.done?' done':''}`;
+      card.dataset.id = p.id;
+      card.innerHTML = `
+        <div class="gc-num">#${p.id}</div>
+        <div class="gc-name">${p.name}</div>
+        <div class="gc-tag">${p.done ? '10 exercises' : 'coming soon'}</div>
+        <div class="gc-bar"><div class="gc-bar-fill" style="width:${p.done?'100':'0'}%"></div></div>`;
+      if(p.done){
+        card.onclick = () => openPattern(p);
+        card.style.cursor = 'pointer';
+      } else {
+        card.style.opacity = '.4';
+        card.style.cursor = 'not-allowed';
+      }
+      grid.appendChild(card);
+    });
+    sec.appendChild(grid);
+    gs.appendChild(sec);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OPEN PATTERN IN IFRAME
+// ─────────────────────────────────────────────────────────────────────────────
+function openPattern(p){
+  if(!p.done) return;
+  activeId = p.id;
+
+  // Update sidebar highlight
+  document.querySelectorAll('.pat-row').forEach(r => r.classList.remove('active'));
+  const row = document.querySelector(`.pat-row[data-id="${p.id}"]`);
+  if(row){
+    row.classList.add('active');
+    row.scrollIntoView({block:'nearest',behavior:'smooth'});
+  }
+
+  // Update grid highlight
+  document.querySelectorAll('.grid-card').forEach(c => c.classList.remove('active-card'));
+  const card = document.querySelector(`.grid-card[data-id="${p.id}"]`);
+  if(card) card.classList.add('active-card');
+
+  // Update topbar
+  document.getElementById('topbar-cat').textContent = CATS[p.cat].name;
+  document.getElementById('topbar-pattern-name').textContent = `#${p.id} ${p.name}`;
+  document.getElementById('btn-home').classList.add('show');
+
+  // Show iframe, hide hero
+  const iframe = document.getElementById('pattern-iframe');
+  const iframeWrap = document.getElementById('iframe-wrap');
+  const hero = document.getElementById('hero');
+  const urlEl = document.getElementById('iframe-url');
+  const openTabBtn = document.getElementById('open-tab-btn');
+
+  hero.style.display = 'none';
+  iframeWrap.classList.add('show');
+  iframe.src = './' + p.path;
+  urlEl.textContent = './' + p.path;
+  openTabBtn.href = './' + p.path;
+
+  // Close sidebar on mobile
+  closeSidebar();
+
+  // Save last visited
+  try{ localStorage.setItem('dsa47_last', p.id); } catch(e){}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHOW HERO
+// ─────────────────────────────────────────────────────────────────────────────
+function showHero(){
+  activeId = null;
+  document.getElementById('hero').style.display = 'flex';
+  document.getElementById('iframe-wrap').classList.remove('show');
+  document.getElementById('pattern-iframe').src = '';
+  document.getElementById('topbar-pattern-name').textContent = '—';
+  document.getElementById('topbar-cat').textContent = 'Select a pattern';
+  document.getElementById('btn-home').classList.remove('show');
+  document.querySelectorAll('.pat-row').forEach(r=>r.classList.remove('active'));
+  document.querySelectorAll('.grid-card').forEach(c=>c.classList.remove('active-card'));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEARCH / FILTER
+// ─────────────────────────────────────────────────────────────────────────────
+function filterPatterns(q){
+  q = q.toLowerCase().trim();
+  let visCount = 0;
+  document.querySelectorAll('.pat-row').forEach(row=>{
+    const match = !q || row.dataset.name.includes(q) || row.dataset.id.includes(q);
+    row.classList.toggle('hidden', !match);
+    if(match) visCount++;
+  });
+  // show/hide category headers
+  document.querySelectorAll('.cat-header').forEach(hdr=>{
+    let next = hdr.nextSibling;
+    let allHidden = true;
+    while(next && !next.classList?.contains('cat-header')){
+      if(next.classList?.contains('pat-row') && !next.classList.contains('hidden')){
+        allHidden = false; break;
+      }
+      next = next.nextSibling;
+    }
+    hdr.style.display = allHidden ? 'none' : '';
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────────────────────────────────────────
+function updateStats(){
+  document.getElementById('stat-done').textContent = DONE_COUNT;
+  document.getElementById('hs-done').textContent = DONE_COUNT;
+  const pct = Math.round(DONE_COUNT / PATTERNS.length * 100);
+  document.getElementById('sidebar-prog').style.width = pct + '%';
+  document.getElementById('prog-label-right').textContent = `${DONE_COUNT} / ${PATTERNS.length} available`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MOBILE SIDEBAR
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KEYBOARD SHORTCUTS
+// ─────────────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') showHero();
+  if((e.metaKey||e.ctrlKey) && e.key==='k'){
+    e.preventDefault();
+    document.getElementById('search').focus();
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebar-overlay').classList.add('open');
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+buildSidebar();
+buildGrid();
+updateStats();
+
+// Restore last visited
+try{
+  const last = localStorage.getItem('dsa47_last');
+  if(last){
+    const p = PATTERNS.find(x=>x.id===last&&x.done);
+    if(p) openPattern(p);
+  }
+} catch(e){}
+</script>
+</body>
+</html>
